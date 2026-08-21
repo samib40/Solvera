@@ -1,2 +1,11 @@
 User-agent: *
-Disallow: /
+Allow: /
+Disallow: /impressum.html
+Disallow: /datenschutz.html
+Disallow: /vorschau.html
+Disallow: /Solvera-Sales-Website.html
+Disallow: /danke.html
+Disallow: /danke-firmen.html
+Disallow: /danke-beratung.html
+
+Sitemap: https://www.solvera-sales.de/sitemap.xml
