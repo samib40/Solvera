@@ -1054,6 +1054,8 @@ input[type="range"]::-moz-range-thumb {
 
 /* ---------- 25. Team ---------- */
 .team-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px; }
+/* Zwei Karten laufen nicht über die volle Breite, sondern stehen mittig */
+.team-grid-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); max-width: 620px; }
 .team-grid > * { min-width: 0; }
 
 .team-card {
