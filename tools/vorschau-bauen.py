@@ -109,7 +109,7 @@ def main():
     seiten = {datei: baue_seite(datei) for datei, _ in SEITEN}
     for datei in WEITERE:
         seiten[datei] = baue_seite(datei)
-    logo = uri('assets/img/logo.svg')
+    logo = uri('assets/img/logo-mark.png')
 
     # </script> im eingebetteten JSON entschärfen
     daten = json.dumps(seiten, ensure_ascii=False).replace('</', r'<\/')
