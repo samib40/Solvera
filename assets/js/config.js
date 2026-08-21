@@ -10,21 +10,33 @@ window.SOLVERA = {
   /* ---------------------------------------------------------------------
      1. FORMULAR-ZIELE
      ---------------------------------------------------------------------
-     Trage hier deine Formspree-Endpoints ein (kostenlos anlegen unter
-     https://formspree.io  ->  New Form  ->  Endpoint kopieren).
-     Beispiel: "https://formspree.io/f/xayzabcd"
+     Alle drei Formulare gehen an kontakt.php im selben Verzeichnis. Das
+     Skript stellt die Angaben per E-Mail an info@solvera-sales.de zu und
+     leitet anschliessend auf die passende Dankeseite weiter.
 
-     Solange die Felder leer sind, funktioniert die Seite trotzdem: die
-     Formulare oeffnen dann automatisch das E-Mail-Programm des Besuchers
-     mit allen ausgefuellten Daten (Fallback, siehe forms.js).
+     Voraussetzung ist ein Webhosting mit PHP – das ist bei Strato, IONOS,
+     All-Inkl, Hetzner, Mittwald und den meisten anderen Anbietern der Fall.
+     Der Empfaenger wird oben in kontakt.php gepflegt.
 
-     Statt Formspree kann hier auch jede andere URL stehen, die POST mit
-     JSON annimmt (eigenes Backend, Make, Zapier, HubSpot, n8n ...).
+     WICHTIG: Auf einem rein statischen Hoster (zum Beispiel GitHub Pages)
+     laeuft kein PHP. Dort merkt die Seite das selbst und oeffnet stattdessen
+     das E-Mail-Programm des Besuchers mit allen Angaben – es geht also nichts
+     verloren, siehe forms.js.
+
+     Statt kontakt.php kann hier auch jede andere URL stehen, die POST
+     annimmt (eigenes Backend, Formspree, Make, Zapier, n8n ...).
      --------------------------------------------------------------------- */
   endpoints: {
-    lead:       '',   // Anfragen aus dem PV-Rechner
-    bewerbung:  '',   // Bewerbungen von Vertriebspartnern
-    firmen:     ''    // Anfragen von Photovoltaik-Fachbetrieben
+    lead:       'kontakt.php',   // Anfragen aus dem Photovoltaik-Rechner
+    bewerbung:  'kontakt.php',   // Bewerbungen von Vertriebspartnern
+    firmen:     'kontakt.php'    // Anfragen von Photovoltaik-Fachbetrieben
+  },
+
+  /* Seite, auf der der Besucher nach dem Absenden landet */
+  danke: {
+    lead:       'danke-beratung.html',
+    bewerbung:  'danke.html',
+    firmen:     'danke-firmen.html'
   },
 
   /* Empfaenger fuer den E-Mail-Fallback (wenn oben nichts eingetragen ist) */

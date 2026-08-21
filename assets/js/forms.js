@@ -27,10 +27,46 @@
   };
 
   var SUBJECTS = {
-    lead:      'Neue Anfrage über den PV-Rechner',
+    lead:      'Neue Anfrage über den Photovoltaik-Rechner',
     bewerbung: 'Neue Bewerbung als Vertriebspartner',
-    firmen:    'Neue Partneranfrage (Photovoltaik-Fachbetrieb)'
+    firmen:    'Neue Anfrage eines Photovoltaik-Fachbetriebs'
   };
+
+  /* Seite, auf die nach erfolgreichem Versand geleitet wird.
+     Wird in assets/js/config.js unter "danke" gepflegt. */
+  var DANKE = {
+    lead:      'danke-beratung.html',
+    bewerbung: 'danke.html',
+    firmen:    'danke-firmen.html'
+  };
+
+  function dankeseite(type) {
+    return (CFG.danke && CFG.danke[type]) || DANKE[type] || 'danke.html';
+  }
+
+  function versandFehler() {
+    var to = (CFG.kontakt && CFG.kontakt.email) || 'info@solvera-sales.de';
+    return 'Der Versand hat leider nicht geklappt. Bitte versuchen Sie es erneut oder ' +
+           'schreiben Sie uns direkt an ' + to + '.';
+  }
+
+  /* Auf einer lokal geoeffneten Datei oder in der Vorschau gibt es keinen
+     Server, der das Formular annehmen koennte. Dann greift der E-Mail-Weg. */
+  function ohneServer() {
+    return location.protocol !== 'http:' && location.protocol !== 'https:';
+  }
+
+  /* Seitenwechsel. In der eingebetteten Vorschau uebernimmt die Huelle. */
+  function gehZu(ziel) {
+    try {
+      if (window.parent && window.parent !== window) {
+        window.parent.postMessage({ solveraSeite: ziel.split('#')[0],
+                                    anker: (ziel.split('#')[1] || '') }, '*');
+        return;
+      }
+    } catch (e) { /* fremde Herkunft: normal weiterleiten */ }
+    window.location.href = ziel;
+  }
 
   /* ---------- Hilfsfunktionen ---------- */
 
@@ -131,26 +167,8 @@
       '?subject=' + encodeURIComponent(subject) +
       '&body='    + encodeURIComponent(body);
     showMessage(form,
-      'Ihr E-Mail-Programm wurde mit allen Angaben geöffnet. Bitte schicken Sie die Nachricht ab – ' +
-      'oder rufen Sie uns direkt an unter 0176 45163460.', 'ok');
-  }
-
-  /* Erfolgsansicht einblenden */
-  function showSuccess(form) {
-    var box = $('[data-form-success]', form) ||
-              (form.parentElement && $('[data-form-success]', form.parentElement));
-    if (!box) { showMessage(form, 'Vielen Dank! Ihre Nachricht ist bei uns eingegangen.', 'ok'); return; }
-
-    if (form.contains(box)) {
-      Array.prototype.forEach.call(form.children, function (child) {
-        if (child !== box) child.style.display = 'none';
-      });
-    } else {
-      form.style.display = 'none';
-    }
-    box.classList.add('is-visible');
-    box.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    form.dispatchEvent(new CustomEvent('solvera:success', { bubbles: true }));
+      'Ihr E-Mail-Programm wurde mit allen Angaben geöffnet. Bitte schicken Sie die Nachricht ab. ' +
+      'Alternativ erreichen Sie uns unter ' + to + '.', 'ok');
   }
 
   /* ---------- Versand ---------- */
@@ -162,6 +180,7 @@
     var fileEl   = $('input[type="file"]', form);
     var file     = fileEl && fileEl.files && fileEl.files[0];
 
+    data.art       = type;
     data.formular  = SUBJECTS[type] || type;
     data.seite     = window.location.pathname;
     data._subject  = SUBJECTS[type] || 'Anfrage über die Website';
@@ -171,7 +190,7 @@
       return;
     }
 
-    if (!endpoint) { mailtoFallback(form, type, data); return; }
+    if (!endpoint || ohneServer()) { mailtoFallback(form, type, data); return; }
 
     var btn = form.querySelector('button[type="submit"]');
     var old = btn ? btn.innerHTML : '';
@@ -194,15 +213,30 @@
 
     fetch(endpoint, { method: 'POST', headers: headers, body: body })
       .then(function (res) {
+        /* Ist am Ziel kein Empfangsskript hinterlegt (z. B. weil die Seite
+           noch auf einem rein statischen Hoster liegt), soll der Besucher
+           nicht im Regen stehen: dann oeffnet sich sein E-Mail-Programm. */
+        if (res.status === 404 || res.status === 405 || res.status === 501) {
+          mailtoFallback(form, type, data);
+          return null;
+        }
         if (!res.ok) throw new Error('HTTP ' + res.status);
-        showSuccess(form);
+        return res.json().catch(function () { return {}; });
       })
-      .catch(function () {
-        showMessage(form,
-          'Der Versand hat leider nicht geklappt. Bitte versuchen Sie es erneut oder rufen Sie uns ' +
-          'an unter 0176 45163460 – wir sind auch abends erreichbar.', 'err');
+      .then(function (antwort) {
+        if (antwort === null) return;                     // bereits per E-Mail abgehandelt
+        if (antwort && antwort.ok === false) {
+          showMessage(form, antwort.text || versandFehler(), 'err');
+          if (btn) { btn.disabled = false; btn.innerHTML = old; }
+          return;
+        }
+        form.dispatchEvent(new CustomEvent('solvera:success', { bubbles: true }));
+        gehZu((antwort && antwort.weiter) || dankeseite(type));
       })
-      .finally(function () {
+      .catch(function (fehler) {
+        /* Netzwerkfehler: der Server ist gar nicht erreichbar. */
+        if (fehler instanceof TypeError) { mailtoFallback(form, type, data); }
+        else { showMessage(form, versandFehler(), 'err'); }
         if (btn) { btn.disabled = false; btn.innerHTML = old; }
       });
   }
@@ -217,7 +251,10 @@
 
       // Spam-Schutz: unsichtbares Feld darf nicht ausgefuellt sein
       var trap = form.querySelector('input[name="website"]');
-      if (trap && trap.value) { showSuccess(form); return; }
+      if (trap && trap.value) {
+        gehZu(dankeseite(form.getAttribute('data-form') || 'lead'));
+        return;
+      }
 
       if (!validate(form)) {
         showMessage(form, 'Bitte prüfen Sie die rot markierten Felder.', 'err');
