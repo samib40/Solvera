@@ -153,3 +153,46 @@
   });
 
 })();
+
+/* =========================================================================
+   Social-Media-Symbole
+   Erscheinen nur fuer Profile, die in config.js hinterlegt sind – leere
+   Eintraege werden uebersprungen, damit keine toten Links entstehen.
+   ========================================================================= */
+(function () {
+  'use strict';
+
+  var LINKS = (window.SOLVERA && window.SOLVERA.social) || {};
+  var ziele = document.querySelectorAll('[data-social]');
+  if (!ziele.length) return;
+
+  var DIENSTE = {
+    instagram: { name: 'Instagram', pfad: '<rect x="2" y="2" width="20" height="20" rx="5.5"/><circle cx="12" cy="12" r="4.2"/><circle cx="17.6" cy="6.4" r="1.2" fill="currentColor" stroke="none"/>' },
+    tiktok:    { name: 'TikTok',    pfad: '<path d="M15.5 3v9.9a3.6 3.6 0 1 1-3-3.55"/><path d="M15.5 3c.3 2.2 1.9 3.9 4.1 4.2"/>' },
+    linkedin:  { name: 'LinkedIn',  pfad: '<rect x="2.5" y="2.5" width="19" height="19" rx="3"/><path d="M7 10.5V17M7 7.2v.1M11 17v-4a2.2 2.2 0 0 1 4.4 0v4"/>' },
+    facebook:  { name: 'Facebook',  pfad: '<path d="M14.5 8.5h2.3M14.5 21V9.8c0-1.6.9-2.8 2.6-2.8h1.6"/><circle cx="12" cy="12" r="9.3"/>' },
+    youtube:   { name: 'YouTube',   pfad: '<rect x="2" y="5.5" width="20" height="13" rx="4"/><path d="m10.3 9.4 4.6 2.6-4.6 2.6z"/>' }
+  };
+
+  var vorhanden = Object.keys(DIENSTE).filter(function (k) {
+    return typeof LINKS[k] === 'string' && LINKS[k].trim();
+  });
+
+  Array.prototype.forEach.call(ziele, function (ziel) {
+    if (!vorhanden.length) { ziel.remove(); return; }
+
+    vorhanden.forEach(function (k) {
+      var d = DIENSTE[k];
+      var a = document.createElement('a');
+      a.className = 'social-link';
+      a.href = LINKS[k].trim();
+      a.target = '_blank';
+      a.rel = 'noopener';
+      a.setAttribute('aria-label', d.name);
+      a.title = d.name;
+      a.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" ' +
+                    'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + d.pfad + '</svg>';
+      ziel.appendChild(a);
+    });
+  });
+})();

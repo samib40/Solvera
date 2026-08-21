@@ -79,6 +79,29 @@ auch ohne Konfiguration nutzbar – aber die Abbruchquote ist deutlich höher.
 
 ---
 
+## Farben ändern
+
+Die gesamte Farbwelt steckt in **einem** Block ganz oben in
+`assets/css/style.css` (`:root`). Wer dort die Werte tauscht, färbt die ganze
+Website um – es gibt keine fest verdrahteten Farben im Rest der Datei.
+
+```css
+--wine:       #7d1a2e;   /* Bordeaux – Schaltflächen, Flächen           */
+--wine-light: #9c2740;   /* heller, für Verläufe und Mouseover          */
+--wine-deep:  #55101f;   /* dunkler, für Verlaufsenden                  */
+--wine-text:  #cfa3aa;   /* gedecktes Altrosa – Akzenttext auf Schwarz  */
+```
+
+`--wine-text` ist bewusst heller als das Bordeaux selbst: Reines Bordeaux auf
+Schwarz erreicht keinen ausreichenden Kontrast für Fließtext. Wer diesen Wert
+verändert, sollte den Kontrast gegen `--bg` prüfen (Mindestwert 4,5:1 für
+normalen Text). Alle aktuellen Werte erfüllen WCAG AA.
+
+Logo und Favicon liegen als SVG unter `assets/img/` und enthalten dieselben
+Farbwerte – bei einem Farbwechsel dort mit anpassen.
+
+---
+
 ## Tracking und Cookie-Banner
 
 Tracking wird **ausschließlich nach ausdrücklicher Einwilligung** geladen
@@ -155,6 +178,24 @@ oben rund ein Zehntel der Bildhöhe Luft haben.
 
 ---
 
+## Social Media verlinken
+
+Die Symbole in der Fußzeile erscheinen **automatisch**, sobald in
+`assets/js/config.js` unter `social` eine Profil-URL eingetragen wird:
+
+```js
+social: {
+  instagram: 'https://www.instagram.com/…',
+  tiktok:    'https://www.tiktok.com/@…',
+  linkedin:  '', facebook: '', youtube: ''
+}
+```
+
+Leere Felder werden übersprungen – es entstehen also keine toten Links. Sind
+alle Felder leer, wird die Symbolzeile gar nicht erst angezeigt.
+
+---
+
 ## Veröffentlichen
 
 Die Website ist rein statisch. Es gibt keinen Build-Schritt – die Dateien werden
@@ -184,7 +225,8 @@ Bei abweichender Domain diese Adresse überall ersetzen.
   Grafiken sind CSS-Gradienten. Dadurch lädt die Seite sehr schnell und es ist
   **kein Cookie-Banner erforderlich** – solange kein Tracking ergänzt wird.
 * **Barrierefreiheit.** Skip-Link, Fokus-Ringe, `aria`-Attribute an Navigation und
-  Akkordeon, `prefers-reduced-motion` wird respektiert.
+  Akkordeon, `prefers-reduced-motion` wird respektiert. Alle Textfarben erfüllen
+  den WCAG-AA-Kontrast.
 * **Spam-Schutz.** Jedes Formular enthält ein unsichtbares Honeypot-Feld (`website`).
   Ausgefüllte Einsendungen werden verworfen.
 * **Browser.** Getestet für aktuelle Versionen von Chrome, Firefox, Safari und Edge

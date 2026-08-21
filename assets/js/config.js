@@ -57,6 +57,22 @@ window.SOLVERA = {
   },
 
   /* ---------------------------------------------------------------------
+     1c. SOCIAL MEDIA
+     ---------------------------------------------------------------------
+     Sobald ein Profil steht, hier die vollstaendige URL eintragen – das
+     passende Symbol erscheint dann automatisch in der Fusszeile und im
+     Mobilmenue. Leere Felder werden uebersprungen, es entstehen also keine
+     toten Links. Reihenfolge der Anzeige = Reihenfolge in dieser Liste.
+     --------------------------------------------------------------------- */
+  social: {
+    instagram: '',   // z. B. 'https://www.instagram.com/solvera.sales'
+    tiktok:    '',   // z. B. 'https://www.tiktok.com/@solvera.sales'
+    linkedin:  '',   // z. B. 'https://www.linkedin.com/company/solvera-sales'
+    facebook:  '',   // z. B. 'https://www.facebook.com/solverasales'
+    youtube:   ''    // z. B. 'https://www.youtube.com/@solverasales'
+  },
+
+  /* ---------------------------------------------------------------------
      2. RECHENWERTE DES PV-RECHNERS
      ---------------------------------------------------------------------
      Marktueblichen Durchschnittswerte. Bei Bedarf hier anpassen – die
