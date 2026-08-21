@@ -32,6 +32,7 @@ Kein Build-Schritt, kein Framework, keine externen Requests – einfach hochlade
 | `impressum.html` | Pflichtangaben nach § 5 DDG |
 | `datenschutz.html` | Datenschutzerklärung nach DSGVO |
 | `404.html` | Fehlerseite |
+| `vorschau.html` | Alle Seiten in einer Datei – nur zum Anschauen, nicht hochladen |
 
 ```
 assets/
@@ -43,6 +44,9 @@ assets/
 ├── js/calculator.js       Photovoltaik-Rechner (Startseite)
 ├── js/earnings.js         Provisions-Rechner (Karriereseite)
 └── img/                   Logo, Favicon (SVG) und vier Teamfotos (JPG, 3:4)
+
+tools/
+└── vorschau-bauen.py      Erzeugt vorschau.html aus den Einzeldateien
 ```
 
 ---
@@ -76,6 +80,28 @@ auch ohne Konfiguration nutzbar – aber die Abbruchquote ist deutlich höher.
 > den kostenpflichtigen Tarifen. Ohne Upgrade kommt die Bewerbung an, die Datei
 > jedoch nicht. Wer keinen Bezahltarif möchte, entfernt das Upload-Feld
 > (`.file-drop`) aus `index.html` und `karriere.html`.
+
+---
+
+## Vorschau ansehen
+
+Die Website besteht aus mehreren Dateien und braucht zum Anschauen normalerweise
+einen Server. Für den schnellen Blick gibt es deshalb `vorschau.html` im
+Projektordner: eine einzige Datei, in der alle fünf Seiten, das Stylesheet, die
+Skripte und sämtliche Bilder eingebettet sind.
+
+**Doppelklick genügt** – kein Server, keine Internetverbindung. Oben lässt sich
+zwischen den Seiten wechseln und die Ansicht auf Desktop, Tablet oder Handy
+umschalten. Die Datei eignet sich auch zum Weitergeben per E-Mail.
+
+Nach Änderungen an der Website neu erzeugen:
+
+```bash
+python3 tools/vorschau-bauen.py
+```
+
+> `vorschau.html` ist reine Ansichtssache und trägt `noindex`. Sie gehört nicht
+> auf den Server – dort werden die einzelnen Seiten hochgeladen.
 
 ---
 
