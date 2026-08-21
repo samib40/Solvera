@@ -138,7 +138,24 @@
     el.textContent = new Date().getFullYear();
   });
 
-  /* ---------- Sanftes Scrollen zu Ankern ---------- */
+  /* ---------- Sanftes Scrollen zu Ankern ----------
+     Beruecksichtigt die feste Kopfzeile und, falls vorhanden, die
+     Sprungmarken-Leiste darunter. Ohne diesen Versatz landet das Ziel
+     hinter den fixierten Leisten. */
+  function ankerVersatz() {
+    var h = document.querySelector('.header');
+    var sub = document.querySelector('.subnav');
+    var hoehe = h ? h.getBoundingClientRect().height : 0;
+    if (sub) hoehe += sub.getBoundingClientRect().height;
+    return hoehe + 14;
+  }
+
+  function springeZu(el, weich) {
+    if (!el) return;
+    var ziel = el.getBoundingClientRect().top + window.scrollY - ankerVersatz();
+    window.scrollTo({ top: Math.max(0, ziel), behavior: weich && !reducedMotion ? 'smooth' : 'auto' });
+  }
+
   document.addEventListener('click', function (e) {
     var link = e.target.closest && e.target.closest('a[href^="#"]');
     if (!link) return;
@@ -148,9 +165,19 @@
     if (!target) return;
     e.preventDefault();
     closeNav();
-    target.scrollIntoView({ behavior: reducedMotion ? 'auto' : 'smooth', block: 'start' });
+    springeZu(target, true);
     history.replaceState(null, '', id);
   });
+
+  /* Anker aus einem seiteninternen Verweis (z. B. bewerben.html#verguetung)
+     nach dem vollstaendigen Laden noch einmal korrekt anfahren. */
+  if (window.location.hash.length > 1) {
+    window.addEventListener('load', function () {
+      var ziel = null;
+      try { ziel = document.querySelector(window.location.hash); } catch (err) { ziel = null; }
+      if (ziel) window.setTimeout(function () { springeZu(ziel, false); }, 60);
+    });
+  }
 
 })();
 

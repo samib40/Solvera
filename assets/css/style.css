@@ -104,6 +104,8 @@ h1, h2, h3, h4 {
   letter-spacing: -.025em;
   font-weight: 800;
   text-wrap: balance;
+  overflow-wrap: break-word;
+  hyphens: auto;
 }
 h1 { font-size: clamp(2.25rem, 5.2vw, 3.75rem); }
 h2 { font-size: clamp(1.9rem, 4vw, 3rem); }

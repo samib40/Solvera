@@ -19,13 +19,14 @@ Kein Build-Schritt, kein Framework, keine externen Requests – einfach hochlade
 | 8 | Formular-Endpoints eintragen (sonst nur E-Mail-Fallback) | `assets/js/config.js` |
 | 9 | Tracking-IDs eintragen – erst dann erscheint der Cookie-Banner | `assets/js/config.js` |
 | 10 | Angaben zur Förderung prüfen und Datum aktualisieren | `photovoltaik.html`, `#foerderung` |
+| 10a | Anzahl der Vertriebspartner aktuell halten (derzeit 57) | `index.html`, `ueber-uns.html`, `photovoltaik-firmen.html` |
 | 11 | Partner-Logos erst nach schriftlicher Freigabe einsetzen | `photovoltaik.html`, `#partner` |
 | 12 | `datePosted` / `validThrough` der Stellenanzeige aktualisieren | `bewerben.html`, JSON-LD im `<head>` |
 
 ## Seitenstruktur
 
 Schwerpunkt der Website ist die Gewinnung von Vertriebspartnern. Die Navigation
-lautet **Start · Photovoltaikanlage · Bewerben · Firmenkunden · Über uns**;
+lautet **Start · Bewerben · Photovoltaikanlage · Firmenkunden · Über uns**;
 „Bewerben" ist als helle Schaltfläche hervorgehoben. Alle Angaben zur Position
 stehen gebündelt auf `bewerben.html` und sind dort über eine Sprungmarken-Leiste
 erreichbar. Der Photovoltaik-Rechner sitzt am Ende der Photovoltaik-Seite.
@@ -38,7 +39,7 @@ Website führen über die Bewerbung oder WhatsApp.
 |-------|--------|-------------------|
 | `index.html` | Start: Vergütung, Tätigkeit in vier Schritten, Standorte, Entwicklung | Start |
 | `ueber-uns.html` | Unternehmensprofil, Geschäftsmodell, Team mit Fotos, Standorte | Über uns (letzter Punkt) |
-| `photovoltaik.html` | Vorteile, staatliche Förderung, Umwelt und Wirtschaft, Lead-Begriff, Partner, Photovoltaik-Rechner, Hinweis für Firmenkunden | Photovoltaikanlage |
+| `photovoltaik.html` | Vorteile, staatliche Förderung, Umwelt und Wirtschaft, die sieben Qualitätskriterien, Partner, Photovoltaik-Rechner, Hinweis für Firmenkunden | Photovoltaikanlage |
 | `bewerben.html` | Vergütung mit Rechner, Rahmenbedingungen, Entwicklungsmodell, Standorte kompakt, Ausbildung, Ablauf, Bewerbungsformular, zwölf häufige Fragen | Bewerben (hervorgehoben) |
 | `photovoltaik-firmen.html` | Angebot für Photovoltaik-Fachbetriebe, Anfrageformular | Firmenkunden |
 | `impressum.html` | Pflichtangaben nach § 5 DDG | Fußzeile |
@@ -189,6 +190,10 @@ genügt eine Anpassung dort – der Rechner übernimmt sie automatisch.
 `config.js` unter `provision.proLead`. Achtung: In den Fließtexten steht der
 Betrag zusätzlich ausgeschrieben – bei einer Änderung mit
 `grep -rn "70 €" *.html` alle Stellen mitziehen.
+
+**Qualitätskriterien** (sieben Punkte auf `photovoltaik.html#leads` und
+`photovoltaik-firmen.html`) stammen aus der Vorgabe des Fachpartners. Ändert der
+Partner seine Kriterien, müssen beide Listen angepasst werden.
 
 **Kennzahlen** auf Start- und Bewerbungsseite sind direkt im HTML hinterlegt.
 Der Wert im Attribut `data-count` wird beim Scrollen hochgezählt:
