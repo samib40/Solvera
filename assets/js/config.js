@@ -31,7 +31,29 @@ window.SOLVERA = {
   kontakt: {
     email:    'info@solvera-sales.de',
     telefon:  '+4917645163460',
+    whatsapp: '4917645163460',   // internationale Schreibweise, ohne + und ohne Leerzeichen
     firma:    'Solvera Sales GmbH'
+  },
+
+  /* ---------------------------------------------------------------------
+     1b. TRACKING & COOKIE-EINWILLIGUNG
+     ---------------------------------------------------------------------
+     WICHTIG: Tracking wird ausschliesslich nach ausdruecklicher Einwilligung
+     des Besuchers geladen (Art. 6 Abs. 1 lit. a DSGVO, § 25 TDDDG).
+     Solange hier keine ID eingetragen ist, wird der Cookie-Banner gar nicht
+     erst angezeigt – die Seite bleibt dann vollstaendig trackingfrei.
+
+     Google Analytics 4:  Mess-ID aus dem GA4-Konto, Format "G-XXXXXXXXXX"
+     Meta-Pixel:          Pixel-ID aus dem Meta Business Manager, nur Ziffern
+     TikTok-Pixel:        Pixel-ID aus dem TikTok Ads Manager
+     --------------------------------------------------------------------- */
+  tracking: {
+    ga4:    '',   // z. B. 'G-XXXXXXXXXX'
+    meta:   '',   // z. B. '1234567890123456'
+    tiktok: '',   // z. B. 'CXXXXXXXXXXXXXXXXXXX'
+
+    /* Speicherdauer der Einwilligungsentscheidung in Tagen */
+    speicherdauerTage: 182
   },
 
   /* ---------------------------------------------------------------------

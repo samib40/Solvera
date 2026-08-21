@@ -9,16 +9,20 @@ Kein Build-Schritt, kein Framework, keine externen Requests – einfach hochlade
 
 | # | Was | Wo |
 |---|-----|-----|
-| 1 | Geschäftsführer, Amtsgericht, HRB-Nummer, USt-IdNr. eintragen | `impressum.html` |
-| 2 | Gelben Hinweiskasten entfernen | `impressum.html`, `datenschutz.html` |
-| 3 | Hosting-Anbieter + Partnerfirmen (Name/Anschrift) eintragen | `datenschutz.html` |
-| 4 | Formular-Endpoints eintragen (sonst nur E-Mail-Fallback) | `assets/js/config.js` |
-| 5 | Schreibweise des Firmennamens prüfen (Solvera / Solviera) | alle Dateien |
-| 6 | Erfolgszahlen aktuell halten | `index.html`, Abschnitt `#erfolge` |
-| 7 | Partner-Logos erst nach schriftlicher Freigabe einsetzen | `index.html`, Abschnitt `#partner` |
-| 8 | `datePosted` / `validThrough` der Stellenanzeige aktualisieren | `karriere.html`, JSON-LD im `<head>` |
-
----
+| 1 | **HRB-Nummer** eintragen (Amtsgericht Karlsruhe steht schon) | `impressum.html` |
+| 2 | **USt-IdNr.** eintragen | `impressum.html` |
+| 3 | **Hosting-Anbieter** (Name + Anschrift) eintragen | `datenschutz.html`, Abschnitt 6 |
+| 4 | **Energie Plus**: vollständigen Firmennamen und Anschrift eintragen | `datenschutz.html`, Abschnitt 7 |
+| 5 | **Datenschutzbeauftragter**: benennen oder Abschnitt 2 löschen | `datenschutz.html` |
+| 6 | Nicht genutzte **Analyse-Dienste** aus Abschnitt 5 streichen | `datenschutz.html` |
+| 7 | Gelbe Hinweiskästen entfernen | `impressum.html`, `datenschutz.html` |
+| 8 | Formular-Endpoints eintragen (sonst nur E-Mail-Fallback) | `assets/js/config.js` |
+| 9 | Tracking-IDs eintragen – erst dann erscheint der Cookie-Banner | `assets/js/config.js` |
+| 10 | **Standorte der Teamleiter** eintragen (aktuell „Standort folgt") | `index.html`, Abschnitt `#team` |
+| 11 | Fotos von Oskar Teschke, Monis Manai, Marc Naccum ergänzen | `index.html`, Abschnitt `#team` |
+| 12 | Erfolgszahlen aktuell halten | `index.html`, Abschnitt `#erfolge` |
+| 13 | Partner-Logos erst nach schriftlicher Freigabe einsetzen | `index.html`, Abschnitt `#partner` |
+| 14 | `datePosted` / `validThrough` der Stellenanzeige aktualisieren | `karriere.html`, JSON-LD im `<head>` |
 
 ## Seitenstruktur
 
@@ -35,11 +39,12 @@ Kein Build-Schritt, kein Framework, keine externen Requests – einfach hochlade
 assets/
 ├── css/style.css          Design-System (Farben, Komponenten, Responsive)
 ├── js/config.js           ► ZENTRALE KONFIGURATION – hier alles einstellen
+├── js/consent.js          Cookie-Banner, lädt Tracking erst nach Einwilligung
 ├── js/main.js             Header, Navigation, Scroll-Animationen, FAQ
 ├── js/forms.js            Validierung + Versand aller Formulare
 ├── js/calculator.js       Photovoltaik-Rechner (Startseite)
 ├── js/earnings.js         Provisions-Rechner (Karriereseite)
-└── img/                   Logo und Favicon (SVG)
+└── img/                   Logo, Favicon (SVG) und Teamfotos (JPG)
 ```
 
 ---
@@ -73,6 +78,43 @@ auch ohne Konfiguration nutzbar – aber die Abbruchquote ist deutlich höher.
 > den kostenpflichtigen Tarifen. Ohne Upgrade kommt die Bewerbung an, die Datei
 > jedoch nicht. Wer keinen Bezahltarif möchte, entfernt das Upload-Feld
 > (`.file-drop`) aus `index.html` und `karriere.html`.
+
+---
+
+## Tracking und Cookie-Banner
+
+Tracking wird **ausschließlich nach ausdrücklicher Einwilligung** geladen
+(§ 25 Abs. 1 TDDDG, Art. 6 Abs. 1 lit. a DSGVO). Vorher wird kein Skript eines
+Drittanbieters eingebunden und kein Analyse-Cookie gesetzt.
+
+IDs eintragen in `assets/js/config.js`:
+
+```js
+tracking: {
+  ga4:    'G-XXXXXXXXXX',        // Google Analytics 4 – Mess-ID
+  meta:   '1234567890123456',    // Meta-Pixel-ID
+  tiktok: ''                     // leer lassen = nicht aktiv
+}
+```
+
+* **Solange alle drei Felder leer sind, erscheint der Cookie-Banner nicht** und
+  die Website ist vollständig trackingfrei.
+* Sobald mindestens eine ID eingetragen ist, erscheint der Banner beim ersten Besuch.
+* Die Entscheidung wird 182 Tage im Local Storage gespeichert
+  (Schlüssel `solvera-consent`), danach wird erneut gefragt.
+* Widerruf jederzeit über „Cookie-Einstellungen" im Seitenfuß.
+
+> **Pflicht:** Wenn du einen Dienst aktivierst, muss er auch in der
+> Datenschutzerklärung (Abschnitt 5) stehen – und jeder Dienst, den du *nicht*
+> nutzt, muss dort gestrichen werden.
+
+---
+
+## WhatsApp-Bewerbung
+
+Die WhatsApp-Buttons zeigen auf `wa.me/4917645163460` mit vorformulierter Nachricht.
+Nummer ändern in `assets/js/config.js` unter `kontakt.whatsapp` **und** in den
+`href`-Attributen der `.wa-btn`-Links in `index.html` und `karriere.html`.
 
 ---
 

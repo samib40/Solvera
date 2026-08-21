@@ -995,3 +995,99 @@ input[type="range"]::-moz-range-thumb {
   .header, .mobile-nav, .to-top, .calc, .cta-band, .footer { display: none !important; }
   body { background: #fff; color: #000; }
 }
+
+/* ---------- 24. Cookie-Einwilligung ---------- */
+.consent-bar {
+  position: fixed;
+  left: 0; right: 0; bottom: 0;
+  z-index: 120;
+  background: rgba(10, 13, 18, .97);
+  backdrop-filter: blur(18px) saturate(150%);
+  -webkit-backdrop-filter: blur(18px) saturate(150%);
+  border-top: 1px solid var(--gold-line);
+  box-shadow: 0 -18px 50px -20px rgba(0, 0, 0, .9);
+  transform: translateY(105%);
+  transition: transform .35s cubic-bezier(.2, .7, .3, 1);
+}
+.consent-bar.is-visible { transform: none; }
+.consent-bar-inner {
+  max-width: var(--wrap);
+  margin-inline: auto;
+  padding: 20px 22px;
+  display: flex; align-items: center; gap: 26px; flex-wrap: wrap;
+}
+.consent-bar-txt { flex: 1; min-width: 260px; }
+.consent-bar-txt strong { display: block; font-size: 1rem; font-weight: 800; letter-spacing: -.015em; }
+.consent-bar-txt p { font-size: .85rem; color: var(--txt-2); line-height: 1.55; margin-top: 5px; max-width: 76ch; }
+.consent-bar-txt a { color: var(--gold); text-decoration: underline; text-underline-offset: 2px; }
+.consent-bar-btns { display: flex; gap: 10px; flex: none; }
+
+@media (max-width: 640px) {
+  .consent-bar-inner { gap: 16px; padding: 18px; }
+  .consent-bar-btns { width: 100%; }
+  .consent-bar-btns .btn { flex: 1; }
+}
+
+/* ---------- 25. Team ---------- */
+.team-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px; }
+.team-grid > * { min-width: 0; }
+
+.team-card {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: linear-gradient(180deg, var(--surface) 0%, var(--surface-2) 100%);
+  overflow: hidden;
+  transition: border-color .25s ease, transform .25s ease, box-shadow .25s ease;
+}
+.team-card:hover { border-color: var(--gold-line); transform: translateY(-4px); box-shadow: var(--shadow); }
+
+.team-photo {
+  position: relative;
+  aspect-ratio: 3 / 4;
+  background: linear-gradient(165deg, var(--surface-3), var(--surface));
+  overflow: hidden;
+}
+.team-photo img { width: 100%; height: 100%; object-fit: cover; object-position: center 18%; }
+.team-photo::after {
+  content: "";
+  position: absolute; inset: auto 0 0 0; height: 22%;
+  background: linear-gradient(to top, rgba(10, 13, 18, .35), transparent);
+  pointer-events: none;
+}
+
+/* Platzhalter, solange kein Foto vorliegt */
+.team-photo.is-empty { display: grid; place-items: center; }
+.team-initials {
+  width: 84px; height: 84px;
+  display: grid; place-items: center;
+  border-radius: 50%;
+  background: var(--gold-soft);
+  border: 1px solid var(--gold-line);
+  color: var(--gold);
+  font-size: 1.7rem; font-weight: 800; letter-spacing: -.02em;
+}
+
+.team-body { padding: 20px 22px 24px; }
+.team-body h4 { font-size: 1.08rem; }
+.team-role { font-size: .82rem; color: var(--gold); font-weight: 700; margin-top: 3px; }
+.team-loc { font-size: .82rem; color: var(--txt-3); margin-top: 8px; display: flex; align-items: center; gap: 6px; }
+.team-loc svg { width: 14px; height: 14px; flex: none; }
+
+@media (max-width: 880px) { .team-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 460px) { .team-grid { grid-template-columns: minmax(0, 1fr); } }
+
+/* ---------- 26. WhatsApp ---------- */
+.wa-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+  padding: 14px 26px;
+  border-radius: 999px;
+  font-weight: 700; font-size: .97rem;
+  background: #25d366;
+  color: #062812;
+  border: 1px solid rgba(255, 255, 255, .18);
+  box-shadow: 0 12px 34px -14px rgba(37, 211, 102, .7);
+  transition: transform .18s ease, box-shadow .25s ease, filter .2s ease;
+}
+.wa-btn:hover { transform: translateY(-2px); filter: brightness(1.06); box-shadow: 0 18px 44px -14px rgba(37, 211, 102, .85); }
+.wa-btn svg { width: 19px; height: 19px; flex: none; }
+.wa-btn.btn-full { width: 100%; }
