@@ -18,11 +18,9 @@ Kein Build-Schritt, kein Framework, keine externen Requests – einfach hochlade
 | 7 | Gelbe Hinweiskästen entfernen | `impressum.html`, `datenschutz.html` |
 | 8 | Formular-Endpoints eintragen (sonst nur E-Mail-Fallback) | `assets/js/config.js` |
 | 9 | Tracking-IDs eintragen – erst dann erscheint der Cookie-Banner | `assets/js/config.js` |
-| 10 | **Standorte der Teamleiter** eintragen (aktuell „Standort folgt") | `index.html`, Abschnitt `#team` |
-| 11 | Fotos von Oskar Teschke, Monis Manai, Marc Naccum ergänzen | `index.html`, Abschnitt `#team` |
-| 12 | Erfolgszahlen aktuell halten | `index.html`, Abschnitt `#erfolge` |
-| 13 | Partner-Logos erst nach schriftlicher Freigabe einsetzen | `index.html`, Abschnitt `#partner` |
-| 14 | `datePosted` / `validThrough` der Stellenanzeige aktualisieren | `karriere.html`, JSON-LD im `<head>` |
+| 10 | Erfolgszahlen aktuell halten | `index.html`, Abschnitt `#erfolge` |
+| 11 | Partner-Logos erst nach schriftlicher Freigabe einsetzen | `index.html`, Abschnitt `#partner` |
+| 12 | `datePosted` / `validThrough` der Stellenanzeige aktualisieren | `karriere.html`, JSON-LD im `<head>` |
 
 ## Seitenstruktur
 
@@ -44,7 +42,7 @@ assets/
 ├── js/forms.js            Validierung + Versand aller Formulare
 ├── js/calculator.js       Photovoltaik-Rechner (Startseite)
 ├── js/earnings.js         Provisions-Rechner (Karriereseite)
-└── img/                   Logo, Favicon (SVG) und Teamfotos (JPG)
+└── img/                   Logo, Favicon (SVG) und vier Teamfotos (JPG, 3:4)
 ```
 
 ---
@@ -135,6 +133,25 @@ Der Wert im Attribut `data-count` wird beim Scrollen hochgezählt:
 ```html
 <div class="stat"><div class="v"><span data-count="25">25</span></div> …
 ```
+
+---
+
+## Teamfotos austauschen
+
+Alle Teamfotos liegen im Format **3:4** (600×800 px, dazu eine kleine Fassung
+mit 300×400 px für Mobilgeräte) unter `assets/img/`:
+
+```
+team-sami-bssiss.jpg     team-sami-bssiss@small.jpg
+team-oskar-teschke.jpg   team-oskar-teschke@small.jpg
+team-monis-manai.jpg     team-monis-manai@small.jpg
+team-marc-naccum.jpg     team-marc-naccum@small.jpg
+```
+
+Für ein neues Gesicht (z. B. die Teamleitung Nürnberg) beide Größen anlegen und
+eine bestehende `<article class="team-card">` in `index.html` kopieren. Damit die
+Reihe einheitlich wirkt, sollte der Kopf bei allen Fotos etwa gleich groß sein und
+oben rund ein Zehntel der Bildhöhe Luft haben.
 
 ---
 
