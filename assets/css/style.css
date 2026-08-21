@@ -1179,3 +1179,38 @@ input[type="range"]::-moz-range-thumb {
 /* Schaltfläche in der Kopfzeile erscheint erst, wenn die Navigation einklappt */
 .nur-mobil { display: none; }
 @media (max-width: 880px) { .nur-mobil { display: inline-flex; } }
+
+/* ---------- 30. Höchste Entwicklungsstufe hervorheben ---------- */
+:root {
+  --krone:       #9b7fc4;
+  --krone-soft:  rgba(155, 127, 196, .14);
+  --krone-line:  rgba(155, 127, 196, .38);
+}
+
+.badge-krone {
+  border-color: var(--krone-line);
+  background: var(--krone-soft);
+  color: var(--krone);
+}
+.badge-krone svg { width: 13px; height: 13px; flex: none; }
+
+/* Karte der obersten Stufe bekommt einen eigenen Rahmen */
+.card-krone { border-color: var(--krone-line); }
+.card-krone:hover { border-color: var(--krone); }
+.card-krone .ico-tile,
+.timeline-item.ist-krone .accent { color: var(--krone); }
+
+.timeline-item.ist-krone::before {
+  background: var(--krone);
+  box-shadow: 0 0 0 4px var(--bg), 0 0 0 5px var(--krone-line);
+}
+
+/* Krone in Überschriften: bleibt in der Zeile (globales svg{display:block} aushebeln) */
+.krone-inline {
+  display: inline-block;
+  width: 15px;
+  height: 15px;
+  vertical-align: -2px;
+  margin-right: 7px;
+  color: var(--krone);
+}
