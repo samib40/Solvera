@@ -1,7 +1,8 @@
 # Solvera Sales GmbH – Website
 
-Statische Website für die Solvera Sales GmbH (Karlsruhe · Berlin · Nürnberg).
-Kein Build-Schritt, kein Framework, keine externen Requests – einfach hochladen und läuft.
+Statische Website für die Solvera Sales GmbH i. G. (Baden-Württemberg · Berlin).
+Kein Build-Schritt, kein Framework, kein Server, keine externen Requests.
+Läuft unverändert auf GitHub Pages.
 
 ---
 
@@ -9,19 +10,19 @@ Kein Build-Schritt, kein Framework, keine externen Requests – einfach hochlade
 
 | # | Was | Wo |
 |---|-----|-----|
-| 1 | **HRB-Nummer** eintragen (Amtsgericht Karlsruhe steht schon) | `impressum.html` |
-| 2 | **USt-IdNr.** eintragen | `impressum.html` |
-| 3 | **Hosting-Anbieter** (Name + Anschrift) eintragen | `datenschutz.html`, Abschnitt 6 |
-| 4 | **Energie Plus**: vollständigen Firmennamen und Anschrift eintragen | `datenschutz.html`, Abschnitt 7 |
-| 5 | **Datenschutzbeauftragter**: benennen oder Abschnitt 2 löschen | `datenschutz.html` |
-| 6 | Nicht genutzte **Analyse-Dienste** aus Abschnitt 5 streichen | `datenschutz.html` |
-| 7 | Gelbe Hinweiskästen entfernen | `impressum.html`, `datenschutz.html` |
-| 8 | Formular-Endpoints eintragen (sonst nur E-Mail-Fallback) | `assets/js/config.js` |
-| 9 | Tracking-IDs eintragen – erst dann erscheint der Cookie-Banner | `assets/js/config.js` |
-| 10 | Angaben zur Förderung prüfen und Datum aktualisieren | `photovoltaik.html`, `#foerderung` |
-| 10a | Anzahl der Vertriebspartner aktuell halten (derzeit 57) | `index.html`, `ueber-uns.html`, `photovoltaik-firmen.html` |
-| 11 | Partner-Logos erst nach schriftlicher Freigabe einsetzen | `photovoltaik.html`, `#partner` |
-| 12 | `datePosted` / `validThrough` der Stellenanzeige aktualisieren | `bewerben.html`, JSON-LD im `<head>` |
+| 1 | **Nach der Handelsregister-Eintragung:** Registernummer eintragen und den Zusatz „i. G." überall streichen | `impressum.html`, `datenschutz.html` |
+| 2 | **USt-IdNr.** eintragen, sobald erteilt | `impressum.html` |
+| 3 | Gelben Hinweiskasten entfernen, sobald 1 und 2 erledigt sind | `impressum.html` |
+| 4 | Nicht genutzte **Analyse-Dienste** aus Abschnitt 5 streichen | `datenschutz.html` |
+| 5 | Tracking-IDs eintragen – erst dann erscheint der Cookie-Banner | `assets/js/config.js` |
+| 6 | Angaben zur Förderung prüfen und Datum aktualisieren | `photovoltaik.html`, `#foerderung` |
+| 7 | Anzahl der Vertriebspartner aktuell halten (derzeit 57) | `index.html`, `ueber-uns.html`, `photovoltaik-firmen.html` |
+| 8 | Partner-Logos erst nach schriftlicher Freigabe einsetzen | `photovoltaik.html`, `#partner` |
+| 9 | `datePosted` / `validThrough` der Stellenanzeige aktualisieren | `bewerben.html`, JSON-LD im `<head>` |
+| 10 | Optional: Formulardienst anbinden – siehe „Formulare" | `assets/js/config.js` |
+
+**Erledigt:** Hosting (GitHub Pages) und Fachpartner Energie Plus stehen in der
+Datenschutzerklärung, ein Datenschutzbeauftragter ist nicht erforderlich.
 
 ## Seitenstruktur
 
@@ -65,37 +66,65 @@ tools/
 
 ---
 
-## Formulare anbinden
+## Formulare
 
-Alle drei Formulare (PV-Rechner, Bewerbung, Firmenanfrage) laufen über dieselbe Logik.
-Ziel wird in **`assets/js/config.js`** eingetragen:
+Alle drei Formulare (Photovoltaik-Rechner, Bewerbung, Firmenanfrage) laufen über
+dieselbe Logik in `assets/js/forms.js`.
+
+### Ohne Server – so funktioniert es
+
+GitHub Pages liefert nur fertige Dateien aus. Dort läuft kein Programm, das ein
+Formular entgegennehmen könnte – ein Formular kann seine Daten also nicht von
+selbst verschicken. Die Seite löst das so:
+
+1. Der Besucher füllt aus und klickt auf Absenden.
+2. Der Browser prüft die Eingaben und stellt daraus eine fertige Nachricht zusammen.
+3. Der Besucher bekommt sie angezeigt und schickt sie mit einem Klick ab –
+   **per E-Mail**, **per WhatsApp** oder indem er den Text **kopiert**.
+
+Das ist die Voreinstellung. Sie braucht keinen Vertrag, keinen Dienstleister und
+kein Konto, setzt keine Cookies und sendet nichts an Dritte – die Angaben
+verlassen den Browser erst, wenn der Besucher sich für einen Weg entscheidet.
+
+### Optional: Versand im Hintergrund
+
+Bequemer wird es mit einem Formulardienst: Dann geht die Anfrage direkt raus und
+der Besucher landet auf der Dankeseite. Dafür in `assets/js/config.js` eintragen,
+wohin gesendet werden soll:
 
 ```js
 endpoints: {
-  lead:      'https://formspree.io/f/xxxxxxxx',   // PV-Rechner
+  lead:      'https://formspree.io/f/xxxxxxxx',   // Photovoltaik-Rechner
   bewerbung: 'https://formspree.io/f/yyyyyyyy',   // Bewerbungen
-  firmen:    'https://formspree.io/f/zzzzzzzz'    // Photovoltaik-Firmen
+  firmen:    'https://formspree.io/f/zzzzzzzz'    // Photovoltaik-Fachbetriebe
 }
 ```
 
-**Mit Formspree (empfohlen, ohne eigenen Server):**
-1. Konto auf [formspree.io](https://formspree.io) anlegen
-2. Pro Formular ein neues Formular erstellen → Endpoint-URL kopieren
-3. URLs oben eintragen, Datei speichern, hochladen
+Es funktioniert jede Adresse, die einen `POST` mit JSON annimmt – Formspree,
+Web3Forms, FormSubmit, Make, Zapier, n8n oder ein eigener Cloudflare Worker.
 
-**Alternativen:** Jede URL, die einen `POST` mit JSON annimmt, funktioniert –
-z. B. Make, Zapier, n8n, HubSpot oder ein eigenes Backend.
+Ist ein Ziel eingetragen, aber nicht erreichbar, fällt die Seite von selbst auf
+den Weg über E-Mail und WhatsApp zurück. Der Besucher steht also nie vor einer
+Fehlermeldung.
 
-**Solange nichts eingetragen ist**, öffnet sich beim Absenden automatisch das
-E-Mail-Programm des Besuchers mit allen ausgefüllten Daten. Die Seite ist also
-auch ohne Konfiguration nutzbar – aber die Abbruchquote ist deutlich höher.
+> **Vorher klären:** Mit dem Anbieter muss ein Vertrag zur Auftragsverarbeitung
+> nach Art. 28 DSGVO geschlossen und der Dienst in der Datenschutzerklärung
+> genannt werden – bei Bewerberdaten besonders wichtig. Sitzt der Anbieter
+> außerhalb der EU, gehört die Grundlage der Übermittlung dazu. Solange das
+> nicht geklärt ist: Felder leer lassen, die Seite funktioniert auch so.
 
-> **Hinweis zum Lebenslauf-Upload:** Dateianhänge unterstützt Formspree erst in
-> den kostenpflichtigen Tarifen. Ohne Upgrade kommt die Bewerbung an, die Datei
-> jedoch nicht. Wer keinen Bezahltarif möchte, entfernt das Upload-Feld
-> (`.file-drop`) aus `bewerben.html`.
+### Dankeseiten
 
----
+`danke.html` (Bewerbung), `danke-firmen.html` und `danke-beratung.html`. Sie
+werden nur angesteuert, wenn oben ein Ziel eingetragen ist. Alle drei tragen
+`noindex`.
+
+### Lebenslauf
+
+Das Upload-Feld wurde entfernt: Ohne Server lässt sich kein Anhang übertragen,
+und ein Feld, das stillschweigend nichts tut, ist schlimmer als keines. Unter dem
+Formular steht stattdessen der Hinweis, Unterlagen formlos per E-Mail
+nachzureichen.
 
 ## Vorschau und Weitergabe
 
@@ -255,28 +284,50 @@ alle Felder leer, wird die Symbolzeile gar nicht erst angezeigt.
 
 ---
 
-## Veröffentlichen
+## Veröffentlichen und eigene Domain
 
 Die Website ist rein statisch. Es gibt keinen Build-Schritt – die Dateien werden
-so hochgeladen, wie sie im Repository liegen.
+so genommen, wie sie im Repository liegen.
 
-**Klassischer Webspace (IONOS, Strato, All-Inkl …)**
-Alle Dateien und den Ordner `assets/` per FTP in das Web-Wurzelverzeichnis
-(meist `httpdocs/` oder `html/`) legen. Fertig.
+### GitHub Pages einschalten
 
-**GitHub Pages**
-Repository → *Settings* → *Pages* → Branch auswählen, Ordner `/ (root)`.
-Die Datei `.nojekyll` liegt bereits bei und verhindert die Jekyll-Verarbeitung.
-Eigene Domain unter *Custom domain* eintragen.
+Repository → **Settings → Pages** → als Quelle den Branch wählen, in dem die
+Dateien liegen, Ordner `/ (root)`. Die Datei `.nojekyll` liegt bereits bei; ohne
+sie würde GitHub Ordner mit Unterstrich ignorieren.
 
-**Netlify / Vercel**
+### Eigene Domain verbinden
+
+1. Domain registrieren (vorgesehen ist `solvera-sales.de`).
+2. Beim Domain-Anbieter im DNS eintragen:
+
+   | Typ | Name | Wert |
+   |-----|------|------|
+   | A | `@` | `185.199.108.153` |
+   | A | `@` | `185.199.109.153` |
+   | A | `@` | `185.199.110.153` |
+   | A | `@` | `185.199.111.153` |
+   | CNAME | `www` | `samib40.github.io` |
+
+3. In **Settings → Pages → Custom domain** die Domain eintragen und speichern.
+   GitHub legt dann selbst eine Datei `CNAME` im Repository an.
+4. **Enforce HTTPS** anhaken, sobald das Zertifikat da ist. Das dauert nach dem
+   DNS-Eintrag meist Minuten bis wenige Stunden.
+
+> Die Datei `CNAME` nicht von Hand anlegen, solange die Domain nicht registriert
+> ist. Sonst leitet GitHub Pages auf eine Domain um, die es noch nicht gibt –
+> und `samib40.github.io/Solvera/` ist nicht mehr erreichbar.
+
+### Andere Hoster
+
+Auf klassischem Webspace (IONOS, Strato, All-Inkl) alle Dateien und den Ordner
+`assets/` per FTP ins Wurzelverzeichnis legen. Bei Netlify oder Vercel das
 Repository verbinden, Build-Command leer lassen, Publish-Directory `/`.
 
-Nach dem Livegang: In `sitemap.xml`, `robots.txt` und den `<link rel="canonical">`
-sowie `og:url`-Tags aller Seiten steht `https://www.solvera-sales.de/`.
-Bei abweichender Domain diese Adresse überall ersetzen.
+### Nach dem Umzug
 
----
+In `sitemap.xml`, `robots.txt` sowie in den `canonical`- und `og:url`-Angaben
+aller Seiten steht `https://www.solvera-sales.de/`. Bei abweichender Domain
+diese Adresse überall ersetzen.
 
 ## Technische Hinweise
 

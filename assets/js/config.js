@@ -10,36 +10,48 @@ window.SOLVERA = {
   /* ---------------------------------------------------------------------
      1. FORMULAR-ZIELE
      ---------------------------------------------------------------------
-     Alle drei Formulare gehen an kontakt.php im selben Verzeichnis. Das
-     Skript stellt die Angaben per E-Mail an info@solvera-sales.de zu und
-     leitet anschliessend auf die passende Dankeseite weiter.
+     Die Website laeuft auf GitHub Pages. Dort liegen nur fertige Dateien,
+     es gibt kein Programm, das ein Formular entgegennehmen koennte. Ein
+     Formular kann seine Daten deshalb nicht von selbst verschicken.
 
-     Voraussetzung ist ein Webhosting mit PHP – das ist bei Strato, IONOS,
-     All-Inkl, Hetzner, Mittwald und den meisten anderen Anbietern der Fall.
-     Der Empfaenger wird oben in kontakt.php gepflegt.
+     SOLANGE HIER NICHTS EINGETRAGEN IST, funktioniert die Seite trotzdem:
+     Nach dem Absenden bekommt der Besucher seine Angaben sauber
+     aufbereitet und schickt sie mit einem Klick per E-Mail oder WhatsApp –
+     oder kopiert sie. Das kommt ohne fremde Dienste aus und ist damit
+     datenschutzrechtlich unproblematisch.
 
-     WICHTIG: Auf einem rein statischen Hoster (zum Beispiel GitHub Pages)
-     laeuft kein PHP. Dort merkt die Seite das selbst und oeffnet stattdessen
-     das E-Mail-Programm des Besuchers mit allen Angaben – es geht also nichts
-     verloren, siehe forms.js.
+     BEQUEMER wird es mit einem Formulardienst. Dann laeuft der Versand im
+     Hintergrund und der Besucher landet direkt auf der Dankeseite. Dafuer
+     hier die Adresse eintragen, an die gesendet werden soll, zum Beispiel:
 
-     Statt kontakt.php kann hier auch jede andere URL stehen, die POST
-     annimmt (eigenes Backend, Formspree, Make, Zapier, n8n ...).
+       Formspree     'https://formspree.io/f/xxxxxxxx'
+       Web3Forms     'https://api.web3forms.com/submit'   (Zugangsschluessel
+                     zusaetzlich als verstecktes Feld access_key im Formular)
+       FormSubmit    'https://formsubmit.co/ajax/info@solvera-sales.de'
+       Eigene Loesung  jede Adresse, die POST mit JSON annimmt
+                       (Make, Zapier, n8n, Cloudflare Worker ...)
+
+     WICHTIG vor dem Einschalten: Mit dem Anbieter muss ein Vertrag zur
+     Auftragsverarbeitung nach Art. 28 DSGVO geschlossen und der Dienst in
+     der Datenschutzerklaerung genannt werden. Sitzt der Anbieter ausserhalb
+     der EU, ist zusaetzlich die Grundlage der Uebermittlung anzugeben.
+     Solange das nicht geklaert ist, diese Felder leer lassen.
      --------------------------------------------------------------------- */
   endpoints: {
-    lead:       'kontakt.php',   // Anfragen aus dem Photovoltaik-Rechner
-    bewerbung:  'kontakt.php',   // Bewerbungen von Vertriebspartnern
-    firmen:     'kontakt.php'    // Anfragen von Photovoltaik-Fachbetrieben
+    lead:       '',   // Anfragen aus dem Photovoltaik-Rechner
+    bewerbung:  '',   // Bewerbungen von Vertriebspartnern
+    firmen:     ''    // Anfragen von Photovoltaik-Fachbetrieben
   },
 
-  /* Seite, auf der der Besucher nach dem Absenden landet */
+  /* Seite, auf der der Besucher nach dem Absenden landet.
+     Gilt nur, wenn oben eine Adresse eingetragen ist. */
   danke: {
     lead:       'danke-beratung.html',
     bewerbung:  'danke.html',
     firmen:     'danke-firmen.html'
   },
 
-  /* Empfaenger fuer den E-Mail-Fallback (wenn oben nichts eingetragen ist) */
+  /* Empfaenger der Formulare und Kontaktdaten der Website */
   kontakt: {
     email:    'info@solvera-sales.de',
     telefon:  '+4917645163460',

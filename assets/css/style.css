@@ -1235,3 +1235,61 @@ input[type="range"]::-moz-range-thumb {
 @media (max-width: 560px) {
   .danke .hero-actions .btn { width: 100%; }
 }
+
+/* ---------- 32. Versandkasten (Formular ohne eigenen Server) ---------- */
+.versand {
+  border: 1px solid var(--brass-line);
+  border-radius: var(--radius-lg);
+  background: linear-gradient(180deg, var(--surface) 0%, var(--surface-2) 100%);
+  padding: clamp(24px, 4vw, 36px);
+}
+.versand-kopf { display: flex; gap: 16px; align-items: flex-start; }
+.versand-haken {
+  width: 44px; height: 44px; flex: none;
+  display: grid; place-items: center;
+  border-radius: 50%;
+  color: var(--brass-text);
+  background: var(--brass-soft);
+  border: 1px solid var(--brass-line);
+}
+.versand-haken svg { width: 21px; height: 21px; }
+.versand-kopf h3 { font-size: 1.15rem; }
+.versand-kopf p { margin-top: 6px; font-size: .93rem; }
+
+.versand-wege { display: grid; gap: 12px; margin-top: 26px; }
+.versand-wege .btn,
+.versand-wege .wa-btn { width: 100%; justify-content: center; }
+.versand-wege svg { width: 19px; height: 19px; flex: none; }
+@media (min-width: 620px) {
+  .versand-wege { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+.versand-details { margin-top: 22px; border-top: 1px solid var(--line); padding-top: 18px; }
+.versand-details summary {
+  cursor: pointer;
+  font-size: .89rem;
+  color: var(--txt-2);
+  list-style: none;
+}
+.versand-details summary::-webkit-details-marker { display: none; }
+.versand-details summary::before { content: "＋ "; color: var(--brass-text); }
+.versand-details[open] summary::before { content: "－ "; }
+.versand-details summary:hover { color: var(--txt); }
+
+.versand-text {
+  margin-top: 12px;
+  padding: 16px;
+  max-height: 260px;
+  overflow: auto;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--bg);
+  color: var(--txt-2);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: .82rem;
+  line-height: 1.65;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.versand-details .btn svg { width: 17px; height: 17px; flex: none; }
+.versand-details [data-kopie-hinweis] { display: block; margin-top: 10px; text-align: center; }
