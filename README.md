@@ -56,7 +56,7 @@ assets/
 ├── js/forms.js            Validierung + Versand aller Formulare
 ├── js/calculator.js       Photovoltaik-Rechner (Startseite)
 ├── js/earnings.js         Provisions-Rechner (Karriereseite)
-└── img/                   Logo, Favicon (SVG) und vier Teamfotos (JPG, 3:4)
+└── img/                   Logo (PNG, freigestellt), Favicons und vier Teamfotos
 
 tools/
 └── vorschau-bauen.py      Erzeugt vorschau.html aus den Einzeldateien
@@ -138,8 +138,18 @@ dunklem Grund – das erzeugt den Kontrast, ohne dass die Seite bunt wirkt.
 Wer Farben ändert, sollte den Kontrast gegen `--bg` prüfen: Mindestwert 4,5:1 für
 normalen Text, 3:1 für große Überschriften. Alle aktuellen Werte erfüllen WCAG AA.
 
-Logo und Favicon liegen als SVG unter `assets/img/` und enthalten dieselben
-Farbwerte – bei einem Farbwechsel dort mit anpassen.
+Das Logo liegt als freigestelltes PNG unter `assets/img/`:
+
+```
+logo-mark.png        Bildmarke (S mit Pfeil), transparent
+logo-wortmarke.png   Schriftzug SOLVERA SALES, transparent
+favicon-32.png       Browser-Symbol
+favicon-180.png      Symbol für Startbildschirm auf Mobilgeräten
+```
+
+Liegt das Logo später als Vektordatei (SVG) vor, lassen sich diese Dateien
+eins zu eins ersetzen – die Klassen `.brand-mark` und `.brand-wort` steuern
+nur die Höhe.
 
 ---
 
