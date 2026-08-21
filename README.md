@@ -217,9 +217,19 @@ tracking: {
 
 ## WhatsApp-Bewerbung
 
-Die WhatsApp-Buttons zeigen auf `wa.me/4917645163460` mit vorformulierter Nachricht.
-Nummer ändern in `assets/js/config.js` unter `kontakt.whatsapp` **und** in den
-`href`-Attributen der `.wa-btn`-Links in `bewerben.html`.
+Die WhatsApp-Schaltflächen zeigen auf `wa.me/4915201028749` mit vorformulierter
+Nachricht. Dieselbe Nummer nutzt auch der Versandkasten unter den Formularen.
+
+Beim Wechsel der Nummer sind **drei** Stellen zu ändern:
+
+| Wo | Was |
+|----|-----|
+| `assets/js/config.js` | `kontakt.telefon` und `kontakt.whatsapp` |
+| `bewerben.html` | `href` der beiden `.wa-btn`-Links |
+| `impressum.html`, `datenschutz.html` | Rufnummer im Text und im `tel:`-Link |
+
+Auf allen übrigen Seiten steht bewusst keine Rufnummer – der Kontakt läuft über
+„Jetzt bewerben", E-Mail und WhatsApp.
 
 ---
 
