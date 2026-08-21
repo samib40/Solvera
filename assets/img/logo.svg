@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" fill="none" role="img" aria-label="Solvera Sales">
+  <defs>
+    <linearGradient id="sv-g" x1="4" y1="3" x2="36" y2="37" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFCB57"/>
+      <stop offset=".55" stop-color="#F6A821"/>
+      <stop offset="1" stop-color="#D98A05"/>
+    </linearGradient>
+  </defs>
+  <rect x="1.5" y="1.5" width="37" height="37" rx="11" fill="url(#sv-g)"/>
+  <rect x="1.5" y="1.5" width="37" height="37" rx="11" stroke="#FFDD8E" stroke-opacity=".45" stroke-width="1"/>
+  <path d="M22.9 8.5 12.2 21.4a.85.85 0 0 0 .65 1.4h5.44l-1.33 8.94a.6.6 0 0 0 1.06.46l10.72-12.9a.85.85 0 0 0-.65-1.4h-5.45l1.33-8.94a.6.6 0 0 0-1.07-.46Z" fill="#171208"/>
+</svg>
