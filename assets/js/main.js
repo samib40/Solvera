@@ -156,6 +156,10 @@
     window.scrollTo({ top: Math.max(0, ziel), behavior: weich && !reducedMotion ? 'smooth' : 'auto' });
   }
 
+  /* Wird von der eingebetteten Fassung genutzt, damit Anker auch dort
+     unterhalb der festen Leisten landen. */
+  window.solveraSpringeZu = function (el) { springeZu(el, false); };
+
   document.addEventListener('click', function (e) {
     var link = e.target.closest && e.target.closest('a[href^="#"]');
     if (!link) return;

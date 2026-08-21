@@ -45,7 +45,8 @@ Website führen über die Bewerbung oder WhatsApp.
 | `impressum.html` | Pflichtangaben nach § 5 DDG | Fußzeile |
 | `datenschutz.html` | Datenschutzerklärung nach DSGVO | Fußzeile |
 | `404.html` | Fehlerseite | – |
-| `vorschau.html` | Alle Seiten in einer Datei – nur zum Anschauen, nicht hochladen | – |
+| `vorschau.html` | Alle Seiten in einer Datei, mit Ansichtswechsler – nicht hochladen | – |
+| `Solvera-Sales-Website.html` | Alle Seiten in einer Datei, zum Weitergeben – nicht hochladen | – |
 
 ```
 assets/
@@ -96,25 +97,28 @@ auch ohne Konfiguration nutzbar – aber die Abbruchquote ist deutlich höher.
 
 ---
 
-## Vorschau ansehen
+## Vorschau und Weitergabe
 
 Die Website besteht aus mehreren Dateien und braucht zum Anschauen normalerweise
-einen Server. Für den schnellen Blick gibt es deshalb `vorschau.html` im
-Projektordner: eine einzige Datei, in der alle fünf Seiten, das Stylesheet, die
-Skripte und sämtliche Bilder eingebettet sind.
-
-**Doppelklick genügt** – kein Server, keine Internetverbindung. Oben lässt sich
-zwischen den Seiten wechseln und die Ansicht auf Desktop, Tablet oder Handy
-umschalten. Die Datei eignet sich auch zum Weitergeben per E-Mail.
-
-Nach Änderungen an der Website neu erzeugen:
+einen Server. Ein Skript packt sie deshalb in jeweils eine einzige Datei:
 
 ```bash
 python3 tools/vorschau-bauen.py
 ```
 
-> `vorschau.html` ist reine Ansichtssache und trägt `noindex`. Sie gehört nicht
-> auf den Server – dort werden die einzelnen Seiten hochgeladen.
+Daraus entstehen zwei Dateien im Projektordner:
+
+| Datei | Zweck |
+|-------|-------|
+| `vorschau.html` | **Zum Prüfen.** Oben eine Leiste, mit der sich zwischen Desktop-, Tablet- und Handy-Ansicht umschalten lässt. |
+| `Solvera-Sales-Website.html` | **Zum Weitergeben** über WhatsApp, E-Mail oder USB-Stick. Zeigt nur die Website, ohne Leiste; Teamfotos in kleinerer Auflösung, damit die Datei kompakt bleibt. |
+
+Beide funktionieren per Doppelklick – ohne Server, ohne Internetverbindung und
+ohne Anmeldung. Stylesheet, Skripte und Bilder liegen eingebettet in der Datei,
+gemeinsame Bestandteile jeweils nur einmal.
+
+> Beide Dateien tragen `noindex` und gehören nicht auf den Server. Dort werden
+> die einzelnen Seiten hochgeladen.
 
 ---
 

@@ -1,13 +1,20 @@
 #!/usr/bin/env python3
 """
-Baut aus der mehrteiligen Website eine einzige HTML-Datei zum Anschauen.
+Packt die mehrteilige Website in eine einzige HTML-Datei.
 
-CSS, JavaScript und alle Bilder werden eingebettet, sodass die Datei ohne
-Server und ohne Internetverbindung funktioniert – zum Weitergeben per E-Mail
-oder zum Öffnen per Doppelklick.
+Zwei Ausgaben:
+
+  vorschau.html                Zum Prüfen: mit Leiste zum Umschalten
+                               zwischen Desktop-, Tablet- und Handy-Ansicht.
+
+  Solvera-Sales-Website.html   Zum Weitergeben, etwa über WhatsApp oder
+                               E-Mail: nur die Website, ohne Leiste.
+
+Beide Dateien enthalten Stylesheet, Skripte und Bilder eingebettet und
+funktionieren ohne Server und ohne Internetverbindung. Gemeinsame Bestandteile
+werden nur einmal gespeichert, damit die Dateien klein bleiben.
 
 Aufruf:  python3 tools/vorschau-bauen.py
-Ergebnis: vorschau.html im Projektordner
 """
 
 import base64
@@ -18,17 +25,13 @@ import re
 
 WURZEL = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-# Reiter in der Vorschau-Leiste. Impressum und Datenschutz erscheinen bewusst
-# nicht als Reiter – sie sind ueber die Fusszeile jeder Seite erreichbar.
 SEITEN = [
     ('index.html',               'Start'),
-    ('ueber-uns.html',           'Über uns'),
-    ('photovoltaik.html',        'Photovoltaik'),
     ('bewerben.html',            'Bewerben'),
+    ('photovoltaik.html',        'Photovoltaikanlage'),
     ('photovoltaik-firmen.html', 'Firmenkunden'),
+    ('ueber-uns.html',           'Über uns'),
 ]
-
-# Zusaetzlich eingebettet, damit Verweise aus der Fusszeile funktionieren
 WEITERE = ['impressum.html', 'datenschutz.html', '404.html']
 
 
@@ -37,104 +40,77 @@ def lies(pfad):
         return f.read()
 
 
-def daten_uri(pfad):
+def daten_uri(pfad, klein=False):
     voll = os.path.join(WURZEL, pfad)
     typ = mimetypes.guess_type(voll)[0] or 'application/octet-stream'
-    if typ == 'image/svg+xml':
-        typ = 'image/svg+xml'
+    # Fuer die Weitergabe reichen die kleinen Fassungen der Teamfotos
+    if klein:
+        sparsam = voll.replace('.jpg', '@small.jpg')
+        if '@small' not in voll and os.path.exists(sparsam):
+            voll = sparsam
     with open(voll, 'rb') as f:
-        roh = base64.b64encode(f.read()).decode('ascii')
-    return f'data:{typ};base64,{roh}'
+        return f'data:{typ};base64,' + base64.b64encode(f.read()).decode('ascii')
 
 
-_uri_cache = {}
+def sammle_bilder(klein):
+    ordner = os.path.join(WURZEL, 'assets/img')
+    return {n: daten_uri(f'assets/img/{n}', klein)
+            for n in sorted(os.listdir(ordner)) if not n.startswith('.')}
 
 
-def uri(pfad):
-    if pfad not in _uri_cache:
-        _uri_cache[pfad] = daten_uri(pfad)
-    return _uri_cache[pfad]
-
-
-def baue_seite(datei):
-    html = lies(datei)
-
-    # Stylesheet einbetten
-    css = lies('assets/css/style.css')
-    html = html.replace(
-        '<link rel="stylesheet" href="assets/css/style.css">',
-        '<style>\n' + css + '\n</style>')
-
-    # Skripte einbetten
-    for treffer in re.findall(r'<script src="(assets/js/[^"]+)"></script>', html):
-        js = lies(treffer)
-        html = html.replace(f'<script src="{treffer}"></script>',
-                            '<script>\n' + js + '\n</script>')
-
-    # Favicon und Bilder als Daten-URI
-    html = re.sub(r'href="(assets/img/[^"]+)"', lambda m: f'href="{uri(m.group(1))}"', html)
-    html = re.sub(r'src="(assets/img/[^"]+)"',  lambda m: f'src="{uri(m.group(1))}"',  html)
-
-    def ersetze_srcset(m):
-        teile = []
-        for eintrag in m.group(1).split(','):
-            eintrag = eintrag.strip()
-            if not eintrag:
-                continue
-            stueck = eintrag.split()
-            teile.append(uri(stueck[0]) + (' ' + ' '.join(stueck[1:]) if len(stueck) > 1 else ''))
-        return 'srcset="' + ', '.join(teile) + '"'
-
-    html = re.sub(r'srcset="([^"]+)"', ersetze_srcset, html)
-
-    # Seitenwechsel an die Vorschau-Hülle melden
-    bruecke = '''
+BRUECKE = '''
 <script>
 (function () {
   document.addEventListener('click', function (e) {
     var a = e.target.closest && e.target.closest('a[href$=".html"]');
     if (!a) return;
     e.preventDefault();
-    var ziel = a.getAttribute('href').split('/').pop();
-    parent.postMessage({ solveraSeite: ziel, anker: (a.getAttribute('href').split('#')[1] || '') }, '*');
+    var h = a.getAttribute('href');
+    parent.postMessage({ solveraSeite: h.split('/').pop().split('#')[0],
+                         anker: (h.split('#')[1] || '') }, '*');
   });
 })();
 </script>
-</body>'''
-    html = html.replace('</body>', bruecke, 1)
-    return html
+'''
 
 
-def main():
-    seiten = {datei: baue_seite(datei) for datei, _ in SEITEN}
-    for datei in WEITERE:
-        seiten[datei] = baue_seite(datei)
-    logo = uri('assets/img/logo-mark.png')
+def baue_seite(datei):
+    """Ersetzt Stylesheet, Skripte und Bildpfade durch Platzhalter."""
+    html = lies(datei)
+    html = html.replace('<link rel="stylesheet" href="assets/css/style.css">', '<!--SOLVERA:CSS-->')
+    for treffer in re.findall(r'<script src="assets/js/([^"]+)"></script>', html):
+        html = html.replace(f'<script src="assets/js/{treffer}"></script>',
+                            f'<!--SOLVERA:JS:{treffer}-->')
+    html = re.sub(r'assets/img/([^"\s,]+)', lambda m: '%SOLVERA_IMG:' + m.group(1) + '%', html)
+    return html.replace('</body>', BRUECKE + '</body>', 1)
 
-    # </script> im eingebetteten JSON entschärfen
-    daten = json.dumps(seiten, ensure_ascii=False).replace('</', r'<\/')
-    reiter = json.dumps([{'datei': d, 'name': n} for d, n in SEITEN], ensure_ascii=False)
 
-    huelle = HUELLE.replace('/*SEITEN*/', daten).replace('/*REITER*/', reiter).replace('%LOGO%', logo)
+def schreibe(ziel, mit_leiste, klein):
+    seiten = {d: baue_seite(d) for d, _ in SEITEN}
+    for d in WEITERE:
+        seiten[d] = baue_seite(d)
 
-    ziel = os.path.join(WURZEL, 'vorschau.html')
-    with open(ziel, 'w', encoding='utf-8') as f:
+    mittel = {
+        'css': lies('assets/css/style.css'),
+        'js': {n: lies(f'assets/js/{n}') for n in sorted(os.listdir(os.path.join(WURZEL, 'assets/js')))},
+        'img': sammle_bilder(klein),
+    }
+
+    def sicher(obj):
+        return json.dumps(obj, ensure_ascii=False).replace('</', r'<\/')
+
+    huelle = (HUELLE
+              .replace('/*SEITEN*/', sicher(seiten))
+              .replace('/*MITTEL*/', sicher(mittel))
+              .replace('/*START*/', sicher(SEITEN[0][0]))
+              .replace('/*LEISTE*/', 'true' if mit_leiste else 'false')
+              .replace('%LOGO%', mittel['img']['logo-mark.png']))
+
+    pfad = os.path.join(WURZEL, ziel)
+    with open(pfad, 'w', encoding='utf-8') as f:
         f.write(huelle)
-    print(f'vorschau.html geschrieben – {os.path.getsize(ziel) / 1024:.0f} KB, {len(SEITEN) + len(WEITERE)} Seiten')
-
-    # Zweite Fassung ohne <html>/<head>/<body> – wird von manchen Vorschau-
-    # Diensten benoetigt, die den Dokumentrahmen selbst mitbringen.
-    import sys
-    fragment_ziel = os.environ.get('VORSCHAU_FRAGMENT')
-    if fragment_ziel:
-        inhalt = huelle
-        inhalt = inhalt[inhalt.index('<title>'):]
-        inhalt = inhalt.replace('</head>\n<body>\n', '')
-        inhalt = inhalt.replace('</body>\n</html>\n', '')
-        inhalt = re.sub(r'<link rel="icon"[^>]*>\n', '', inhalt)
-        with open(fragment_ziel, 'w', encoding='utf-8') as f:
-            f.write(inhalt)
-        print(f'Fragment geschrieben: {fragment_ziel} – {os.path.getsize(fragment_ziel) / 1024:.0f} KB')
+    print(f'{ziel:32} {os.path.getsize(pfad)/1024:6.0f} KB')
+    return huelle
 
 
 HUELLE = r'''<!DOCTYPE html>
@@ -143,163 +119,111 @@ HUELLE = r'''<!DOCTYPE html>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
-<title>Solvera Sales</title>
-<link rel="icon" href="%LOGO%" type="image/svg+xml">
+<title>Solvera Sales GmbH</title>
+<link rel="icon" href="%LOGO%" type="image/png">
 <style>
   :root {
-    --bg:      #0b0b0d;
-    --bar:     #151518;
-    --line:    rgba(255, 255, 255, .09);
-    --line-2:  rgba(255, 255, 255, .16);
-    --txt:     #f5f4f2;
-    --txt-2:   #8a8781;
-    --brass:   #c0a16b;
-    --rose:    #dcc394;
+    --bg: #0b0b0d; --bar: #151518;
+    --line: rgba(255,255,255,.09); --line-2: rgba(255,255,255,.16);
+    --txt: #f5f4f2; --txt-2: #8a8781; --brass: #c0a16b;
     --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   }
   * { box-sizing: border-box; margin: 0; }
   html, body { height: 100%; }
-  body {
-    background: var(--bg);
-    color: var(--txt);
-    font-family: var(--font);
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-  }
+  body { background: var(--bg); color: var(--txt); font-family: var(--font);
+         display: flex; flex-direction: column; overflow: hidden; }
 
-  /* Leiste */
-  .leiste {
-    flex: none;
-    display: flex; align-items: center; gap: 18px;
-    padding: 0 14px;
-    height: 52px;
-    background: var(--bar);
-    border-bottom: 1px solid var(--line);
-    overflow-x: auto;
-    scrollbar-width: none;
-  }
+  .leiste { flex: none; display: flex; align-items: center; gap: 18px;
+            padding: 0 14px; height: 52px; background: var(--bar);
+            border-bottom: 1px solid var(--line); overflow-x: auto; scrollbar-width: none; }
   .leiste::-webkit-scrollbar { display: none; }
-
+  .leiste[hidden] { display: none; }
   .marke { display: flex; align-items: center; gap: 9px; flex: none; }
-  .marke img { width: 24px; height: 24px; }
-  .marke span { font-size: .82rem; font-weight: 700; letter-spacing: -.01em; white-space: nowrap; }
-  .marke em {
-    font-style: normal; font-size: .62rem; letter-spacing: .16em;
-    text-transform: uppercase; color: var(--txt-2); margin-left: 9px;
-  }
-
-  .hinweis {
-    font-size: .78rem;
-    color: var(--txt-2);
-    white-space: nowrap;
-    flex: none;
-  }
-
+  .marke img { height: 26px; width: auto; }
+  .marke span { font-size: .8rem; font-weight: 700; white-space: nowrap; }
+  .hinweis { font-size: .78rem; color: var(--txt-2); white-space: nowrap; flex: none; }
   .geraete { display: flex; gap: 3px; margin-left: auto; flex: none; padding-left: 14px; }
-  .geraete button {
-    font: inherit; font-size: .78rem; font-weight: 600;
-    color: var(--txt-2);
-    background: none;
-    border: 1px solid transparent;
-    padding: 6px 11px;
-    border-radius: 8px;
-    cursor: pointer;
-    white-space: nowrap;
-    transition: color .15s ease, border-color .15s ease;
-  }
+  .geraete button { font: inherit; font-size: .78rem; font-weight: 600; color: var(--txt-2);
+                    background: none; border: 1px solid transparent; padding: 6px 11px;
+                    border-radius: 8px; cursor: pointer; white-space: nowrap; }
   .geraete button:hover { color: var(--txt); }
-  .geraete button[aria-pressed="true"] { color: var(--rose); border-color: var(--line-2); }
+  .geraete button[aria-pressed="true"] { color: var(--brass); border-color: var(--line-2); }
+  button:focus-visible { outline: 2px solid var(--brass); outline-offset: 2px; }
 
-  button:focus-visible { outline: 2px solid var(--rose); outline-offset: 2px; }
-
-  /* Bühne */
-  .buehne {
-    flex: 1;
-    min-height: 0;
-    display: flex;
-    justify-content: center;
-    background:
-      repeating-linear-gradient(45deg, rgba(255,255,255,.014) 0 1px, transparent 1px 9px),
-      var(--bg);
-    padding: 0;
-    transition: padding .25s ease;
-  }
+  .buehne { flex: 1; min-height: 0; display: flex; justify-content: center;
+            background: var(--bg); padding: 0; transition: padding .25s ease; }
   .buehne.gerahmt { padding: 22px 16px; }
-
-  .rahmen {
-    width: 100%;
-    height: 100%;
-    max-width: none;
-    background: var(--bg);
-    transition: max-width .25s ease;
-  }
-  .buehne.gerahmt .rahmen {
-    border: 1px solid var(--line-2);
-    border-radius: 16px;
-    overflow: hidden;
-    box-shadow: 0 30px 70px -30px rgba(0, 0, 0, .9);
-  }
+  .rahmen { width: 100%; height: 100%; max-width: none; background: var(--bg);
+            transition: max-width .25s ease; }
+  .buehne.gerahmt .rahmen { border: 1px solid var(--line-2); border-radius: 16px;
+                            overflow: hidden; box-shadow: 0 30px 70px -30px rgba(0,0,0,.9); }
   iframe { width: 100%; height: 100%; border: 0; display: block; background: var(--bg); }
 
-  @media (max-width: 760px) {
-    .marke span, .hinweis { display: none; }
-    .geraete { display: none; }
-    .leiste { gap: 12px; }
-  }
+  @media (max-width: 760px) { .marke span, .hinweis { display: none; } .geraete { display: none; } }
 </style>
 </head>
 <body>
 
-<div class="leiste">
-  <div class="marke">
-    <img src="%LOGO%" alt="">
-    <span>Solvera Sales<em>Vorschau</em></span>
-  </div>
+<div class="leiste" id="leiste">
+  <div class="marke"><img src="%LOGO%" alt=""><span>Solvera Sales</span></div>
   <span class="hinweis">Navigation über die Website selbst</span>
   <div class="geraete" id="geraete" role="group" aria-label="Ansicht"></div>
 </div>
 
 <div class="buehne" id="buehne">
-  <div class="rahmen" id="rahmen">
-    <iframe id="rahmenInhalt" title="Vorschau der Website"></iframe>
-  </div>
+  <div class="rahmen" id="rahmen"><iframe id="rahmenInhalt" title="Solvera Sales"></iframe></div>
 </div>
 
 <script>
 (function () {
   var SEITEN = /*SEITEN*/;
-  var REITER = /*REITER*/;
-  var BREITEN = [
-    { name: 'Desktop', wert: 0 },
-    { name: 'Tablet',  wert: 834 },
-    { name: 'Handy',   wert: 390 }
-  ];
+  var MITTEL = /*MITTEL*/;
+  var START  = /*START*/;
+  var LEISTE = /*LEISTE*/;
 
   var rahmenInhalt = document.getElementById('rahmenInhalt');
-  var buehne       = document.getElementById('buehne');
-  var rahmen       = document.getElementById('rahmen');
-  var geraeteNav   = document.getElementById('geraete');
+  var buehne = document.getElementById('buehne');
+  var rahmen = document.getElementById('rahmen');
+  var leiste = document.getElementById('leiste');
+  var geraeteNav = document.getElementById('geraete');
 
-  var aktuelleSeite = REITER[0].datei;
-  var aktuelleBreite = 0;
+  if (!LEISTE) leiste.hidden = true;
+
+  /* Platzhalter durch die gemeinsam gespeicherten Bestandteile ersetzen */
+  function baue(datei) {
+    var html = SEITEN[datei];
+    html = html.replace('<!--SOLVERA:CSS-->', '<style>' + MITTEL.css + '<\/style>');
+    html = html.replace(/<!--SOLVERA:JS:([^>]+)-->/g, function (_, name) {
+      return '<script>' + (MITTEL.js[name] || '') + '<\/script>';
+    });
+    html = html.replace(/%SOLVERA_IMG:([^%]+)%/g, function (_, name) {
+      return MITTEL.img[name] || '';
+    });
+    return html;
+  }
 
   function zeige(datei, anker) {
-    if (!SEITEN[datei]) datei = REITER[0].datei;
-    aktuelleSeite = datei;
-
-    var html = SEITEN[datei];
+    if (!SEITEN[datei]) datei = START;
+    var html = baue(datei);
     if (anker) {
       html = html.replace('</body>',
         '<script>window.addEventListener("load",function(){var z=document.getElementById(' +
-        JSON.stringify(anker) + ');if(z)z.scrollIntoView();});<\/script></body>');
+        JSON.stringify(anker) + ');if(z&&window.solveraSpringeZu)window.solveraSpringeZu(z);' +
+        'else if(z)z.scrollIntoView();});<\/script></body>');
     }
     rahmenInhalt.srcdoc = html;
     try { history.replaceState(null, '', '#' + datei.replace('.html', '')); } catch (e) {}
   }
 
+  [{ name: 'Desktop', wert: 0 }, { name: 'Tablet', wert: 834 }, { name: 'Handy', wert: 390 }]
+    .forEach(function (g) {
+      var b = document.createElement('button');
+      b.type = 'button'; b.textContent = g.name; b.dataset.wert = g.wert;
+      b.addEventListener('click', function () { setzeBreite(g.wert); });
+      geraeteNav.appendChild(b);
+    });
+
   function setzeBreite(wert) {
-    aktuelleBreite = wert;
     rahmen.style.maxWidth = wert ? wert + 'px' : 'none';
     buehne.classList.toggle('gerahmt', wert > 0);
     Array.prototype.forEach.call(geraeteNav.children, function (b) {
@@ -307,28 +231,36 @@ HUELLE = r'''<!DOCTYPE html>
     });
   }
 
-  BREITEN.forEach(function (g) {
-    var b = document.createElement('button');
-    b.type = 'button';
-    b.textContent = g.name;
-    b.dataset.wert = g.wert;
-    b.addEventListener('click', function () { setzeBreite(g.wert); });
-    geraeteNav.appendChild(b);
-  });
-
   window.addEventListener('message', function (e) {
     if (!e.data || !e.data.solveraSeite) return;
     zeige(e.data.solveraSeite, e.data.anker || '');
   });
 
-  var start = (location.hash || '').replace('#', '');
   setzeBreite(0);
-  zeige(start ? start + '.html' : REITER[0].datei, '');
+  var start = (location.hash || '').replace('#', '');
+  zeige(start ? start + '.html' : START, '');
 })();
 </script>
 </body>
 </html>
 '''
+
+
+def main():
+    print('Erzeuge:')
+    schreibe('vorschau.html', mit_leiste=True, klein=False)
+    schreibe('Solvera-Sales-Website.html', mit_leiste=False, klein=True)
+
+    fragment_ziel = os.environ.get('VORSCHAU_FRAGMENT')
+    if fragment_ziel:
+        inhalt = open(os.path.join(WURZEL, 'vorschau.html'), encoding='utf-8').read()
+        inhalt = inhalt[inhalt.index('<title>'):]
+        inhalt = inhalt.replace('</head>\n<body>\n', '')
+        inhalt = inhalt.replace('</body>\n</html>\n', '')
+        inhalt = re.sub(r'<link rel="icon"[^>]*>\n', '', inhalt)
+        with open(fragment_ziel, 'w', encoding='utf-8') as f:
+            f.write(inhalt)
+        print(f'{"Fragment für die Online-Vorschau":32} {os.path.getsize(fragment_ziel)/1024:6.0f} KB')
 
 
 if __name__ == '__main__':

@@ -3,5 +3,6 @@ Allow: /
 Disallow: /impressum.html
 Disallow: /datenschutz.html
 Disallow: /vorschau.html
+Disallow: /Solvera-Sales-Website.html
 
 Sitemap: https://www.solvera-sales.de/sitemap.xml
