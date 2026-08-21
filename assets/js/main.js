@@ -53,7 +53,7 @@
 
   /* ---------- Aktiven Navigationspunkt markieren ---------- */
   var sections = $$('main section[id]');
-  var navLinks = $$('.nav a[href^="#"]');
+  var navLinks = $$('.nav a[href^="#"], .subnav a[href^="#"]');
 
   if (sections.length && navLinks.length && 'IntersectionObserver' in window) {
     var navObserver = new IntersectionObserver(function (entries) {

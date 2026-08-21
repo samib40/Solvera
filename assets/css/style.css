@@ -1130,3 +1130,33 @@ input[type="range"]::-moz-range-thumb {
   transform: translateY(-2px);
 }
 .social-link svg { width: 19px; height: 19px; }
+
+/* ---------- 28. Sprungmarken innerhalb einer Seite ---------- */
+.subnav {
+  border-block: 1px solid var(--line);
+  background: rgba(255, 255, 255, .015);
+  position: sticky;
+  top: var(--header-h);
+  z-index: 40;
+  backdrop-filter: blur(14px) saturate(140%);
+  -webkit-backdrop-filter: blur(14px) saturate(140%);
+}
+.subnav-inner {
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding-block: 9px;
+}
+.subnav-inner::-webkit-scrollbar { display: none; }
+.subnav a {
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-size: .88rem;
+  font-weight: 600;
+  color: var(--txt-2);
+  white-space: nowrap;
+  transition: color .18s ease, background .18s ease;
+}
+.subnav a:hover { color: var(--txt); background: rgba(255, 255, 255, .06); }
+.subnav a.is-active { color: var(--txt); background: rgba(255, 255, 255, .08); }

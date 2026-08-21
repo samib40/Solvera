@@ -18,16 +18,18 @@ import re
 
 WURZEL = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
+# Reiter in der Vorschau-Leiste. Impressum und Datenschutz erscheinen bewusst
+# nicht als Reiter – sie sind ueber die Fusszeile jeder Seite erreichbar.
 SEITEN = [
     ('index.html',               'Start'),
-    ('verdienst.html',           'Verdienst'),
-    ('standorte.html',           'Standorte & Aufstieg'),
+    ('ueber-uns.html',           'Über uns'),
     ('photovoltaik.html',        'Photovoltaik'),
     ('bewerben.html',            'Bewerben'),
-    ('photovoltaik-firmen.html', 'Für Firmen'),
-    ('impressum.html',           'Impressum'),
-    ('datenschutz.html',         'Datenschutz'),
+    ('photovoltaik-firmen.html', 'Firmenkunden'),
 ]
+
+# Zusaetzlich eingebettet, damit Verweise aus der Fusszeile funktionieren
+WEITERE = ['impressum.html', 'datenschutz.html', '404.html']
 
 
 def lies(pfad):
@@ -105,6 +107,8 @@ def baue_seite(datei):
 
 def main():
     seiten = {datei: baue_seite(datei) for datei, _ in SEITEN}
+    for datei in WEITERE:
+        seiten[datei] = baue_seite(datei)
     logo = uri('assets/img/logo.svg')
 
     # </script> im eingebetteten JSON entschärfen
@@ -116,7 +120,7 @@ def main():
     ziel = os.path.join(WURZEL, 'vorschau.html')
     with open(ziel, 'w', encoding='utf-8') as f:
         f.write(huelle)
-    print(f'vorschau.html geschrieben – {os.path.getsize(ziel) / 1024:.0f} KB, {len(SEITEN)} Seiten')
+    print(f'vorschau.html geschrieben – {os.path.getsize(ziel) / 1024:.0f} KB, {len(SEITEN) + len(WEITERE)} Seiten')
 
     # Zweite Fassung ohne <html>/<head>/<body> – wird von manchen Vorschau-
     # Diensten benoetigt, die den Dokumentrahmen selbst mitbringen.

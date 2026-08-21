@@ -24,17 +24,18 @@ Kein Build-Schritt, kein Framework, keine externen Requests – einfach hochlade
 
 ## Seitenstruktur
 
-Die Website ist auf mehrere kurze Seiten aufgeteilt statt auf eine lange Startseite.
-Schwerpunkt ist die Gewinnung von Vertriebspartnern; der Photovoltaik-Rechner sitzt
-bewusst am Ende der Photovoltaik-Seite.
+Schwerpunkt der Website ist die Gewinnung von Vertriebspartnern. Die Navigation
+umfasst bewusst nur drei Punkte plus die Schaltfläche „Jetzt bewerben"; alle Angaben
+zur Position stehen gebündelt auf `bewerben.html` und sind dort über eine
+Sprungmarken-Leiste erreichbar. Der Photovoltaik-Rechner sitzt am Ende der
+Photovoltaik-Seite.
 
 | Datei | Inhalt | In der Navigation |
 |-------|--------|-------------------|
-| `index.html` | Start: Direktvertrieb erklärt, Provision, Standorte, Aufstieg, Lead-Begriff | Start |
-| `verdienst.html` | Provision im Detail, Provisions-Rechner, Abrechnung, Rahmenbedingungen | Verdienst |
-| `standorte.html` | Team mit Fotos, drei Standorte, Aufstiegsmodell, Ausbildung | Standorte & Aufstieg |
-| `photovoltaik.html` | Vorteile, staatliche Förderung, Umwelt und Wirtschaft, Lead-Begriff, Partner, Photovoltaik-Rechner, Firmen-Hinweis | Photovoltaik |
-| `bewerben.html` | Ablauf, Bewerbungsformular, WhatsApp, zwölf häufige Fragen | Schaltfläche „Jetzt bewerben" |
+| `index.html` | Start: Direktvertrieb erklärt, Vergütung, Standorte, Entwicklung, Lead-Begriff | Start |
+| `ueber-uns.html` | Unternehmensprofil, Geschäftsmodell, Team mit Fotos, Standorte | Über uns |
+| `photovoltaik.html` | Vorteile, staatliche Förderung, Umwelt und Wirtschaft, Lead-Begriff, Partner, Photovoltaik-Rechner, Hinweis für Firmenkunden | Photovoltaik |
+| `bewerben.html` | Vergütung mit Rechner, Rahmenbedingungen, Entwicklungsmodell, Standorte kompakt, Ausbildung, Ablauf, Bewerbungsformular, zwölf häufige Fragen | Schaltfläche „Jetzt bewerben" |
 | `photovoltaik-firmen.html` | Angebot für Photovoltaik-Fachbetriebe, Anfrageformular | nur Fußzeile und Hinweis auf der Photovoltaik-Seite |
 | `impressum.html` | Pflichtangaben nach § 5 DDG | Fußzeile |
 | `datenschutz.html` | Datenschutzerklärung nach DSGVO | Fußzeile |
@@ -185,7 +186,7 @@ genügt eine Anpassung dort – der Rechner übernimmt sie automatisch.
 Betrag zusätzlich ausgeschrieben – bei einer Änderung mit
 `grep -rn "70 €" *.html` alle Stellen mitziehen.
 
-**Kennzahlen** auf der Startseite sind in `index.html` hinterlegt.
+**Kennzahlen** auf Start- und Bewerbungsseite sind direkt im HTML hinterlegt.
 Der Wert im Attribut `data-count` wird beim Scrollen hochgezählt:
 
 ```html
