@@ -189,19 +189,12 @@ HUELLE = r'''<!DOCTYPE html>
     text-transform: uppercase; color: var(--txt-2); margin-left: 9px;
   }
 
-  .reiter { display: flex; gap: 3px; flex: none; }
-  .reiter button {
-    font: inherit; font-size: .82rem; font-weight: 600;
+  .hinweis {
+    font-size: .78rem;
     color: var(--txt-2);
-    background: none; border: 0;
-    padding: 7px 12px;
-    border-radius: 8px;
-    cursor: pointer;
     white-space: nowrap;
-    transition: color .15s ease, background .15s ease;
+    flex: none;
   }
-  .reiter button:hover { color: var(--txt); background: rgba(255, 255, 255, .05); }
-  .reiter button[aria-current="true"] { color: var(--txt); background: var(--brass); color: #14100a; }
 
   .geraete { display: flex; gap: 3px; margin-left: auto; flex: none; padding-left: 14px; }
   .geraete button {
@@ -250,7 +243,7 @@ HUELLE = r'''<!DOCTYPE html>
   iframe { width: 100%; height: 100%; border: 0; display: block; background: var(--bg); }
 
   @media (max-width: 760px) {
-    .marke span { display: none; }
+    .marke span, .hinweis { display: none; }
     .geraete { display: none; }
     .leiste { gap: 12px; }
   }
@@ -263,7 +256,7 @@ HUELLE = r'''<!DOCTYPE html>
     <img src="%LOGO%" alt="">
     <span>Solvera Sales<em>Vorschau</em></span>
   </div>
-  <nav class="reiter" id="reiter" aria-label="Seiten"></nav>
+  <span class="hinweis">Navigation über die Website selbst</span>
   <div class="geraete" id="geraete" role="group" aria-label="Ansicht"></div>
 </div>
 
@@ -286,7 +279,6 @@ HUELLE = r'''<!DOCTYPE html>
   var rahmenInhalt = document.getElementById('rahmenInhalt');
   var buehne       = document.getElementById('buehne');
   var rahmen       = document.getElementById('rahmen');
-  var reiterNav    = document.getElementById('reiter');
   var geraeteNav   = document.getElementById('geraete');
 
   var aktuelleSeite = REITER[0].datei;
@@ -303,10 +295,6 @@ HUELLE = r'''<!DOCTYPE html>
         JSON.stringify(anker) + ');if(z)z.scrollIntoView();});<\/script></body>');
     }
     rahmenInhalt.srcdoc = html;
-
-    Array.prototype.forEach.call(reiterNav.children, function (b) {
-      b.setAttribute('aria-current', String(b.dataset.datei === datei));
-    });
     try { history.replaceState(null, '', '#' + datei.replace('.html', '')); } catch (e) {}
   }
 
@@ -318,15 +306,6 @@ HUELLE = r'''<!DOCTYPE html>
       b.setAttribute('aria-pressed', String(Number(b.dataset.wert) === wert));
     });
   }
-
-  REITER.forEach(function (s) {
-    var b = document.createElement('button');
-    b.type = 'button';
-    b.textContent = s.name;
-    b.dataset.datei = s.datei;
-    b.addEventListener('click', function () { zeige(s.datei, ''); });
-    reiterNav.appendChild(b);
-  });
 
   BREITEN.forEach(function (g) {
     var b = document.createElement('button');

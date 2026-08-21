@@ -25,18 +25,22 @@ Kein Build-Schritt, kein Framework, keine externen Requests – einfach hochlade
 ## Seitenstruktur
 
 Schwerpunkt der Website ist die Gewinnung von Vertriebspartnern. Die Navigation
-umfasst bewusst nur drei Punkte plus die Schaltfläche „Jetzt bewerben"; alle Angaben
-zur Position stehen gebündelt auf `bewerben.html` und sind dort über eine
-Sprungmarken-Leiste erreichbar. Der Photovoltaik-Rechner sitzt am Ende der
-Photovoltaik-Seite.
+lautet **Start · Photovoltaikanlage · Bewerben · Firmenkunden · Über uns**;
+„Bewerben" ist als helle Schaltfläche hervorgehoben. Alle Angaben zur Position
+stehen gebündelt auf `bewerben.html` und sind dort über eine Sprungmarken-Leiste
+erreichbar. Der Photovoltaik-Rechner sitzt am Ende der Photovoltaik-Seite.
+
+Eine Telefonnummer steht bewusst nur noch im Impressum und in der
+Datenschutzerklärung – dort ist sie gesetzlich vorgeschrieben. Alle Wege auf der
+Website führen über die Bewerbung oder WhatsApp.
 
 | Datei | Inhalt | In der Navigation |
 |-------|--------|-------------------|
-| `index.html` | Start: Direktvertrieb erklärt, Vergütung, Standorte, Entwicklung, Lead-Begriff | Start |
-| `ueber-uns.html` | Unternehmensprofil, Geschäftsmodell, Team mit Fotos, Standorte | Über uns |
-| `photovoltaik.html` | Vorteile, staatliche Förderung, Umwelt und Wirtschaft, Lead-Begriff, Partner, Photovoltaik-Rechner, Hinweis für Firmenkunden | Photovoltaik |
-| `bewerben.html` | Vergütung mit Rechner, Rahmenbedingungen, Entwicklungsmodell, Standorte kompakt, Ausbildung, Ablauf, Bewerbungsformular, zwölf häufige Fragen | Schaltfläche „Jetzt bewerben" |
-| `photovoltaik-firmen.html` | Angebot für Photovoltaik-Fachbetriebe, Anfrageformular | nur Fußzeile und Hinweis auf der Photovoltaik-Seite |
+| `index.html` | Start: Vergütung, Tätigkeit in vier Schritten, Standorte, Entwicklung | Start |
+| `ueber-uns.html` | Unternehmensprofil, Geschäftsmodell, Team mit Fotos, Standorte | Über uns (letzter Punkt) |
+| `photovoltaik.html` | Vorteile, staatliche Förderung, Umwelt und Wirtschaft, Lead-Begriff, Partner, Photovoltaik-Rechner, Hinweis für Firmenkunden | Photovoltaikanlage |
+| `bewerben.html` | Vergütung mit Rechner, Rahmenbedingungen, Entwicklungsmodell, Standorte kompakt, Ausbildung, Ablauf, Bewerbungsformular, zwölf häufige Fragen | Bewerben (hervorgehoben) |
+| `photovoltaik-firmen.html` | Angebot für Photovoltaik-Fachbetriebe, Anfrageformular | Firmenkunden |
 | `impressum.html` | Pflichtangaben nach § 5 DDG | Fußzeile |
 | `datenschutz.html` | Datenschutzerklärung nach DSGVO | Fußzeile |
 | `404.html` | Fehlerseite | – |

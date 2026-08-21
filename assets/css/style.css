@@ -1160,3 +1160,19 @@ input[type="range"]::-moz-range-thumb {
 }
 .subnav a:hover { color: var(--txt); background: rgba(255, 255, 255, .06); }
 .subnav a.is-active { color: var(--txt); background: rgba(255, 255, 255, .08); }
+
+/* ---------- 29. Bewerben-Punkt in der Navigation hervorheben ---------- */
+.nav a.nav-cta {
+  background: var(--btn-fill);
+  color: var(--btn-txt);
+  font-weight: 700;
+  padding: 9px 18px;
+  border-radius: 999px;
+  margin-inline: 4px;
+}
+.nav a.nav-cta:hover { background: var(--btn-fill-hi); color: var(--btn-txt); }
+.nav a.nav-cta.is-active { background: var(--btn-fill-hi); color: var(--btn-txt); }
+
+/* Schaltfläche in der Kopfzeile erscheint erst, wenn die Navigation einklappt */
+.nur-mobil { display: none; }
+@media (max-width: 880px) { .nur-mobil { display: inline-flex; } }
