@@ -2,5 +2,6 @@ User-agent: *
 Allow: /
 Disallow: /impressum.html
 Disallow: /datenschutz.html
+Disallow: /vorschau.html
 
 Sitemap: https://www.solvera-sales.de/sitemap.xml

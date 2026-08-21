@@ -18,21 +18,28 @@ Kein Build-Schritt, kein Framework, keine externen Requests – einfach hochlade
 | 7 | Gelbe Hinweiskästen entfernen | `impressum.html`, `datenschutz.html` |
 | 8 | Formular-Endpoints eintragen (sonst nur E-Mail-Fallback) | `assets/js/config.js` |
 | 9 | Tracking-IDs eintragen – erst dann erscheint der Cookie-Banner | `assets/js/config.js` |
-| 10 | Erfolgszahlen aktuell halten | `index.html`, Abschnitt `#erfolge` |
-| 11 | Partner-Logos erst nach schriftlicher Freigabe einsetzen | `index.html`, Abschnitt `#partner` |
-| 12 | `datePosted` / `validThrough` der Stellenanzeige aktualisieren | `karriere.html`, JSON-LD im `<head>` |
+| 10 | Angaben zur Förderung prüfen und Datum aktualisieren | `photovoltaik.html`, `#foerderung` |
+| 11 | Partner-Logos erst nach schriftlicher Freigabe einsetzen | `photovoltaik.html`, `#partner` |
+| 12 | `datePosted` / `validThrough` der Stellenanzeige aktualisieren | `bewerben.html`, JSON-LD im `<head>` |
 
 ## Seitenstruktur
 
-| Datei | Inhalt |
-|-------|--------|
-| `index.html` | Startseite: PV-Rechner (Hero), Was sind PV-Leads, Ablauf, Erfolge, Partner, Über uns, Standorte, Karriere, Bewerbungsformular |
-| `karriere.html` | Recruiting: Provisions-Rechner, Angebot, Ausbildung, Aufstieg, offene Positionen, FAQ, Bewerbungsformular |
-| `pv-firmen.html` | B2B: Leistung, Qualitätsstandard, Ablauf, Regionen, Anfrageformular |
-| `impressum.html` | Pflichtangaben nach § 5 DDG |
-| `datenschutz.html` | Datenschutzerklärung nach DSGVO |
-| `404.html` | Fehlerseite |
-| `vorschau.html` | Alle Seiten in einer Datei – nur zum Anschauen, nicht hochladen |
+Die Website ist auf mehrere kurze Seiten aufgeteilt statt auf eine lange Startseite.
+Schwerpunkt ist die Gewinnung von Vertriebspartnern; der Photovoltaik-Rechner sitzt
+bewusst am Ende der Photovoltaik-Seite.
+
+| Datei | Inhalt | In der Navigation |
+|-------|--------|-------------------|
+| `index.html` | Start: Direktvertrieb erklärt, Provision, Standorte, Aufstieg, Lead-Begriff | Start |
+| `verdienst.html` | Provision im Detail, Provisions-Rechner, Abrechnung, Rahmenbedingungen | Verdienst |
+| `standorte.html` | Team mit Fotos, drei Standorte, Aufstiegsmodell, Ausbildung | Standorte & Aufstieg |
+| `photovoltaik.html` | Vorteile, staatliche Förderung, Umwelt und Wirtschaft, Lead-Begriff, Partner, Photovoltaik-Rechner, Firmen-Hinweis | Photovoltaik |
+| `bewerben.html` | Ablauf, Bewerbungsformular, WhatsApp, zwölf häufige Fragen | Schaltfläche „Jetzt bewerben" |
+| `photovoltaik-firmen.html` | Angebot für Photovoltaik-Fachbetriebe, Anfrageformular | nur Fußzeile und Hinweis auf der Photovoltaik-Seite |
+| `impressum.html` | Pflichtangaben nach § 5 DDG | Fußzeile |
+| `datenschutz.html` | Datenschutzerklärung nach DSGVO | Fußzeile |
+| `404.html` | Fehlerseite | – |
+| `vorschau.html` | Alle Seiten in einer Datei – nur zum Anschauen, nicht hochladen | – |
 
 ```
 assets/
@@ -79,7 +86,7 @@ auch ohne Konfiguration nutzbar – aber die Abbruchquote ist deutlich höher.
 > **Hinweis zum Lebenslauf-Upload:** Dateianhänge unterstützt Formspree erst in
 > den kostenpflichtigen Tarifen. Ohne Upgrade kommt die Bewerbung an, die Datei
 > jedoch nicht. Wer keinen Bezahltarif möchte, entfernt das Upload-Feld
-> (`.file-drop`) aus `index.html` und `karriere.html`.
+> (`.file-drop`) aus `bewerben.html`.
 
 ---
 
@@ -112,16 +119,18 @@ Die gesamte Farbwelt steckt in **einem** Block ganz oben in
 Website um – es gibt keine fest verdrahteten Farben im Rest der Datei.
 
 ```css
---wine:       #7d1a2e;   /* Bordeaux – Schaltflächen, Flächen           */
---wine-light: #9c2740;   /* heller, für Verläufe und Mouseover          */
---wine-deep:  #55101f;   /* dunkler, für Verlaufsenden                  */
---wine-text:  #cfa3aa;   /* gedecktes Altrosa – Akzenttext auf Schwarz  */
+--brass:       #c0a16b;   /* gedecktes Messing – Akzent, Symbole, Zahlen */
+--brass-light: #dcc394;   /* heller, für Verläufe                        */
+--brass-deep:  #8a6f42;   /* dunkler, für Verlaufsenden                  */
+--btn-fill:    #f5f4f2;   /* Hauptschaltflächen: Platin auf Schwarz      */
 ```
 
-`--wine-text` ist bewusst heller als das Bordeaux selbst: Reines Bordeaux auf
-Schwarz erreicht keinen ausreichenden Kontrast für Fließtext. Wer diesen Wert
-verändert, sollte den Kontrast gegen `--bg` prüfen (Mindestwert 4,5:1 für
-normalen Text). Alle aktuellen Werte erfüllen WCAG AA.
+Das Messing ist bewusst sparsam eingesetzt: Es färbt Symbole, Kennzahlen, Rahmen
+und Ziffern, aber keine großen Flächen. Die Hauptschaltflächen sind hell auf
+dunklem Grund – das erzeugt den Kontrast, ohne dass die Seite bunt wirkt.
+
+Wer Farben ändert, sollte den Kontrast gegen `--bg` prüfen: Mindestwert 4,5:1 für
+normalen Text, 3:1 für große Überschriften. Alle aktuellen Werte erfüllen WCAG AA.
 
 Logo und Favicon liegen als SVG unter `assets/img/` und enthalten dieselben
 Farbwerte – bei einem Farbwechsel dort mit anpassen.
@@ -161,7 +170,7 @@ tracking: {
 
 Die WhatsApp-Buttons zeigen auf `wa.me/4917645163460` mit vorformulierter Nachricht.
 Nummer ändern in `assets/js/config.js` unter `kontakt.whatsapp` **und** in den
-`href`-Attributen der `.wa-btn`-Links in `index.html` und `karriere.html`.
+`href`-Attributen der `.wa-btn`-Links in `bewerben.html`.
 
 ---
 
@@ -172,11 +181,11 @@ stehen gesammelt in `assets/js/config.js` unter `calc`. Ändern sich Marktpreise
 genügt eine Anpassung dort – der Rechner übernimmt sie automatisch.
 
 **Provision** (aktuell 70 € pro qualifiziertem Lead) steht ebenfalls in
-`config.js` unter `provision.proLead`. Achtung: In den Fließtexten von
-`index.html` und `karriere.html` steht der Betrag zusätzlich ausgeschrieben –
-bei einer Änderung dort mit ändern.
+`config.js` unter `provision.proLead`. Achtung: In den Fließtexten steht der
+Betrag zusätzlich ausgeschrieben – bei einer Änderung mit
+`grep -rn "70 €" *.html` alle Stellen mitziehen.
 
-**Kennzahlen** auf der Startseite (`#erfolge`) sind in `index.html` hinterlegt.
+**Kennzahlen** auf der Startseite sind in `index.html` hinterlegt.
 Der Wert im Attribut `data-count` wird beim Scrollen hochgezählt:
 
 ```html

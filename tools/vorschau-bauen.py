@@ -19,11 +19,14 @@ import re
 WURZEL = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 SEITEN = [
-    ('index.html',       'Startseite'),
-    ('karriere.html',    'Karriere'),
-    ('pv-firmen.html',   'Für PV-Firmen'),
-    ('impressum.html',   'Impressum'),
-    ('datenschutz.html', 'Datenschutz'),
+    ('index.html',               'Start'),
+    ('verdienst.html',           'Verdienst'),
+    ('standorte.html',           'Standorte & Aufstieg'),
+    ('photovoltaik.html',        'Photovoltaik'),
+    ('bewerben.html',            'Bewerben'),
+    ('photovoltaik-firmen.html', 'Für Firmen'),
+    ('impressum.html',           'Impressum'),
+    ('datenschutz.html',         'Datenschutz'),
 ]
 
 
@@ -140,14 +143,14 @@ HUELLE = r'''<!DOCTYPE html>
 <link rel="icon" href="%LOGO%" type="image/svg+xml">
 <style>
   :root {
-    --bg:      #0a0809;
-    --bar:     #151113;
+    --bg:      #0b0b0d;
+    --bar:     #151518;
     --line:    rgba(255, 255, 255, .09);
     --line-2:  rgba(255, 255, 255, .16);
-    --txt:     #f2eef0;
-    --txt-2:   #8d838a;
-    --wine:    #7d1a2e;
-    --rose:    #cfa3aa;
+    --txt:     #f5f4f2;
+    --txt-2:   #8a8781;
+    --brass:   #c0a16b;
+    --rose:    #dcc394;
     --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   }
   * { box-sizing: border-box; margin: 0; }
@@ -194,7 +197,7 @@ HUELLE = r'''<!DOCTYPE html>
     transition: color .15s ease, background .15s ease;
   }
   .reiter button:hover { color: var(--txt); background: rgba(255, 255, 255, .05); }
-  .reiter button[aria-current="true"] { color: var(--txt); background: var(--wine); }
+  .reiter button[aria-current="true"] { color: var(--txt); background: var(--brass); color: #14100a; }
 
   .geraete { display: flex; gap: 3px; margin-left: auto; flex: none; padding-left: 14px; }
   .geraete button {
