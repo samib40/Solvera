@@ -1,9 +1,11 @@
 User-agent: *
 Allow: /
-Disallow: /impressum.html
-Disallow: /datenschutz.html
+
+# Die zusammengepackten Einzeldateien gehören nicht in den Index.
 Disallow: /vorschau.html
 Disallow: /Solvera-Sales-Website.html
+
+# Dankeseiten: kein eigenständiger Inhalt.
 Disallow: /danke.html
 Disallow: /danke-firmen.html
 Disallow: /danke-beratung.html
