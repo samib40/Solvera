@@ -8,4 +8,4 @@ Disallow: /danke.html
 Disallow: /danke-firmen.html
 Disallow: /danke-beratung.html
 
-Sitemap: https://www.solvera-sales.de/sitemap.xml
+Sitemap: https://solvera-sales.com/sitemap.xml
