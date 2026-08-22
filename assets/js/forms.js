@@ -61,7 +61,7 @@
     firmen:    'Guten Tag, wir interessieren uns für Photovoltaik-Leads.'
   };
 
-  function empfaenger() { return (CFG.kontakt && CFG.kontakt.email) || 'info@solvera-sales.de'; }
+  function empfaenger() { return (CFG.kontakt && CFG.kontakt.email) || 'info@solvera-sales.com'; }
   function whatsapp()   { return (CFG.kontakt && CFG.kontakt.whatsapp) || ''; }
   function dankeseite(art) { return (CFG.danke && CFG.danke[art]) || DANKE[art] || 'danke.html'; }
 

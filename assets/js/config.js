@@ -27,7 +27,7 @@ window.SOLVERA = {
        Formspree     'https://formspree.io/f/xxxxxxxx'
        Web3Forms     'https://api.web3forms.com/submit'   (Zugangsschluessel
                      zusaetzlich als verstecktes Feld access_key im Formular)
-       FormSubmit    'https://formsubmit.co/ajax/info@solvera-sales.de'
+       FormSubmit    'https://formsubmit.co/ajax/info@solvera-sales.com'
        Eigene Loesung  jede Adresse, die POST mit JSON annimmt
                        (Make, Zapier, n8n, Cloudflare Worker ...)
 
@@ -53,7 +53,7 @@ window.SOLVERA = {
 
   /* Empfaenger der Formulare und Kontaktdaten der Website */
   kontakt: {
-    email:    'info@solvera-sales.de',
+    email:    'info@solvera-sales.com',
     telefon:  '+4915201028749',
     whatsapp: '4915201028749',   // internationale Schreibweise, ohne + und ohne Leerzeichen
     firma:    'Solvera Sales GmbH'
