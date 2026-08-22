@@ -72,7 +72,8 @@
 <!-- ===================== HERO ===================== -->
 <section class="hero bg-grid">
   <div class="wrap">
-    <div style="max-width:900px">
+    <div class="grid g-2" style="gap:clamp(28px,5vw,56px);align-items:center">
+    <div>
       <span class="eyebrow">Photovoltaik</span>
       <h1 class="mt-16">Photovoltaik: <span class="grad-text">Vorteile, Förderung, Marktlage.</span></h1>
       <p class="lead mt-24" style="max-width:40em">
@@ -82,6 +83,90 @@
         <a class="btn btn-primary btn-lg" href="#rechner">Ersparnis berechnen</a>
         <a class="btn btn-ghost btn-lg" href="#foerderung">Förderung ansehen</a>
       </div>
+    </div>
+
+    <div class="reveal reveal-d1">
+      <svg class="bild-haus bild-flaeche" viewBox="0 0 620 450" role="img" aria-label="Wohnhaus mit Photovoltaikanlage auf dem Dach">
+  <defs>
+    <linearGradient id="modulglas" x1="0" y1="0" x2=".7" y2="1">
+      <stop offset="0" stop-color="#28333f"/>
+      <stop offset=".5" stop-color="#171f2b"/>
+      <stop offset="1" stop-color="#0d141d"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Sonne -->
+  <g stroke="#c0a16b" stroke-linecap="round" fill="none">
+    <circle cx="524" cy="92" r="24" stroke-width="2" stroke-opacity=".8"/>
+    <g stroke-width="1.8" stroke-opacity=".42">
+      <line x1="524" y1="46" x2="524" y2="58"/><line x1="524" y1="126" x2="524" y2="138"/>
+      <line x1="478" y1="92" x2="490" y2="92"/><line x1="558" y1="92" x2="570" y2="92"/>
+      <line x1="491" y1="59" x2="500" y2="68"/><line x1="548" y1="116" x2="557" y2="125"/>
+      <line x1="557" y1="59" x2="548" y2="68"/><line x1="500" y1="116" x2="491" y2="125"/>
+    </g>
+  </g>
+
+  <!-- Einstrahlung -->
+  <g stroke="#c0a16b" stroke-opacity=".26" stroke-width="1.4" stroke-linecap="round" stroke-dasharray="7 10">
+    <line x1="492" y1="120" x2="404" y2="198"/>
+    <line x1="510" y1="130" x2="428" y2="203"/>
+  </g>
+
+  <g stroke-linejoin="round">
+    <!-- Linke Seitenwand -->
+    <path d="M120 400 L120 300 L167.5 192.5 L167.5 292.5 Z"
+          fill="#0f0e0c" stroke="#c0a16b" stroke-opacity=".36" stroke-width="1.7"/>
+    <!-- Vorderwand -->
+    <path d="M120 400 L380 400 L380 300 L120 300 Z"
+          fill="#100f0d" stroke="#c0a16b" stroke-opacity=".72" stroke-width="2.2"/>
+    <!-- Pultdach -->
+    <path d="M112 303 L388 303 L435.5 195.5 L159.5 195.5 Z"
+          fill="#0c0b09" stroke="#c0a16b" stroke-opacity=".85" stroke-width="2.4"/>
+  </g>
+
+  <!-- Anlage auf dem Dach -->
+  <g transform="translate(167.5 192.5) skewX(-23.85)">
+    <g fill="url(#modulglas)" stroke="#c0a16b" stroke-opacity=".5" stroke-width="1.4">
+      <rect x="10"  y="12" width="55" height="40" rx="2"/>
+      <rect x="71"  y="12" width="55" height="40" rx="2"/>
+      <rect x="132" y="12" width="55" height="40" rx="2"/>
+      <rect x="193" y="12" width="55" height="40" rx="2"/>
+      <rect x="10"  y="58" width="55" height="40" rx="2"/>
+      <rect x="71"  y="58" width="55" height="40" rx="2"/>
+      <rect x="132" y="58" width="55" height="40" rx="2"/>
+      <rect x="193" y="58" width="55" height="40" rx="2"/>
+    </g>
+    <g stroke="#93a6bd" stroke-opacity=".2" stroke-width="1">
+      <line x1="28"  y1="12" x2="28"  y2="98"/><line x1="47"  y1="12" x2="47"  y2="98"/>
+      <line x1="89"  y1="12" x2="89"  y2="98"/><line x1="108" y1="12" x2="108" y2="98"/>
+      <line x1="150" y1="12" x2="150" y2="98"/><line x1="169" y1="12" x2="169" y2="98"/>
+      <line x1="211" y1="12" x2="211" y2="98"/><line x1="230" y1="12" x2="230" y2="98"/>
+    </g>
+  </g>
+
+  <!-- Fenster und Haustür -->
+  <g stroke="#c0a16b" stroke-width="1.8" stroke-opacity=".55" fill="none">
+    <rect x="148" y="328" width="54" height="42" rx="2"/>
+    <line x1="175" y1="328" x2="175" y2="370"/>
+    <line x1="148" y1="349" x2="202" y2="349"/>
+    <rect x="318" y="328" width="42" height="42" rx="2"/>
+    <line x1="339" y1="328" x2="339" y2="370"/>
+    <line x1="318" y1="349" x2="360" y2="349"/>
+    <path d="M234 400 L234 344 A23 23 0 0 1 280 344 L280 400" stroke-opacity=".75"/>
+    <circle cx="272" cy="374" r="3" fill="#c0a16b" stroke="none" fill-opacity=".8"/>
+  </g>
+
+  <!-- Zähler und Netzanschluss -->
+  <g stroke="#c0a16b" stroke-width="1.5" stroke-opacity=".32" fill="none">
+    <line x1="380" y1="352" x2="446" y2="352"/>
+    <rect x="446" y="335" width="34" height="34" rx="3"/>
+    <line x1="455" y1="352" x2="471" y2="352"/>
+    <line x1="463" y1="344" x2="463" y2="360"/>
+  </g>
+
+  <line x1="64" y1="400" x2="556" y2="400" stroke="#c0a16b" stroke-opacity=".28" stroke-width="1.6" stroke-linecap="round"/>
+</svg>
+    </div>
     </div>
   </div>
 </section>
@@ -339,6 +424,53 @@
     </div>
   </div>
 </section>
+
+<div class="bild-band" aria-hidden="false">
+<svg class="bild-modul" viewBox="0 0 1160 428" role="img" aria-label="Photovoltaikmodul aus monokristallinen Solarzellen" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <linearGradient id="zellenglanz-pv" x1="0" y1="0" x2="0.85" y2="1">
+      <stop offset="0" stop-color="#1e2836"/>
+      <stop offset=".45" stop-color="#141c27"/>
+      <stop offset="1" stop-color="#0d131b"/>
+    </linearGradient>
+    <linearGradient id="reflex-pv" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#c0a16b" stop-opacity=".16"/>
+      <stop offset=".35" stop-color="#c0a16b" stop-opacity="0"/>
+      <stop offset="1" stop-color="#c0a16b" stop-opacity="0"/>
+    </linearGradient>
+    <pattern id="finger-pv" width="9" height="9" patternUnits="userSpaceOnUse">
+      <line x1="0" y1="4.5" x2="9" y2="4.5" stroke="#8fa3bd" stroke-opacity=".13" stroke-width="1"/>
+    </pattern>
+    <g id="pvzelle-pv">
+      <path d="M22 0h131l22 22v131l-22 22H22L0 153V22Z" fill="url(#zellenglanz-pv)"/>
+      <path d="M22 0h131l22 22v131l-22 22H22L0 153V22Z" fill="url(#finger-pv)"/>
+      <path d="M22 0h131l22 22v131l-22 22H22L0 153V22Z" fill="url(#reflex-pv)"/>
+      <path d="M22 0h131l22 22v131l-22 22H22L0 153V22Z" fill="none" stroke="#5d6b7f" stroke-opacity=".22" stroke-width="1"/>
+      <line x1="44" y1="4" x2="44" y2="171" stroke="#a8b6c8" stroke-opacity=".26" stroke-width="2.5"/>
+      <line x1="87.5" y1="0" x2="87.5" y2="175" stroke="#a8b6c8" stroke-opacity=".26" stroke-width="2.5"/>
+      <line x1="131" y1="4" x2="131" y2="171" stroke="#a8b6c8" stroke-opacity=".26" stroke-width="2.5"/>
+    </g>
+  </defs>
+
+  <rect x="6" y="6" width="1148" height="416" rx="8" fill="none" stroke="#c0a16b" stroke-opacity=".30" stroke-width="2"/>
+  <rect x="14" y="14" width="1132" height="400" rx="4" fill="#0a0f16"/>
+
+  <g transform="translate(28, 28)">
+    <use href="#pvzelle-pv" x="0"   y="0"/>
+    <use href="#pvzelle-pv" x="189" y="0"/>
+    <use href="#pvzelle-pv" x="378" y="0"/>
+    <use href="#pvzelle-pv" x="567" y="0"/>
+    <use href="#pvzelle-pv" x="756" y="0"/>
+    <use href="#pvzelle-pv" x="945" y="0"/>
+    <use href="#pvzelle-pv" x="0"   y="189"/>
+    <use href="#pvzelle-pv" x="189" y="189"/>
+    <use href="#pvzelle-pv" x="378" y="189"/>
+    <use href="#pvzelle-pv" x="567" y="189"/>
+    <use href="#pvzelle-pv" x="756" y="189"/>
+    <use href="#pvzelle-pv" x="945" y="189"/>
+  </g>
+</svg>
+</div>
 
 <!-- ===================== RECHNER ===================== -->
 <section class="section" id="rechner">
