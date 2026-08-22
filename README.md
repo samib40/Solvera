@@ -307,7 +307,7 @@ sie würde GitHub Ordner mit Unterstrich ignorieren.
 
 ### Eigene Domain verbinden
 
-1. Domain registrieren (vorgesehen ist `solvera-sales.de`).
+1. Domain registrieren (vorgesehen ist `solvera-sales.com`).
 2. Beim Domain-Anbieter im DNS eintragen:
 
    | Typ | Name | Wert |
@@ -336,7 +336,7 @@ Repository verbinden, Build-Command leer lassen, Publish-Directory `/`.
 ### Nach dem Umzug
 
 In `sitemap.xml`, `robots.txt` sowie in den `canonical`- und `og:url`-Angaben
-aller Seiten steht `https://www.solvera-sales.de/`. Bei abweichender Domain
+aller Seiten steht `https://solvera-sales.com/`. Bei abweichender Domain
 diese Adresse überall ersetzen.
 
 ## Technische Hinweise
