@@ -57,7 +57,9 @@ def daten_uri(pfad, klein=False):
 # Bilder, die nur fuer Suchmaschinen und geteilte Links gedacht sind. Sie
 # tauchen auf keiner Seite sichtbar auf und wuerden das Buendel nur aufblaehen.
 NUR_FUER_SUCHMASCHINEN = ('favicon-96.png', 'favicon-192.png', 'favicon-480.png',
-                          'favicon-180.png', 'vorschaubild.png')
+                          'favicon-180.png', 'vorschaubild.png',
+                          # dunkle Logo-Fassungen: auf der hellen Website ungenutzt
+                          'logo-mark.png', 'logo-wortmarke.png')
 
 
 def sammle_bilder(klein):
@@ -113,7 +115,7 @@ def schreibe(ziel, mit_leiste, klein):
               .replace('/*MITTEL*/', sicher(mittel))
               .replace('/*START*/', sicher(SEITEN[0][0]))
               .replace('/*LEISTE*/', 'true' if mit_leiste else 'false')
-              .replace('%LOGO%', mittel['img']['logo-mark.png']))
+              .replace('%LOGO%', mittel['img']['logo-mark-hell.png']))
 
     pfad = os.path.join(WURZEL, ziel)
     with open(pfad, 'w', encoding='utf-8') as f:
