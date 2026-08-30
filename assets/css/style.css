@@ -1330,3 +1330,13 @@ input[type="range"]::-moz-range-thumb {
 @media (prefers-reduced-motion: no-preference) {
   .bild-flaeche { transition: opacity .5s ease; }
 }
+
+/* ---------- 34. Überschriften-Ebene und Aussehen entkoppeln ----------
+   Für die Suchmaschine muss die Reihenfolge h1 → h2 → h3 stimmen. Wo
+   dafür ein h4 zu einem h3 wird, hält diese Klasse das Aussehen. */
+.h-klein { font-size: 1.05rem; letter-spacing: -.01em; font-weight: 700; }
+
+/* Bausteine, die bisher nur h4 kannten */
+.process-item h3 { font-size: 1.05rem; letter-spacing: -.01em; font-weight: 700; margin-bottom: 7px; }
+.feature h3     { font-size: 1.05rem; letter-spacing: -.01em; font-weight: 700; margin-bottom: 6px; }
+.team-body h3   { font-size: 1.08rem; letter-spacing: -.01em; font-weight: 700; }

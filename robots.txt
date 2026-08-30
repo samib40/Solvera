@@ -1,13 +1,16 @@
 User-agent: *
 Allow: /
 
-# Die zusammengepackten Einzeldateien gehören nicht in den Index.
+# Zusammengepackte Einzeldateien – gehören nicht in den Index.
 Disallow: /vorschau.html
 Disallow: /Solvera-Sales-Website.html
 
 # Dankeseiten: kein eigenständiger Inhalt.
-Disallow: /danke.html
-Disallow: /danke-firmen.html
 Disallow: /danke-beratung.html
+Disallow: /danke-firmen.html
+Disallow: /danke.html
+
+# Impressum und Datenschutz tragen noindex, dürfen aber gelesen werden:
+# ein auffindbares Impressum ist ein Vertrauenssignal.
 
 Sitemap: https://solvera-sales.com/sitemap.xml
