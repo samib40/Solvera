@@ -34,7 +34,7 @@ SEITEN = [
 ]
 WEITERE = ['impressum.html', 'datenschutz.html', '404.html',
            'danke.html', 'danke-firmen.html', 'danke-beratung.html',
-           'd2d-vertrieb.html']
+           'd2d-vertrieb.html', 'vertrieb-karlsruhe.html', 'vertrieb-berlin.html']
 
 
 def lies(pfad):
