@@ -54,10 +54,17 @@ def daten_uri(pfad, klein=False):
         return f'data:{typ};base64,' + base64.b64encode(f.read()).decode('ascii')
 
 
+# Bilder, die nur fuer Suchmaschinen und geteilte Links gedacht sind. Sie
+# tauchen auf keiner Seite sichtbar auf und wuerden das Buendel nur aufblaehen.
+NUR_FUER_SUCHMASCHINEN = ('favicon-96.png', 'favicon-192.png', 'favicon-480.png',
+                          'favicon-180.png', 'vorschaubild.png')
+
+
 def sammle_bilder(klein):
     ordner = os.path.join(WURZEL, 'assets/img')
     return {n: daten_uri(f'assets/img/{n}', klein)
-            for n in sorted(os.listdir(ordner)) if not n.startswith('.')}
+            for n in sorted(os.listdir(ordner))
+            if not n.startswith('.') and n not in NUR_FUER_SUCHMASCHINEN}
 
 
 BRUECKE = '''
