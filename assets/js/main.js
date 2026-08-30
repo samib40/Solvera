@@ -227,3 +227,49 @@
     });
   });
 })();
+
+/* =========================================================================
+   Umschalter hell / dunkel
+
+   Die Seite startet hell. Wer umschaltet, bekommt seine Wahl beim naechsten
+   Besuch wieder – gespeichert wird sie im Browser des Besuchers, es verlaesst
+   nichts das Geraet. Ein winziges Skript im Kopf jeder Seite setzt den Modus
+   schon vor dem ersten Anzeigen, damit nichts aufblitzt.
+   ========================================================================= */
+(function () {
+  'use strict';
+
+  var SCHLUESSEL = 'solvera-modus';
+  var knopf = document.getElementById('modus');
+  if (!knopf) return;
+
+  var wurzel = document.documentElement;
+  var farbe = document.querySelector('meta[name="theme-color"]');
+
+  function lesen() {
+    try { return localStorage.getItem(SCHLUESSEL); } catch (e) { return null; }
+  }
+
+  function anwenden(modus, merken) {
+    var dunkel = modus === 'dark';
+    if (dunkel) wurzel.setAttribute('data-theme', 'dark');
+    else        wurzel.removeAttribute('data-theme');
+
+    knopf.setAttribute('aria-label',
+      dunkel ? 'Zu heller Darstellung wechseln' : 'Zu dunkler Darstellung wechseln');
+
+    // Farbe der Browserleiste nachziehen
+    if (farbe) farbe.setAttribute('content', dunkel ? '#0b0b0d' : '#f7f4ef');
+
+    if (merken) {
+      try { localStorage.setItem(SCHLUESSEL, dunkel ? 'dark' : 'light'); } catch (e) {}
+    }
+  }
+
+  // Beschriftung an den Zustand angleichen, den das Kopfskript gesetzt hat
+  anwenden(lesen() === 'dark' ? 'dark' : 'light', false);
+
+  knopf.addEventListener('click', function () {
+    anwenden(wurzel.getAttribute('data-theme') === 'dark' ? 'light' : 'dark', true);
+  });
+})();

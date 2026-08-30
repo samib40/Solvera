@@ -28,6 +28,8 @@
 <link rel="icon" href="assets/img/favicon-192.png" sizes="192x192" type="image/png">
 <link rel="apple-touch-icon" href="assets/img/favicon-180.png">
 <link rel="stylesheet" href="assets/css/style.css">
+<script>/* Modus vor dem ersten Anzeigen setzen, sonst blitzt Hell auf */
+(function(){try{if(localStorage.getItem('solvera-modus')==='dark')document.documentElement.setAttribute('data-theme','dark');}catch(e){}})();</script>
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
@@ -103,8 +105,8 @@
 <header class="header" id="header">
   <div class="wrap">
     <a class="brand" href="index.html" aria-label="Solvera Sales GmbH – Startseite">
-      <img class="brand-mark" src="assets/img/logo-mark-hell.png" alt="" width="240" height="331">
-      <img class="brand-wort" src="assets/img/logo-wortmarke-hell.png" alt="Solvera Sales" width="620" height="154">
+      <img class="brand-mark nur-hell" src="assets/img/logo-mark-hell.png" alt="" width="240" height="331"><img class="brand-mark nur-dunkel" src="assets/img/logo-mark.png" alt="" width="240" height="331">
+      <img class="brand-wort nur-hell" src="assets/img/logo-wortmarke-hell.png" alt="Solvera Sales" width="620" height="154"><img class="brand-wort nur-dunkel" src="assets/img/logo-wortmarke.png" alt="Solvera Sales" width="620" height="154">
     </a>
 
     <nav class="nav" aria-label="Hauptnavigation">
@@ -117,6 +119,10 @@
 
     <div class="header-cta">
       <a class="btn btn-primary btn-sm nur-mobil" href="bewerben.html">Bewerben</a>
+      <button class="modus" id="modus" type="button" aria-label="Zu dunkler Darstellung wechseln" title="Hell oder dunkel">
+        <svg class="modus-mond" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.5 14.3A8.6 8.6 0 0 1 9.7 3.5a8.7 8.7 0 1 0 10.8 10.8Z"/></svg>
+        <svg class="modus-sonne" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.4v2.2M12 19.4v2.2M2.4 12h2.2M19.4 12h2.2M5.2 5.2l1.6 1.6M17.2 17.2l1.6 1.6M18.8 5.2l-1.6 1.6M6.8 17.2l-1.6 1.6"/></svg>
+      </button>
       <button class="burger" id="burger" aria-label="Menü öffnen" aria-expanded="false" aria-controls="mobile-nav">
         <span></span><span></span><span></span>
       </button>
@@ -202,7 +208,7 @@
   </defs>
 
   <!-- Klingelton -->
-  <g fill="none" stroke="#8a6a1c" stroke-linecap="round" stroke-width="2">
+  <g fill="none" stroke="var(--zeich-linie)" stroke-linecap="round" stroke-width="2">
     <path d="M318 150 a26 26 0 0 1 0 34" stroke-opacity=".55"/>
     <path d="M332 138 a44 44 0 0 1 0 58" stroke-opacity=".33"/>
     <path d="M346 126 a62 62 0 0 1 0 82" stroke-opacity=".17"/>
@@ -210,28 +216,28 @@
 
   <!-- Rahmen -->
   <rect x="72" y="40" width="216" height="392" rx="4"
-        fill="none" stroke="#8a6a1c" stroke-opacity=".5" stroke-width="2"/>
+        fill="none" stroke="var(--zeich-linie)" stroke-opacity=".5" stroke-width="2"/>
 
   <!-- Türblatt -->
   <rect x="88" y="56" width="184" height="376" rx="3"
-        fill="url(#tuerblatt)" stroke="#8a6a1c" stroke-opacity=".8" stroke-width="2.2"/>
+        fill="url(#tuerblatt)" stroke="var(--zeich-linie)" stroke-opacity=".8" stroke-width="2.2"/>
 
   <!-- Kassetten -->
-  <g fill="none" stroke="#8a6a1c" stroke-opacity=".34" stroke-width="1.6">
+  <g fill="none" stroke="var(--zeich-linie)" stroke-opacity=".34" stroke-width="1.6">
     <rect x="112" y="82" width="124" height="104" rx="2"/>
     <rect x="112" y="206" width="124" height="82" rx="2"/>
     <rect x="112" y="308" width="124" height="100" rx="2"/>
   </g>
 
   <!-- Oberlicht -->
-  <g fill="none" stroke="#8a6a1c" stroke-opacity=".28" stroke-width="1.6">
+  <g fill="none" stroke="var(--zeich-linie)" stroke-opacity=".28" stroke-width="1.6">
     <rect x="88" y="14" width="184" height="26" rx="2"/>
     <line x1="149" y1="14" x2="149" y2="40"/>
     <line x1="211" y1="14" x2="211" y2="40"/>
   </g>
 
   <!-- Griff -->
-  <g stroke="#8a6a1c" stroke-opacity=".85" stroke-linecap="round">
+  <g stroke="var(--zeich-linie)" stroke-opacity=".85" stroke-linecap="round">
     <circle cx="254" cy="248" r="7" fill="none" stroke-width="2"/>
     <line x1="254" y1="248" x2="240" y2="248" stroke-width="4"/>
   </g>
@@ -239,16 +245,16 @@
   <!-- Klingel am Rahmen -->
   <g>
     <rect x="292" y="152" width="24" height="30" rx="4"
-          fill="none" stroke="#8a6a1c" stroke-opacity=".7" stroke-width="1.8"/>
-    <circle cx="304" cy="167" r="5" fill="#8a6a1c" fill-opacity=".8"/>
+          fill="none" stroke="var(--zeich-linie)" stroke-opacity=".7" stroke-width="1.8"/>
+    <circle cx="304" cy="167" r="5" fill="var(--zeich-linie)" fill-opacity=".8"/>
   </g>
 
   <!-- Briefschlitz -->
   <rect x="144" y="241" width="60" height="9" rx="4.5"
-        fill="none" stroke="#8a6a1c" stroke-opacity=".45" stroke-width="1.6"/>
+        fill="none" stroke="var(--zeich-linie)" stroke-opacity=".45" stroke-width="1.6"/>
 
   <!-- Stufe und Boden -->
-  <g stroke="#8a6a1c" stroke-linecap="round" fill="none">
+  <g stroke="var(--zeich-linie)" stroke-linecap="round" fill="none">
     <path d="M52 432 L308 432" stroke-opacity=".5" stroke-width="2"/>
     <path d="M36 458 L324 458" stroke-opacity=".3" stroke-width="1.8"/>
     <path d="M52 432 L36 458 M308 432 L324 458" stroke-opacity=".3" stroke-width="1.6"/>
@@ -506,8 +512,8 @@
     <div class="footer-top">
       <div class="footer-about">
         <a class="brand brand-gross" href="index.html">
-          <img class="brand-mark" src="assets/img/logo-mark-hell.png" alt="" width="240" height="331">
-          <img class="brand-wort" src="assets/img/logo-wortmarke-hell.png" alt="Solvera Sales" width="620" height="154">
+          <img class="brand-mark nur-hell" src="assets/img/logo-mark-hell.png" alt="" width="240" height="331"><img class="brand-mark nur-dunkel" src="assets/img/logo-mark.png" alt="" width="240" height="331">
+          <img class="brand-wort nur-hell" src="assets/img/logo-wortmarke-hell.png" alt="Solvera Sales" width="620" height="154"><img class="brand-wort nur-dunkel" src="assets/img/logo-wortmarke.png" alt="Solvera Sales" width="620" height="154">
         </a>
         <p>
           Vertriebsdienstleister für die Photovoltaik-Branche. Wir gewinnen qualifizierte

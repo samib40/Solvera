@@ -28,6 +28,8 @@
 <link rel="icon" href="assets/img/favicon-192.png" sizes="192x192" type="image/png">
 <link rel="apple-touch-icon" href="assets/img/favicon-180.png">
 <link rel="stylesheet" href="assets/css/style.css">
+<script>/* Modus vor dem ersten Anzeigen setzen, sonst blitzt Hell auf */
+(function(){try{if(localStorage.getItem('solvera-modus')==='dark')document.documentElement.setAttribute('data-theme','dark');}catch(e){}})();</script>
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
@@ -45,8 +47,8 @@
 <header class="header" id="header">
   <div class="wrap">
     <a class="brand" href="index.html" aria-label="Solvera Sales GmbH – Startseite">
-      <img class="brand-mark" src="assets/img/logo-mark-hell.png" alt="" width="240" height="331">
-      <img class="brand-wort" src="assets/img/logo-wortmarke-hell.png" alt="Solvera Sales" width="620" height="154">
+      <img class="brand-mark nur-hell" src="assets/img/logo-mark-hell.png" alt="" width="240" height="331"><img class="brand-mark nur-dunkel" src="assets/img/logo-mark.png" alt="" width="240" height="331">
+      <img class="brand-wort nur-hell" src="assets/img/logo-wortmarke-hell.png" alt="Solvera Sales" width="620" height="154"><img class="brand-wort nur-dunkel" src="assets/img/logo-wortmarke.png" alt="Solvera Sales" width="620" height="154">
     </a>
 
     <nav class="nav" aria-label="Hauptnavigation">
@@ -59,6 +61,10 @@
 
     <div class="header-cta">
       <a class="btn btn-primary btn-sm nur-mobil" href="bewerben.html">Bewerben</a>
+      <button class="modus" id="modus" type="button" aria-label="Zu dunkler Darstellung wechseln" title="Hell oder dunkel">
+        <svg class="modus-mond" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.5 14.3A8.6 8.6 0 0 1 9.7 3.5a8.7 8.7 0 1 0 10.8 10.8Z"/></svg>
+        <svg class="modus-sonne" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.4v2.2M12 19.4v2.2M2.4 12h2.2M19.4 12h2.2M5.2 5.2l1.6 1.6M17.2 17.2l1.6 1.6M18.8 5.2l-1.6 1.6M6.8 17.2l-1.6 1.6"/></svg>
+      </button>
       <button class="burger" id="burger" aria-label="Menü öffnen" aria-expanded="false" aria-controls="mobile-nav">
         <span></span><span></span><span></span>
       </button>
@@ -360,8 +366,8 @@
     <div class="footer-top">
       <div class="footer-about">
         <a class="brand brand-gross" href="index.html">
-          <img class="brand-mark" src="assets/img/logo-mark-hell.png" alt="" width="240" height="331">
-          <img class="brand-wort" src="assets/img/logo-wortmarke-hell.png" alt="Solvera Sales" width="620" height="154">
+          <img class="brand-mark nur-hell" src="assets/img/logo-mark-hell.png" alt="" width="240" height="331"><img class="brand-mark nur-dunkel" src="assets/img/logo-mark.png" alt="" width="240" height="331">
+          <img class="brand-wort nur-hell" src="assets/img/logo-wortmarke-hell.png" alt="Solvera Sales" width="620" height="154"><img class="brand-wort nur-dunkel" src="assets/img/logo-wortmarke.png" alt="Solvera Sales" width="620" height="154">
         </a>
         <p>
           Vertriebsdienstleister für die Photovoltaik-Branche. Wir gewinnen qualifizierte
