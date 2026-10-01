@@ -1,6 +1,6 @@
 # Solvera Sales GmbH – Website
 
-Statische Website für die Solvera Sales GmbH i. G. (Baden-Württemberg · Berlin).
+Statische Website für die Solvera Sales GmbH i. G. (Baden-Württemberg).
 Kein Build-Schritt, kein Framework, kein Server, keine externen Requests.
 Läuft unverändert auf GitHub Pages.
 

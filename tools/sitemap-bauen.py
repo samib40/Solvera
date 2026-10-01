@@ -24,7 +24,6 @@ RANG = {
     'd2d-vertrieb.html':        ('monthly', '0.8'),
     'photovoltaik.html':        ('monthly', '0.8'),
     'vertrieb-karlsruhe.html':  ('monthly', '0.8'),
-    'vertrieb-berlin.html':     ('monthly', '0.8'),
     'photovoltaik-firmen.html': ('monthly', '0.7'),
     'ueber-uns.html':           ('monthly', '0.6'),
 }

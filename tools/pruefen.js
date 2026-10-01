@@ -27,6 +27,7 @@ const VERALTET = {
   'solvera-sales.de': [],                        // alte Domain
   'kontakt.php': [],                             // entfernter Serverteil
   'Nürnberg': [],                                // aufgegebener Standort
+  'Berlin': [],                                  // Standort vorerst eingestellt
   'Wachhausstra': ['impressum.html', 'datenschutz.html'],  // nur wo Pflicht
 };
 
