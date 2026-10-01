@@ -22,6 +22,7 @@ const BREITEN = [360, 390, 768, 1440, 1920];
    Seiten, auf denen sie ausnahmsweise erlaubt sind. */
 const VERALTET = {
   'Moses': [], 'Monis': [], 'Naccum': [],       // frühere Schreibweisen
+  'Niakam': [],                                  // nicht mehr im Team
   '45163460': [],                                // alte Rufnummer
   'solvera-sales.de': [],                        // alte Domain
   'kontakt.php': [],                             // entfernter Serverteil
