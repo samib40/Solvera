@@ -125,6 +125,8 @@ window.SOLVERA = {
      --------------------------------------------------------------------- */
   provision: {
     proLead: 70,        // EUR je qualifiziertem Lead
+    proAbschluss: 200,  // EUR zusaetzlich, wenn aus dem Lead ein Abschluss wird
+    abschlussquote: 0.15, // Anteil der Leads mit Abschluss (derzeit 15 %)
     tageProMonat: 20    // uebliche Einsatztage pro Monat
   }
 };
