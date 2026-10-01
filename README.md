@@ -264,7 +264,6 @@ mit 300×400 px für Mobilgeräte) unter `assets/img/`:
 
 ```
 team-sami-bssiss.jpg     team-sami-bssiss@small.jpg
-team-oskar-teschke.jpg   team-oskar-teschke@small.jpg
 team-monis-manai.jpg     team-monis-manai@small.jpg
 ```
 
