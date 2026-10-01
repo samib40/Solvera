@@ -1108,40 +1108,16 @@ input[type="range"]::-moz-range-thumb {
   pointer-events: none;
 }
 
-/* Karte ohne Foto: Monogramm in Gold statt leerer Fläche. Ein warmer
-   Lichtschein und ein feines Punktraster füllen das Hochformat, damit die
-   Karte neben einem Foto gleichwertig wirkt. */
-.team-photo.is-empty {
-  display: grid; place-items: center;
-  background:
-    radial-gradient(circle at 50% 44%, rgba(var(--brass-rgb), .20) 0%, transparent 58%),
-    radial-gradient(rgba(var(--brass-rgb), .16) 1px, transparent 1.4px) 0 0 / 16px 16px,
-    linear-gradient(165deg, var(--surface-3), var(--surface));
-}
-.team-photo.is-empty::after { display: none; }
+/* Platzhalter, solange kein Foto vorliegt */
+.team-photo.is-empty { display: grid; place-items: center; }
 .team-initials {
-  position: relative;
-  width: clamp(104px, 42%, 148px); aspect-ratio: 1;
+  width: 84px; height: 84px;
   display: grid; place-items: center;
   border-radius: 50%;
-  background: var(--surface);
+  background: var(--brass-soft);
   border: 1px solid var(--brass-line);
-  box-shadow: 0 0 0 10px var(--brass-soft), 0 22px 44px -22px rgba(var(--brass-rgb), .55);
-  font-size: clamp(2.1rem, 5vw, 2.9rem); font-weight: 800; letter-spacing: .02em;
   color: var(--brass-text);
-  transition: transform .35s ease, box-shadow .35s ease;
-}
-/* Buchstaben im Goldverlauf, wo der Browser es kann */
-@supports (-webkit-background-clip: text) or (background-clip: text) {
-  .team-initials > span {
-    background: var(--verlauf-schrift);
-    -webkit-background-clip: text; background-clip: text;
-    color: transparent;
-  }
-}
-.team-card:hover .team-initials {
-  transform: scale(1.04);
-  box-shadow: 0 0 0 14px var(--brass-soft), 0 26px 50px -22px rgba(var(--brass-rgb), .65);
+  font-size: 1.7rem; font-weight: 800; letter-spacing: -.02em;
 }
 
 .team-body { padding: 20px 22px 24px; }
