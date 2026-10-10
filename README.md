@@ -239,13 +239,14 @@ Auf allen übrigen Seiten steht bewusst keine Rufnummer – der Kontakt läuft �
 stehen gesammelt in `assets/js/config.js` unter `calc`. Ändern sich Marktpreise,
 genügt eine Anpassung dort – der Rechner übernimmt sie automatisch.
 
-**Provision** (aktuell 70 € pro qualifiziertem Lead, dazu 200 € bei Abschluss)
-steht ebenfalls in `config.js` unter `provision`: `proLead`, `proAbschluss` und
-`abschlussquote` (derzeit 0.15, also 15 %). Der Vergütungsrechner rechnet den
-Abschlussbonus mit dieser Quote ein. Achtung: In den Fließtexten stehen die
+**Provision** (aktuell 70 € pro qualifiziertem Lead, dazu 200 € bei Abschluss und
+weitere 200 €, wenn eine Wärmepumpe verbaut wird) steht ebenfalls in `config.js`
+unter `provision`: `proLead`, `proAbschluss`, `abschlussquote` (derzeit 0.15),
+`proWaermepumpe` und `waermepumpenquote` (derzeit 0.10). Der Vergütungsrechner
+rechnet beide Boni mit diesen Quoten ein. Achtung: In den Fließtexten stehen die
 Beträge und die Quote zusätzlich ausgeschrieben – bei einer Änderung mit
-`grep -rn -e "70 €" -e "200 €" -e "270 €" -e "15 %" *.html` alle Stellen mitziehen,
-auch die festen Beispielrechnungen (10 Leads × 15 Tage = 15.000 €).
+`grep -rn -e "70 €" -e "200 €" -e "470 €" -e "400 €" -e "15 %" -e "10 %" *.html` alle Stellen mitziehen,
+auch die festen Beispielrechnungen (10 Leads × 15 Tage = 18.000 €).
 
 **Qualitätskriterien** (sieben Punkte auf `photovoltaik.html#leads` und
 `photovoltaik-firmen.html`) stammen aus der Vorgabe des Fachpartners. Ändert der
