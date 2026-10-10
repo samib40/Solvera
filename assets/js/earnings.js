@@ -1,7 +1,7 @@
 /* =========================================================================
    Solvera Sales – Provisions-Rechner (Karriereseite)
    Einfache, ehrliche Rechnung: Leads x Einsatztage x Provision, dazu der
-   Abschlussbonus mit der aktuellen Abschlussquote.
+   Abschluss- und Waermepumpen-Bonus mit den aktuellen Quoten.
    Werte siehe assets/js/config.js (SOLVERA.provision).
    ========================================================================= */
 (function () {
@@ -15,7 +15,9 @@
   var PRO_LEAD = P.proLead || 70;
   var BONUS    = P.proAbschluss || 200;
   var QUOTE    = typeof P.abschlussquote === 'number' ? P.abschlussquote : 0.15;
-  var SCHNITT  = PRO_LEAD + BONUS * QUOTE;   // durchschnittlich je Lead
+  var WP       = P.proWaermepumpe || 200;
+  var WP_QUOTE = typeof P.waermepumpenquote === 'number' ? P.waermepumpenquote : 0.10;
+  var SCHNITT  = PRO_LEAD + BONUS * QUOTE + WP * WP_QUOTE;   // durchschnittlich je Lead
 
   var out = {
     leads:  document.getElementById('e-leads'),
@@ -25,7 +27,8 @@
     year:   document.getElementById('e-year'),
     count:  document.getElementById('e-leadcount'),
     base:   document.getElementById('e-base'),
-    bonus:  document.getElementById('e-bonus')
+    bonus:  document.getElementById('e-bonus'),
+    wp:     document.getElementById('e-wp')
   };
 
   function fill(el) {
@@ -48,6 +51,7 @@
     if (out.count) out.count.textContent = count;
     if (out.base)  out.base.textContent  = eur(count * PRO_LEAD);
     if (out.bonus) out.bonus.textContent = eur(count * BONUS * QUOTE);
+    if (out.wp)    out.wp.textContent    = eur(count * WP * WP_QUOTE);
     if (out.month) out.month.textContent = eur(count * SCHNITT);
     if (out.day)   out.day.textContent   = eur(leads * SCHNITT);
     if (out.year)  out.year.textContent  = eur(count * SCHNITT * 12);
