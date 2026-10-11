@@ -32,9 +32,9 @@ lautet **Start · Bewerben · Photovoltaikanlage · Firmenkunden · Über uns**;
 stehen gebündelt auf `bewerben.html` und sind dort über eine Sprungmarken-Leiste
 erreichbar. Der Photovoltaik-Rechner sitzt am Ende der Photovoltaik-Seite.
 
-Eine Telefonnummer steht bewusst nur noch im Impressum und in der
-Datenschutzerklärung – dort ist sie gesetzlich vorgeschrieben. Alle Wege auf der
-Website führen über die Bewerbung oder WhatsApp.
+Die Telefonnummer steht im Impressum und in der Datenschutzerklärung (dort
+gesetzlich vorgeschrieben) und als Anruf-Knopf auf `bewerben.html` – oben neben
+dem WhatsApp-Knopf und im Kasten „Rückfragen vorab?“.
 
 | Datei | Inhalt | In der Navigation |
 |-------|--------|-------------------|
@@ -220,15 +220,15 @@ tracking: {
 Die WhatsApp-Schaltflächen zeigen auf `wa.me/491725843019` mit vorformulierter
 Nachricht. Dieselbe Nummer nutzt auch der Versandkasten unter den Formularen.
 
-Beim Wechsel der Nummer sind **drei** Stellen zu ändern:
+Beim Wechsel der Nummer sind diese Stellen zu ändern:
 
 | Wo | Was |
 |----|-----|
 | `assets/js/config.js` | `kontakt.telefon` und `kontakt.whatsapp` |
-| `bewerben.html` | `href` der beiden `.wa-btn`-Links |
+| `bewerben.html` | `href` der beiden `.wa-btn`-Links, dazu zwei Anruf-Knöpfe (`tel:`-Link und Text) |
 | `impressum.html`, `datenschutz.html` | Rufnummer im Text und im `tel:`-Link |
 
-Auf allen übrigen Seiten steht bewusst keine Rufnummer – der Kontakt läuft über
+Auf den übrigen Seiten steht bewusst keine Rufnummer – der Kontakt läuft über
 „Jetzt bewerben", E-Mail und WhatsApp.
 
 ---
