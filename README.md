@@ -217,7 +217,7 @@ tracking: {
 
 ## WhatsApp-Bewerbung
 
-Die WhatsApp-Schaltflächen zeigen auf `wa.me/4915201028749` mit vorformulierter
+Die WhatsApp-Schaltflächen zeigen auf `wa.me/491725843019` mit vorformulierter
 Nachricht. Dieselbe Nummer nutzt auch der Versandkasten unter den Formularen.
 
 Beim Wechsel der Nummer sind **drei** Stellen zu ändern:

@@ -24,6 +24,7 @@ const VERALTET = {
   'Moses': [], 'Monis': [], 'Naccum': [],       // frühere Schreibweisen
   'Niakam': [],                                  // nicht mehr im Team
   '45163460': [],                                // alte Rufnummer
+  '01028749': [],                                // alte Rufnummer 0152
   'solvera-sales.de': [],                        // alte Domain
   'kontakt.php': [],                             // entfernter Serverteil
   'Nürnberg': [],                                // aufgegebener Standort

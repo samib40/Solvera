@@ -54,8 +54,8 @@ window.SOLVERA = {
   /* Empfaenger der Formulare und Kontaktdaten der Website */
   kontakt: {
     email:    'info@solvera-sales.com',
-    telefon:  '+4915201028749',
-    whatsapp: '4915201028749',   // internationale Schreibweise, ohne + und ohne Leerzeichen
+    telefon:  '+491725843019',
+    whatsapp: '491725843019',   // internationale Schreibweise, ohne + und ohne Leerzeichen
     firma:    'Solvera Sales GmbH'
   },
 
