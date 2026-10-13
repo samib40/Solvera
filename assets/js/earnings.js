@@ -57,7 +57,16 @@
     if (out.year)  out.year.textContent  = eur(count * SCHNITT * 12);
   }
 
+  var gemessen = false;
+  function genutzt() {
+    if (gemessen || !window.solveraMessen) return;
+    gemessen = true;
+    window.solveraMessen('rechner_genutzt');
+  }
+
   leadsEl.addEventListener('input', update);
   daysEl.addEventListener('input', update);
+  leadsEl.addEventListener('change', genutzt);
+  daysEl.addEventListener('change', genutzt);
   update();
 })();

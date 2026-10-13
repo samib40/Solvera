@@ -72,7 +72,7 @@ window.SOLVERA = {
      TikTok-Pixel:        Pixel-ID aus dem TikTok Ads Manager
      --------------------------------------------------------------------- */
   tracking: {
-    ga4:    '',   // z. B. 'G-XXXXXXXXXX'
+    ga4:    'G-QN5MY3MVJ6',   // Google Analytics 4 (Property „Solvera Sales Website“)
     meta:   '',   // z. B. '1234567890123456'
     tiktok: '',   // z. B. 'CXXXXXXXXXXXXXXXXXXX'
 
