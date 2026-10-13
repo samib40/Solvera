@@ -178,12 +178,13 @@ logo-mark.png        Bildmarke (S mit Pfeil), transparent
 logo-wortmarke.png   Schriftzug SOLVERA SALES, transparent
 favicon-32.png       Browser-Symbol
 favicon-180.png      Symbol für Startbildschirm auf Mobilgeräten
-wappen-panther.png   Wappen mit den zwei Panthern, freigestellt (720 px, dazu
-                     wappen-panther@small.png mit 400 px), auf ueber-uns.html
+wappen-panther-hell.svg    Wappen mit den zwei Panthern, Vektorgrafik, Gold für Hell
+wappen-panther-dunkel.svg  dasselbe mit hellerem Gold für die dunkle Darstellung
 ```
 
-Das Wappen ist aus einem Foto der goldenen Prägung freigestellt. Liegt es
-später als Vektordatei (SVG) oder als sauberes PNG vor, beide Dateien ersetzen.
+Das Wappen wurde aus dem Foto der Goldprägung als Vektorgrafik nachgezeichnet
+und bleibt dadurch in jeder Größe scharf. Liefert der Designer eine eigene
+SVG-Datei, beide Dateien damit ersetzen.
 
 Liegt das Logo später als Vektordatei (SVG) vor, lassen sich diese Dateien
 eins zu eins ersetzen – die Klassen `.brand-mark` und `.brand-wort` steuern

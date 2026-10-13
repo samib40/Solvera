@@ -1485,8 +1485,8 @@ input[type="range"]::-moz-range-thumb {
   .modus svg { width: 16px; height: 16px; }
 }
 
-/* Wappen mit den Panthern (Über uns). Das Bild ist freigestellt und liegt
-   auf einem warmen Lichtschein, damit das Gold in Hell und Dunkel trägt. */
+/* Wappen mit den Panthern (Über uns). Vektorgrafik in zwei Fassungen:
+   kräftigeres Gold für Hell, helleres für Dunkel (.nur-hell / .nur-dunkel). */
 .wappen-bild {
   position: relative;
   display: grid; place-items: center;
@@ -1499,6 +1499,4 @@ input[type="range"]::-moz-range-thumb {
   pointer-events: none;
 }
 .wappen-bild img { position: relative; width: 100%; max-width: 560px; height: auto; }
-/* Auf Hell bekommt das feine Gold eine leichte Kontur, damit es nicht verblasst */
-.wappen-bild img { filter: drop-shadow(0 1px 1px rgba(90, 62, 10, .45)) drop-shadow(0 0 1px rgba(90, 62, 10, .3)); }
 :root[data-theme="dark"] .wappen-bild img { filter: drop-shadow(0 10px 28px rgba(0, 0, 0, .45)); }
