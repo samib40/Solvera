@@ -1484,3 +1484,21 @@ input[type="range"]::-moz-range-thumb {
   .modus { width: 34px; height: 34px; }
   .modus svg { width: 16px; height: 16px; }
 }
+
+/* Wappen mit den Panthern (Über uns). Das Bild ist freigestellt und liegt
+   auf einem warmen Lichtschein, damit das Gold in Hell und Dunkel trägt. */
+.wappen-bild {
+  position: relative;
+  display: grid; place-items: center;
+  padding: clamp(12px, 3vw, 28px);
+}
+.wappen-bild::before {
+  content: "";
+  position: absolute; inset: 4% 8%;
+  background: radial-gradient(ellipse at center, rgba(var(--brass-rgb), .16) 0%, transparent 68%);
+  pointer-events: none;
+}
+.wappen-bild img { position: relative; width: 100%; max-width: 560px; height: auto; }
+/* Auf Hell bekommt das feine Gold eine leichte Kontur, damit es nicht verblasst */
+.wappen-bild img { filter: drop-shadow(0 1px 1px rgba(90, 62, 10, .45)) drop-shadow(0 0 1px rgba(90, 62, 10, .3)); }
+:root[data-theme="dark"] .wappen-bild img { filter: drop-shadow(0 10px 28px rgba(0, 0, 0, .45)); }

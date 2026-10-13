@@ -102,8 +102,19 @@ function tagBilanz(quelle) {
     await seite.goto('file://' + path.join(WURZEL, datei));
     await seite.waitForTimeout(350);
 
-    const bilder = await seite.evaluate(() =>
-      [...document.images].filter(i => !i.complete || i.naturalWidth === 0).length);
+    /* Einmal bis ans Seitenende scrollen, damit auch Bilder mit
+       loading="lazy" geladen werden, dann noch ladende Bilder kurz abwarten. */
+    const bilder = await seite.evaluate(async () => {
+      window.scrollTo(0, document.body.scrollHeight);
+      await new Promise(r => setTimeout(r, 200));
+      window.scrollTo(0, 0);
+      const offen = [...document.images].filter(i => !i.complete);
+      await Promise.all(offen.map(i => new Promise(fertig => {
+        i.addEventListener('load', fertig); i.addEventListener('error', fertig);
+        setTimeout(fertig, 3000);
+      })));
+      return [...document.images].filter(i => !i.complete || i.naturalWidth === 0).length;
+    });
 
     const ueberlauf = [];
     for (const breite of BREITEN) {
