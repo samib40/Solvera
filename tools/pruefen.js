@@ -28,6 +28,7 @@ const VERALTET = {
   'solvera-sales.de': [],                        // alte Domain
   'kontakt.php': [],                             // entfernter Serverteil
   'Nürnberg': [],                                // aufgegebener Standort
+  'Sales GmbH': [], 'Sales%20GmbH': [], 'i. G.': [],  // Rechtsform jetzt GbR
   'Berlin': [],                                  // Standort vorerst eingestellt
   'Wachhausstra': ['impressum.html', 'datenschutz.html'],  // nur wo Pflicht
 };

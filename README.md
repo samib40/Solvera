@@ -1,6 +1,6 @@
-# Solvera Sales GmbH – Website
+# Solvera Sales GbR – Website
 
-Statische Website für die Solvera Sales GmbH i. G. (Baden-Württemberg).
+Statische Website für die Solvera Sales GbR (Baden-Württemberg).
 Kein Build-Schritt, kein Framework, kein Server, keine externen Requests.
 Läuft unverändert auf GitHub Pages.
 
@@ -10,9 +10,8 @@ Läuft unverändert auf GitHub Pages.
 
 | # | Was | Wo |
 |---|-----|-----|
-| 1 | **Nach der Handelsregister-Eintragung:** Registernummer eintragen und den Zusatz „i. G." überall streichen | `impressum.html`, `datenschutz.html` |
+| 1 | Rechtsform ist eine **GbR** (Gesellschafter Oskar Teschke und Sami Bssiss). Wird sie ins Gesellschaftsregister eingetragen (eGbR), Registergericht und -nummer ins Impressum aufnehmen und den Namenszusatz „eGbR“ führen | `impressum.html`, `datenschutz.html` |
 | 2 | **USt-IdNr.** eintragen, sobald erteilt | `impressum.html` |
-| 3 | Gelben Hinweiskasten entfernen, sobald 1 und 2 erledigt sind | `impressum.html` |
 | 4 | Nicht genutzte **Analyse-Dienste** aus Abschnitt 5 streichen | `datenschutz.html` |
 | 5 | Tracking-IDs eintragen – erst dann erscheint der Cookie-Banner | `assets/js/config.js` |
 | 6 | Angaben zur Förderung prüfen und Datum aktualisieren | `photovoltaik.html`, `#foerderung` |
@@ -384,4 +383,4 @@ diese Adresse überall ersetzen.
 
 ---
 
-© Solvera Sales GmbH
+© Solvera Sales GbR

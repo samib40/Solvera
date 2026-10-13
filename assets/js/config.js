@@ -56,7 +56,7 @@ window.SOLVERA = {
     email:    'info@solvera-sales.com',
     telefon:  '+491725843019',
     whatsapp: '491725843019',   // internationale Schreibweise, ohne + und ohne Leerzeichen
-    firma:    'Solvera Sales GmbH'
+    firma:    'Solvera Sales GbR'
   },
 
   /* ---------------------------------------------------------------------
