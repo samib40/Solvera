@@ -74,6 +74,33 @@
     }
   }
 
+  /* ---------- Klicks und Formulare zählen ----------
+     Nur wenn Google Analytics nach Einwilligung geladen ist; sonst passiert
+     nichts. Die Ereignisnamen tauchen in Google Analytics unter
+     Berichte > Interaktion > Ereignisse auf. */
+  function messen(name, werte) {
+    if (!geladen || !CFG.ga4 || typeof window.gtag !== 'function') return;
+    var p = werte || {};
+    p.seite = window.location.pathname.replace(/^.*\//, '') || 'index.html';
+    window.gtag('event', name, p);
+  }
+  window.solveraMessen = messen;
+
+  document.addEventListener('click', function (e) {
+    var a = e.target.closest && e.target.closest('a[href], button.btn');
+    if (!a || a.closest('.consent-bar')) return;
+    var href = a.getAttribute('href') || '';
+    var text = (a.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 60);
+    var name =
+      /^tel:/.test(href)                        ? 'klick_anruf' :
+      /wa\.me\//.test(href)                     ? 'klick_whatsapp' :
+      /^mailto:/.test(href)                     ? 'klick_email' :
+      /bewerben\.html|#formular/.test(href)     ? 'klick_bewerben' :
+      /photovoltaik-firmen\.html/.test(href)    ? 'klick_firmenkunden' :
+      a.classList.contains('btn')               ? 'klick_knopf' : '';
+    if (name) messen(name, { link_text: text, link_ziel: href.slice(0, 100) });
+  });
+
   /* ---------- Banner ---------- */
   function banner() {
     var el = document.createElement('div');

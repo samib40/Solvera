@@ -219,6 +219,28 @@ tracking: {
 > Datenschutzerklärung (Abschnitt 5) stehen – und jeder Dienst, den du *nicht*
 > nutzt, muss dort gestrichen werden.
 
+**Aktiv ist derzeit nur Google Analytics 4** (Mess-ID `G-QN5MY3MVJ6`). Meta- und
+TikTok-Pixel sind leer und deshalb auch aus der Datenschutzerklärung gestrichen.
+
+Zusätzlich zu den Seitenaufrufen zählt `consent.js` diese Ereignisse (nur nach
+Einwilligung; zu finden in Google Analytics unter Berichte → Interaktion → Ereignisse):
+
+| Ereignis | Wann |
+|----------|------|
+| `klick_bewerben` | Klick auf einen Link zu `bewerben.html` oder `#formular` |
+| `klick_whatsapp` | Klick auf einen WhatsApp-Knopf |
+| `klick_anruf` | Klick auf die Telefonnummer |
+| `klick_email` | Klick auf die E-Mail-Adresse |
+| `klick_firmenkunden` | Klick auf einen Link zu `photovoltaik-firmen.html` |
+| `klick_knopf` | jeder andere Knopf (`.btn`), mit dessen Text |
+| `bewerbung_abgeschickt` | Bewerbungsformular vollständig ausgefüllt und abgeschickt |
+| `firmenanfrage_abgeschickt` | Anfrage von Firmenkunden abgeschickt |
+| `beratungsanfrage_abgeschickt` | Anfrage aus dem Photovoltaik-Rechner abgeschickt |
+| `rechner_genutzt` | Vergütungsrechner einmal je Seitenaufruf bewegt |
+
+Jedes Ereignis trägt die Seite (`seite`), Klicks zusätzlich `link_text` und
+`link_ziel`. Formularinhalte werden nicht übertragen.
+
 ---
 
 ## WhatsApp-Bewerbung

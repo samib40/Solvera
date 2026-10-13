@@ -298,6 +298,15 @@
         meldung(form, 'Bitte prüfen Sie die rot markierten Felder.', 'err');
         return;
       }
+
+      // Für die Website-Statistik (nur mit Einwilligung, siehe consent.js)
+      if (window.solveraMessen) {
+        window.solveraMessen({
+          bewerbung: 'bewerbung_abgeschickt',
+          firmen:    'firmenanfrage_abgeschickt',
+          lead:      'beratungsanfrage_abgeschickt'
+        }[form.getAttribute('data-form')] || 'formular_abgeschickt');
+      }
       absenden(form);
     });
   });
