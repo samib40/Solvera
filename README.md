@@ -1,6 +1,6 @@
-# Solvera Sales GbR – Website
+# Solvera Sales – Website
 
-Statische Website für die Solvera Sales GbR (Baden-Württemberg).
+Statische Website für Solvera Sales (Inhaber Sami Bssiss), Teams deutschlandweit.
 Kein Build-Schritt, kein Framework, kein Server, keine externen Requests.
 Läuft unverändert auf GitHub Pages.
 
@@ -10,7 +10,7 @@ Läuft unverändert auf GitHub Pages.
 
 | # | Was | Wo |
 |---|-----|-----|
-| 1 | Rechtsform ist eine **GbR** (Gesellschafter Oskar Teschke und Sami Bssiss). Wird sie ins Gesellschaftsregister eingetragen (eGbR), Registergericht und -nummer ins Impressum aufnehmen und den Namenszusatz „eGbR“ führen | `impressum.html`, `datenschutz.html` |
+| 1 | Rechtsform ist ein **Einzelunternehmen** (Inhaber Sami Bssiss). Ändert sich das, Impressum und Datenschutzerklärung (Abschnitt 1) anpassen | `impressum.html`, `datenschutz.html` |
 | 2 | **USt-IdNr.** eintragen, sobald erteilt | `impressum.html` |
 | 4 | Nicht genutzte **Analyse-Dienste** aus Abschnitt 5 streichen | `datenschutz.html` |
 | 5 | Tracking-IDs eintragen – erst dann erscheint der Cookie-Banner | `assets/js/config.js` |
@@ -295,7 +295,7 @@ mit 300×400 px für Mobilgeräte) unter `assets/img/`:
 
 ```
 team-sami-bssiss.jpg     team-sami-bssiss@small.jpg
-team-monis-manai.jpg     team-monis-manai@small.jpg
+team-mones-manai.jpg     team-mones-manai@small.jpg
 ```
 
 Für ein neues Gesicht (z. B. die Teamleitung Nürnberg) beide Größen anlegen und
@@ -383,4 +383,4 @@ diese Adresse überall ersetzen.
 
 ---
 
-© Solvera Sales GbR
+© Solvera Sales
