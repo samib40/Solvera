@@ -29,7 +29,7 @@
   /* Lesbare Beschriftungen für die zusammengestellte Nachricht */
   var LABELS = {
     vorname: 'Vorname', nachname: 'Nachname', name: 'Name', email: 'E-Mail',
-    telefon: 'Telefon', plz: 'PLZ', standort: 'Standort', start: 'Gewünschter Start',
+    telefon: 'Telefon', plz: 'PLZ', standort: 'Bundesland', start: 'Gewünschter Start',
     erfahrung: 'Vertriebserfahrung', nachricht: 'Nachricht', firma: 'Unternehmen',
     ansprechpartner: 'Ansprechpartner', position: 'Position', region: 'Region',
     menge: 'Lead-Bedarf pro Monat',
