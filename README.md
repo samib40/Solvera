@@ -163,14 +163,12 @@ Datei wählen → warten bis 100 % → **Speichern**. Geht auch vom Handy.
 * Jede Wiedergabe bekommt eine eigene Adresse, die nach **3 Stunden verfällt**. Ein
   herauskopierter Link ist danach wertlos.
 * Kein Download-Knopf, kein Rechtsklick-Menü, kein Bild-im-Bild.
-* **Name und E-Mail des Zuschauers** laufen halbtransparent im Bild mit und wechseln
-  alle 20 Sekunden die Stelle – auch im Vollbild (außer auf dem iPhone, das nur sein
-  eigenes Vollbild kennt). Taucht eine Bildschirmaufnahme irgendwo auf, sieht man,
-  von wem sie stammt.
+* Optional: **Name und E-Mail des Zuschauers** halbtransparent im Bild
+  (`config.js`, `akademie.wasserzeichen: true`). Derzeit ausgeschaltet.
 * Gesperrte Partner kommen sofort an kein Video mehr.
 
-Ganz verhindern lässt sich das Abfilmen des Bildschirms technisch nicht – das kann
-keine Website. Das Wasserzeichen macht es aber nachvollziehbar.
+Bildschirmaufnahmen verhindert nur DRM (wie bei Netflix), und auch das nicht auf jedem
+Gerät; Abfilmen mit einem zweiten Handy verhindert nichts.
 
 **Dateigröße:** Am besten MP4 in 720p oder 1080p. Ein 10-Minuten-Video vom Handy hat
 oft 500 MB bis 1 GB; exportiert in 720p (z. B. mit dem kostenlosen HandBrake,

@@ -158,6 +158,10 @@ window.SOLVERA = {
     /* Ab wie viel Prozent gesehener Laufzeit ein Video als erledigt gilt.
        100 = komplett angesehen (Vorspulen zaehlt nicht). Einen Knopf
        „Als erledigt markieren“ gibt es bewusst nicht. */
-    abschlussAbProzent: 100
+    abschlussAbProzent: 100,
+
+    /* Name und E-Mail des Zuschauers halbtransparent im Video einblenden
+       (macht Bildschirmaufnahmen nachverfolgbar). true = an, false = aus */
+    wasserzeichen: false
   }
 };
