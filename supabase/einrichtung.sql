@@ -307,6 +307,20 @@ create policy zusage_setzen  on public.zusagen for insert with check (nutzer_id 
 create policy zusage_loeschen on public.zusagen for delete using (nutzer_id = auth.uid());
 
 
+-- Zugriffsrechte für angemeldete Nutzer. Nötig, wenn beim Anlegen des
+-- Projekts „Automatically expose new tables“ abgewählt wurde; schadet
+-- sonst nicht. Wer was sehen darf, regeln die Zeilenrechte oben.
+grant usage on schema public to anon, authenticated;
+grant select, insert, update, delete
+  on public.profile, public.lektionen, public.beitraege,
+     public.fortschritt, public.meldungen, public.zusagen
+  to authenticated;
+revoke all on public.profile, public.lektionen, public.beitraege,
+              public.fortschritt, public.meldungen, public.zusagen
+  from anon;
+grant execute on function public.ist_admin(), public.ist_aktiv() to authenticated;
+
+
 -- ---------- 4b. Privater Videospeicher ----------------------------------
 -- Hochgeladene Schulungsvideos liegen im Bucket "videos". Er ist NICHT
 -- öffentlich: Abspielen geht nur über eine zeitlich begrenzte Adresse, die
