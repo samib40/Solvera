@@ -15,7 +15,7 @@ Läuft unverändert auf GitHub Pages.
 | 4 | Nicht genutzte **Analyse-Dienste** aus Abschnitt 5 streichen | `datenschutz.html` |
 | 5 | Tracking-IDs eintragen – erst dann erscheint der Cookie-Banner | `assets/js/config.js` |
 | 6 | Angaben zur Förderung prüfen und Datum aktualisieren | `photovoltaik.html`, `#foerderung` |
-| 7 | Anzahl der Vertriebspartner aktuell halten (derzeit 57) | `index.html`, `ueber-uns.html`, `photovoltaik-firmen.html` |
+| 7 | Anzahl der Vertriebspartner aktuell halten (derzeit 38) | `index.html`, `ueber-uns.html`, `photovoltaik-firmen.html` |
 | 8 | Partner-Logos erst nach schriftlicher Freigabe einsetzen | `photovoltaik.html`, `#partner` |
 | 9 | `datePosted` / `validThrough` der Stellenanzeige aktualisieren | `bewerben.html`, JSON-LD im `<head>` |
 | 10 | Optional: Formulardienst anbinden – siehe „Formulare" | `assets/js/config.js` |
