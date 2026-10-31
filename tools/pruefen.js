@@ -21,7 +21,7 @@ const BREITEN = [360, 390, 768, 1440, 1920];
 /* Angaben, die nirgends mehr auftauchen dürfen. Der Wert ist die Liste der
    Seiten, auf denen sie ausnahmsweise erlaubt sind. */
 const VERALTET = {
-  'Moses': [], 'Monis': [], 'Naccum': [],       // frühere Schreibweisen
+  'Moses': [], 'Monis': [], 'Mones': [], 'Naccum': [],       // frühere Schreibweisen
   'Niakam': [],                                  // nicht mehr im Team
   '45163460': [],                                // alte Rufnummer
   '01028749': [],                                // alte Rufnummer 0152

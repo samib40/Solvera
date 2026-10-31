@@ -295,7 +295,7 @@ mit 300×400 px für Mobilgeräte) unter `assets/img/`:
 
 ```
 team-sami-bssiss.jpg     team-sami-bssiss@small.jpg
-team-mones-manai.jpg     team-mones-manai@small.jpg
+team-moenes-manai.jpg     team-moenes-manai@small.jpg
 ```
 
 Für ein neues Gesicht (z. B. die Teamleitung Nürnberg) beide Größen anlegen und
