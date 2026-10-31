@@ -7,9 +7,9 @@
 --  Das Skript ist wiederholbar: Ein zweiter Lauf ändert nichts an
 --  vorhandenen Konten, Lektionen oder Fortschritten.
 --
---  ► Vorher anpassen: die E-Mail-Adresse des Admins (Zeile mit ADMIN_EMAIL
---    in der Funktion neues_konto weiter unten). Wer sich mit dieser
---    Adresse registriert, wird automatisch Admin und sofort freigeschaltet.
+--  ► Admin-Adressen: Wer sich mit einer der Adressen in ADMIN_EMAILS
+--    (Funktion neues_konto weiter unten) registriert, wird automatisch
+--    Admin und sofort freigeschaltet.
 -- =========================================================================
 
 
@@ -119,8 +119,8 @@ $$;
 create or replace function public.neues_konto() returns trigger
 language plpgsql security definer set search_path = public as $$
 declare
-  ADMIN_EMAIL constant text := 'info@solvera-sales.com';   -- ◄ anpassen
-  ist_chef boolean := lower(new.email) = lower(ADMIN_EMAIL);
+  ADMIN_EMAILS constant text[] := array['info@solvera-sales.com', 'info@solvera-immobilien.de'];  -- ◄ Admin-Adressen
+  ist_chef boolean := lower(new.email) = any (ADMIN_EMAILS);
   m jsonb := coalesce(new.raw_user_meta_data, '{}'::jsonb);
 begin
   insert into public.profile (id, email, vorname, nachname, telefon, region, rolle, status)
@@ -391,7 +391,7 @@ cross join (values (false)) as e(veroeffentlicht)
 where not exists (select 1 from public.lektionen);
 
 -- ---------- 6. Admin nachträglich festlegen (bei Bedarf) -----------------
--- Falls du dich schon VOR dem Anpassen von ADMIN_EMAIL registriert hast,
+-- Falls du dich schon VOR dem Anpassen von ADMIN_EMAILS registriert hast,
 -- diese Zeile mit deiner Adresse ausführen:
 --
 --   update public.profile set rolle = 'admin', status = 'aktiv'

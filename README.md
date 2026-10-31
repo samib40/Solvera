@@ -106,8 +106,8 @@ reicht für deutlich über hundert Partner).
 
 1. **Projekt anlegen:** Auf supabase.com registrieren → *New project* → Region
    **Central EU (Frankfurt)** wählen, Datenbank-Passwort sicher notieren.
-2. **Datenbank einrichten:** In `supabase/einrichtung.sql` die Zeile mit `ADMIN_EMAIL`
-   auf die eigene Adresse setzen. Dann im Dashboard *SQL Editor → New query* den
+2. **Datenbank einrichten:** In `supabase/einrichtung.sql` stehen unter `ADMIN_EMAILS`
+   die Admin-Adressen (derzeit info@solvera-sales.com und info@solvera-immobilien.de). Dann im Dashboard *SQL Editor → New query* den
    ganzen Inhalt einfügen und *Run*. Legt Tabellen, Rechte, Automatik und die zehn
    Startlektionen an.
 3. **Adressen eintragen:** *Authentication → URL Configuration*

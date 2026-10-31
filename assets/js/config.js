@@ -149,8 +149,8 @@ window.SOLVERA = {
                   Rechte regelt die Datenbank selbst)
      --------------------------------------------------------------------- */
   akademie: {
-    supabaseUrl: '',   // z. B. 'https://abcdefghijkl.supabase.co'
-    supabaseKey: '',   // beginnt mit 'eyJ…' oder 'sb_publishable_…'
+    supabaseUrl: 'https://fdpnwhadvoauuczhugbm.supabase.co',
+    supabaseKey: 'sb_publishable_EMyc9AMtYi8TDSE1fnq8NQ__Vc8ngo6',
 
     /* Fortgeschritten erst nach Starter, Profi erst nach Fortgeschritten */
     stufenNacheinander: true,
