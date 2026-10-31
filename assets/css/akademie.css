@@ -1,0 +1,424 @@
+/* =========================================================================
+   Solvera Akademie – Ergänzungen zum Design-System
+   Nutzt ausschließlich die Farb-Tokens aus style.css, funktioniert also
+   automatisch in Hell und Dunkel.
+   ========================================================================= */
+
+/* hidden muss gegen display-Regeln wie .field { display: flex } gewinnen */
+.ak [hidden] { display: none !important; }
+
+body.ak { display: flex; flex-direction: column; min-height: 100vh; min-height: 100dvh; }
+
+/* ---------- Kopf ---------- */
+.ak-header {
+  position: sticky; top: 0;
+  height: auto;
+  flex-direction: column; align-items: stretch;
+  background: rgba(var(--bg-rgb), .9);
+  backdrop-filter: blur(16px) saturate(150%);
+  -webkit-backdrop-filter: blur(16px) saturate(150%);
+  border-bottom: 1px solid var(--line);
+}
+.ak-header > .wrap { height: var(--header-h); justify-content: space-between; }
+.ak-marke {
+  font-size: .72rem; font-weight: 800; letter-spacing: .14em; text-transform: uppercase;
+  color: var(--brass-text);
+  padding: 4px 9px; border: 1px solid var(--brass-line); border-radius: 999px;
+  background: var(--brass-soft);
+}
+
+.ak-nav {
+  display: flex; gap: 4px;
+  max-width: var(--wrap); width: 100%; margin-inline: auto;
+  padding: 0 22px 10px;
+  overflow-x: auto; scrollbar-width: none;
+}
+.ak-nav[hidden] { display: none; }
+.ak-nav::-webkit-scrollbar { display: none; }
+.ak-nav a {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 8px 13px; border-radius: 9px;
+  font-size: .9rem; font-weight: 650; color: var(--txt-2);
+  white-space: nowrap;
+  transition: color .18s ease, background .18s ease;
+}
+.ak-nav a:hover { color: var(--txt); background: rgba(var(--schleier), .055); }
+.ak-nav a.is-active { color: var(--txt); background: rgba(var(--schleier), .08); }
+.ak-nav a svg { width: 17px; height: 17px; }
+.ak-nav .ak-nav-admin { margin-left: auto; color: var(--brass-text); }
+.ak-zahl {
+  min-width: 20px; height: 20px; padding: 0 6px;
+  display: inline-grid; place-items: center;
+  border-radius: 999px; background: var(--err); color: #fff;
+  font-size: .72rem; font-weight: 800; line-height: 1;
+}
+
+.ak-konto { display: flex; align-items: center; gap: 10px; }
+.ak-konto[hidden] { display: none; }
+.ak-avatar {
+  width: 38px; height: 38px; border-radius: 50%;
+  display: grid; place-items: center;
+  background: linear-gradient(140deg, var(--brass-light), var(--brass-deep));
+  color: var(--auf-brass); font-weight: 800; font-size: .86rem; letter-spacing: .02em;
+  flex: none;
+}
+.ak-konto-name { font-size: .88rem; font-weight: 700; line-height: 1.2; text-align: right; }
+.ak-konto-name small { display: block; font-weight: 600; color: var(--txt-3); font-size: .76rem; }
+
+.ak-demo {
+  background: var(--brass-soft); border-bottom: 1px dashed var(--brass-line);
+  font-size: .84rem; color: var(--txt-2); text-align: center;
+  padding: 8px 16px;
+}
+.ak-demo[hidden] { display: none; }
+.ak-demo strong { color: var(--brass-text); }
+.ak-demo button { text-decoration: underline; text-underline-offset: 2px; color: var(--brass-text); font-weight: 700; }
+
+/* ---------- Hauptbereich ---------- */
+.ak-main { flex: 1; padding-block: clamp(26px, 4vw, 46px) 70px; outline: none; }
+.ak-laden { position: absolute; left: -9999px; }
+.ak-kopf { display: flex; align-items: flex-end; justify-content: space-between; gap: 18px; flex-wrap: wrap; margin-bottom: 26px; }
+.ak-kopf h1, .ak-kopf h2 { font-size: clamp(1.7rem, 3.4vw, 2.4rem); margin-top: 8px; }
+.ak-kopf p { color: var(--txt-2); margin-top: 8px; max-width: 46em; }
+.ak-zurueck { display: inline-flex; align-items: center; gap: 6px; font-size: .9rem; font-weight: 700; color: var(--txt-2); margin-bottom: 14px; }
+.ak-zurueck:hover { color: var(--brass-text); }
+.ak-zurueck svg { width: 16px; height: 16px; }
+
+.ak-raster { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr); gap: 22px; align-items: start; }
+.ak-raster > * { min-width: 0; }
+.ak-spalte { display: grid; gap: 22px; }
+.ak-spalte > * { min-width: 0; }
+
+.ak-karte {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+}
+.ak-karte h2, .ak-karte h3 { font-size: 1.12rem; letter-spacing: -.01em; }
+.ak-karte-kopf { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
+.ak-karte-kopf a { font-size: .86rem; font-weight: 700; color: var(--brass-text); }
+.ak-leer { color: var(--txt-3); font-size: .92rem; padding: 6px 0; }
+
+/* Symbole in Schaltflächen */
+.ak .btn svg { width: 17px; height: 17px; flex: none; }
+
+/* ---------- Anmeldung ---------- */
+.ak-auth { max-width: 470px; margin: clamp(10px, 4vw, 40px) auto 0; }
+.ak-auth .ak-karte { padding: clamp(24px, 4vw, 36px); box-shadow: var(--shadow); }
+.ak-auth h1 { font-size: clamp(1.6rem, 3vw, 2rem); }
+.ak-auth .lead { font-size: .98rem; margin-top: 10px; }
+.ak-auth form { display: grid; gap: 15px; margin-top: 24px; }
+.ak-auth .form-grid { gap: 15px; }
+.ak-auth-fuss { margin-top: 20px; text-align: center; font-size: .92rem; color: var(--txt-2); }
+.ak-auth-fuss a, .ak-link { color: var(--brass-text); font-weight: 700; }
+.ak-schnell { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
+.ak-hinweis {
+  padding: 13px 15px; border-radius: var(--radius-sm);
+  background: var(--brass-soft); border: 1px solid var(--brass-line);
+  font-size: .88rem; color: var(--txt-2);
+}
+.ak-hinweis strong { color: var(--txt); }
+.ak-pw { position: relative; }
+.ak-pw .input { padding-right: 70px; width: 100%; }
+.ak-pw button {
+  position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+  font-size: .78rem; font-weight: 700; color: var(--txt-3); padding: 6px 8px;
+}
+
+/* ---------- Fortschritt ---------- */
+.ak-balken { height: 8px; border-radius: 99px; background: rgba(var(--schleier), .08); overflow: hidden; }
+.ak-balken i {
+  display: block; height: 100%; border-radius: inherit;
+  background: linear-gradient(90deg, var(--brass-light), var(--brass));
+  transition: width .5s ease;
+}
+.ak-balken.ok i { background: linear-gradient(90deg, rgba(var(--ok-rgb), .7), var(--ok)); }
+.ak-balken-klein { height: 6px; }
+
+.ak-ring { --p: 0; width: 132px; height: 132px; border-radius: 50%; flex: none;
+  background: conic-gradient(var(--brass) calc(var(--p) * 1%), rgba(var(--schleier), .08) 0);
+  display: grid; place-items: center; }
+.ak-ring::before { content: ""; grid-area: 1 / 1; width: 106px; height: 106px; border-radius: 50%; background: var(--surface); }
+.ak-ring span { grid-area: 1 / 1; position: relative; font-size: 1.7rem; font-weight: 800; letter-spacing: -.03em; }
+.ak-ring small { display: block; font-size: .7rem; font-weight: 700; color: var(--txt-3); letter-spacing: .06em; text-transform: uppercase; text-align: center; margin-top: -4px; }
+
+.ak-stand { display: flex; gap: 26px; align-items: center; }
+.ak-stufen-mini { display: grid; gap: 14px; flex: 1; min-width: 0; }
+.ak-stufen-mini .zeile { display: flex; justify-content: space-between; gap: 10px; font-size: .88rem; font-weight: 700; margin-bottom: 6px; }
+.ak-stufen-mini .zeile span:last-child { color: var(--txt-3); font-weight: 600; }
+
+/* ---------- Willkommen ---------- */
+.ak-hallo {
+  position: relative; overflow: hidden;
+  border-radius: var(--radius-lg);
+  padding: clamp(24px, 4vw, 36px);
+  background: linear-gradient(135deg, var(--surface) 0%, var(--surface-3) 100%);
+  border: 1px solid var(--line);
+  margin-bottom: 22px;
+}
+.ak-hallo::after {
+  content: ""; position: absolute; right: -120px; top: -140px; width: 380px; height: 380px;
+  background: radial-gradient(circle, rgba(var(--brass-rgb), .2), transparent 65%);
+  pointer-events: none;
+}
+.ak-hallo h1 { font-size: clamp(1.6rem, 3.4vw, 2.3rem); margin-top: 8px; }
+.ak-hallo p { color: var(--txt-2); margin-top: 8px; max-width: 40em; position: relative; }
+.ak-weiter {
+  display: flex; align-items: center; gap: 16px; margin-top: 22px; position: relative;
+  padding: 16px; border-radius: var(--radius); background: var(--surface); border: 1px solid var(--brass-line);
+}
+.ak-weiter .txt { flex: 1; min-width: 0; }
+.ak-weiter .txt small { font-size: .74rem; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: var(--brass-text); }
+.ak-weiter .txt strong { display: block; font-size: 1.02rem; margin-top: 2px; }
+.ak-weiter .btn { flex: none; }
+
+/* ---------- Lektionslisten ---------- */
+.ak-stufe { margin-top: 34px; }
+.ak-stufe:first-of-type { margin-top: 0; }
+.ak-stufe-kopf { display: flex; align-items: center; gap: 16px; margin-bottom: 14px; flex-wrap: wrap; }
+.ak-stufe-kopf h2 { font-size: 1.4rem; }
+.ak-stufe-kopf .ak-balken { flex: 1; min-width: 120px; max-width: 260px; }
+.ak-stufe-kopf .zahl { font-size: .86rem; color: var(--txt-3); font-weight: 700; }
+.ak-stufe-zu { opacity: .62; }
+
+.ak-liste { display: grid; gap: 10px; }
+.ak-eintrag {
+  display: flex; align-items: center; gap: 16px;
+  padding: 16px 18px;
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
+  transition: border-color .2s ease, transform .2s ease, box-shadow .2s ease;
+}
+a.ak-eintrag:hover { border-color: var(--brass-line); transform: translateY(-2px); box-shadow: var(--shadow); }
+.ak-eintrag .txt { flex: 1; min-width: 0; }
+.ak-eintrag .txt strong { display: block; font-size: 1rem; line-height: 1.35; }
+.ak-eintrag .txt p { font-size: .88rem; color: var(--txt-2); margin-top: 3px; }
+.ak-eintrag .meta { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 7px; font-size: .78rem; color: var(--txt-3); font-weight: 600; }
+.ak-eintrag .rechts { flex: none; text-align: right; font-size: .8rem; color: var(--txt-3); font-weight: 700; }
+
+.ak-symbol {
+  width: 42px; height: 42px; border-radius: 12px; flex: none;
+  display: grid; place-items: center;
+  border: 1px solid var(--line-strong); color: var(--txt-3);
+  background: rgba(var(--schleier), .03);
+  font-weight: 800; font-size: .95rem;
+}
+.ak-symbol svg { width: 20px; height: 20px; }
+.ak-symbol.fertig { background: var(--ok-soft); border-color: rgba(var(--ok-rgb), .4); color: var(--ok); }
+.ak-symbol.laeuft { background: var(--brass-soft); border-color: var(--brass-line); color: var(--brass-text); }
+.ak-symbol.gold { background: linear-gradient(140deg, var(--brass-light), var(--brass-deep)); border: 0; color: var(--auf-brass); }
+
+/* ---------- Kennzeichen ---------- */
+.ak-tag {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 3px 10px; border-radius: 999px;
+  font-size: .72rem; font-weight: 800; letter-spacing: .04em;
+  border: 1px solid var(--line-strong); color: var(--txt-2); background: rgba(var(--schleier), .04);
+  white-space: nowrap;
+}
+.ak-tag.woche  { border-color: var(--brass-line); background: var(--brass-soft); color: var(--brass-text); }
+.ak-tag.termin { border-color: rgba(74, 99, 130, .4); background: rgba(74, 99, 130, .1); color: var(--info); }
+.ak-tag.ok     { border-color: rgba(var(--ok-rgb), .4); background: var(--ok-soft); color: var(--ok); }
+.ak-tag.warn   { border-color: var(--brass-line); background: var(--brass-soft); color: var(--brass-text); }
+.ak-tag.err    { border-color: rgba(var(--err-rgb), .4); background: var(--err-soft); color: var(--err); }
+.ak-tag.neu    { background: var(--err); border-color: var(--err); color: #fff; }
+
+/* ---------- Filter ---------- */
+.ak-filter { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px; }
+.ak-filter button {
+  padding: 8px 15px; border-radius: 999px; font-size: .88rem; font-weight: 700;
+  border: 1px solid var(--line-strong); color: var(--txt-2);
+  transition: all .18s ease;
+}
+.ak-filter button:hover { border-color: var(--brass-line); color: var(--txt); }
+.ak-filter button[aria-pressed="true"] { background: var(--btn-fill); border-color: var(--btn-fill); color: var(--btn-txt); }
+
+/* ---------- Beiträge ---------- */
+.ak-beitrag { display: block; padding: 20px 22px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); }
+a.ak-beitrag:hover { border-color: var(--brass-line); }
+.ak-beitrag-kopf { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: .8rem; color: var(--txt-3); font-weight: 600; }
+.ak-beitrag h3 { font-size: 1.1rem; margin-top: 10px; }
+.ak-beitrag p { font-size: .92rem; color: var(--txt-2); margin-top: 6px; }
+.ak-beitrag.angeheftet { border-color: var(--brass-line); }
+
+.ak-termin { display: flex; gap: 16px; align-items: flex-start; }
+.ak-datum {
+  width: 58px; flex: none; text-align: center;
+  border: 1px solid var(--line-strong); border-radius: 12px; overflow: hidden; background: var(--surface-2);
+}
+.ak-datum b { display: block; background: var(--brass); color: var(--auf-brass); font-size: .66rem; letter-spacing: .1em; text-transform: uppercase; padding: 3px 0; }
+.ak-datum span { display: block; font-size: 1.45rem; font-weight: 800; padding: 3px 0 1px; letter-spacing: -.02em; }
+.ak-datum small { display: block; font-size: .68rem; color: var(--txt-3); font-weight: 700; padding-bottom: 5px; }
+.ak-termin .txt { flex: 1; min-width: 0; }
+.ak-termin .txt strong { display: block; line-height: 1.35; }
+.ak-termin .txt .zeit { font-size: .84rem; color: var(--txt-2); margin-top: 2px; }
+.ak-termin + .ak-termin { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--line); }
+.ak-knoepfe { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+
+/* ---------- Video ---------- */
+.ak-video {
+  position: relative; aspect-ratio: 16 / 9; width: 100%;
+  border-radius: var(--radius-lg); overflow: hidden;
+  background: #0b0b0d; border: 1px solid var(--line);
+}
+.ak-video iframe, .ak-video video, #ak-video > div { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+.ak-wasserzeichen {
+  position: absolute; z-index: 2; pointer-events: none; user-select: none;
+  max-width: 60%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font-size: clamp(.68rem, 1.4vw, .85rem); font-weight: 700; letter-spacing: .02em;
+  color: rgba(255, 255, 255, .34); text-shadow: 0 1px 2px rgba(0, 0, 0, .5);
+  transition: left 1.2s ease, top 1.2s ease;
+}
+.ak-vollbild {
+  position: absolute; z-index: 3; top: 10px; right: 10px;
+  width: 36px; height: 36px; border-radius: 9px; display: grid; place-items: center;
+  background: rgba(0, 0, 0, .45); color: #fff; opacity: .75; transition: opacity .2s ease;
+}
+.ak-vollbild:hover, .ak-vollbild:focus-visible { opacity: 1; }
+.ak-vollbild svg { width: 18px; height: 18px; }
+.ak-video:fullscreen { border-radius: 0; border: 0; }
+.ak-video-fehler {
+  position: absolute; inset: auto 12px 12px 12px; z-index: 3;
+  padding: 10px 14px; border-radius: 10px; background: rgba(0, 0, 0, .7); color: #fff; font-size: .88rem;
+}
+.ak-upload { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 14px; border: 1px dashed var(--brass-line); border-radius: var(--radius-sm); background: var(--brass-soft); }
+.ak-upload .info { flex: 1; min-width: 180px; font-size: .88rem; color: var(--txt-2); overflow-wrap: anywhere; }
+.ak-upload .info strong { color: var(--txt); }
+.ak-upload .ak-balken { flex-basis: 100%; }
+.ak-oder { font-size: .78rem; color: var(--txt-3); font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+
+.ak-demo-player {
+  display: grid; place-items: center; align-content: center; gap: 14px; padding: 24px;
+  background: radial-gradient(ellipse at center, #2a2620 0%, #0b0b0d 75%); color: #f5f4f2;
+}
+.ak-demo-play {
+  width: 68px; height: 68px; border-radius: 50%; display: grid; place-items: center;
+  background: rgba(255, 255, 255, .14); border: 1px solid rgba(255, 255, 255, .3); color: #fff;
+}
+.ak-demo-play svg { width: 28px; height: 28px; margin-left: 4px; }
+.ak-demo-play.laeuft svg { display: none; }
+.ak-demo-play.laeuft::before { content: ""; width: 20px; height: 24px; border-left: 6px solid #fff; border-right: 6px solid #fff; }
+.ak-demo-titel { font-size: .85rem; color: rgba(255, 255, 255, .7); }
+.ak-demo-leiste { width: min(420px, 80%); height: 5px; border-radius: 9px; background: rgba(255, 255, 255, .18); overflow: hidden; }
+.ak-demo-leiste i { display: block; height: 100%; width: 0; background: #d9b45c; }
+.ak-demo-zeit { font-size: .8rem; font-variant-numeric: tabular-nums; color: rgba(255, 255, 255, .7); }
+
+.ak-video-leer {
+  display: grid; place-items: center; text-align: center; padding: 24px;
+  background: linear-gradient(135deg, var(--surface-2), var(--surface-3)); color: var(--txt-2);
+}
+.ak-video-leer svg { width: 46px; height: 46px; color: var(--brass-text); margin: 0 auto 10px; }
+.ak-video-leer strong { display: block; color: var(--txt); font-size: 1.05rem; }
+
+.ak-lektion-status { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin-top: 16px; }
+.ak-lektion-status .ak-balken { flex: 1; min-width: 160px; }
+.ak-lektion-status .zahl { font-size: .86rem; font-weight: 700; color: var(--txt-2); }
+.ak-punkte { display: grid; gap: 10px; margin-top: 14px; }
+.ak-punkte li { display: flex; gap: 10px; font-size: .95rem; color: var(--txt-2); }
+.ak-punkte svg { width: 19px; height: 19px; color: var(--brass-text); flex: none; margin-top: 3px; }
+.ak-textblock { white-space: pre-line; color: var(--txt-2); font-size: .97rem; }
+.ak-blaettern { display: flex; justify-content: space-between; gap: 12px; margin-top: 22px; flex-wrap: wrap; }
+
+/* ---------- Gesperrt / Wartend ---------- */
+.ak-zustand { max-width: 560px; margin: clamp(10px, 5vw, 50px) auto 0; text-align: center; }
+.ak-zustand .ico-tile { margin: 0 auto 18px; }
+.ak-zustand h1 { font-size: clamp(1.6rem, 3vw, 2.1rem); }
+.ak-zustand p { color: var(--txt-2); margin-top: 12px; }
+
+/* ---------- Admin ---------- */
+.ak-kennzahlen { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; margin-bottom: 22px; }
+.ak-kennzahl { padding: 18px 20px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); }
+.ak-kennzahl .v { font-size: 1.9rem; font-weight: 800; letter-spacing: -.03em; line-height: 1.1; }
+.ak-kennzahl .k { font-size: .82rem; color: var(--txt-2); font-weight: 650; margin-top: 4px; }
+
+.ak-werkzeug { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 14px; }
+.ak-werkzeug .input, .ak-werkzeug .select { padding-block: 10px; }
+.ak-werkzeug .input { flex: 1; min-width: 180px; }
+.ak-werkzeug .select { width: auto; flex: none; padding-right: 40px; }
+
+.ak-tabelle-rahmen { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
+.ak-tabelle { width: 100%; border-collapse: collapse; font-size: .9rem; }
+.ak-tabelle th, .ak-tabelle td { padding: 12px 14px; text-align: left; border-bottom: 1px solid var(--line); vertical-align: middle; }
+.ak-tabelle thead th { font-size: .72rem; letter-spacing: .1em; text-transform: uppercase; color: var(--txt-3); font-weight: 800; white-space: nowrap; background: var(--surface-2); }
+.ak-tabelle thead th button { font-weight: inherit; letter-spacing: inherit; text-transform: inherit; color: inherit; }
+.ak-tabelle tbody tr:last-child td { border-bottom: 0; }
+.ak-tabelle tbody tr.klickbar { cursor: pointer; }
+.ak-tabelle tbody tr.klickbar:hover td { background: rgba(var(--schleier), .03); }
+.ak-tabelle td.name strong { display: block; }
+.ak-tabelle td.name small { color: var(--txt-3); font-size: .8rem; }
+.ak-tabelle td .ak-balken { width: 90px; }
+.ak-tabelle .nowrap { white-space: nowrap; }
+.ak-tabelle .zahlen { font-variant-numeric: tabular-nums; white-space: nowrap; color: var(--txt-2); }
+.ak-stufen-zellen { display: flex; gap: 5px; }
+.ak-stufen-zellen i {
+  width: 30px; height: 8px; border-radius: 99px; background: rgba(var(--schleier), .08);
+  position: relative; overflow: hidden;
+}
+.ak-stufen-zellen i b { position: absolute; inset: 0 auto 0 0; background: var(--brass); border-radius: inherit; }
+.ak-stufen-zellen i.voll b { background: var(--ok); }
+
+.ak-warteliste .ak-eintrag { border-color: var(--brass-line); }
+.ak-warteliste .ak-knoepfe { margin-top: 0; }
+
+.ak-meldung { display: flex; gap: 14px; padding: 14px 0; border-bottom: 1px solid var(--line); }
+.ak-meldung:last-child { border-bottom: 0; }
+.ak-meldung .ak-symbol { width: 36px; height: 36px; border-radius: 10px; }
+.ak-meldung .ak-symbol svg { width: 17px; height: 17px; }
+.ak-meldung .txt { flex: 1; min-width: 0; font-size: .93rem; }
+.ak-meldung .txt small { display: block; color: var(--txt-3); font-size: .78rem; margin-top: 2px; }
+.ak-meldung.ungelesen .txt { font-weight: 700; }
+.ak-meldung.ungelesen .ak-symbol { box-shadow: 0 0 0 3px var(--brass-soft); }
+
+.ak-formular { display: grid; gap: 15px; }
+.ak-formular .zeile3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 15px; }
+.ak-formular .zeile3 > * { min-width: 0; }
+.ak-formular .hilfe { font-size: .78rem; color: var(--txt-3); }
+.ak-schalter { display: flex; align-items: center; gap: 10px; font-size: .92rem; font-weight: 650; cursor: pointer; }
+.ak-schalter input { width: 18px; height: 18px; accent-color: var(--brass); }
+.ak-gefahr { color: var(--err); }
+.ak-gefahr:hover { background: var(--err-soft); }
+
+.ak-info-liste { display: grid; gap: 9px; font-size: .92rem; }
+.ak-info-liste div { display: flex; justify-content: space-between; gap: 14px; }
+.ak-info-liste dt { color: var(--txt-3); }
+.ak-info-liste dd { margin: 0; font-weight: 650; text-align: right; overflow-wrap: anywhere; }
+
+/* ---------- Toast ---------- */
+.ak-toast {
+  position: fixed; left: 50%; bottom: 22px; z-index: 300;
+  transform: translate(-50%, 20px); opacity: 0; pointer-events: none;
+  max-width: calc(100vw - 32px);
+  padding: 12px 18px; border-radius: 12px;
+  background: var(--btn-fill); color: var(--btn-txt);
+  font-size: .9rem; font-weight: 650; box-shadow: var(--shadow-lg);
+  transition: opacity .25s ease, transform .25s ease;
+}
+.ak-toast.is-visible { opacity: 1; transform: translate(-50%, 0); }
+.ak-toast.err { background: var(--err); color: #fff; }
+
+/* ---------- Fuß ---------- */
+.ak-fuss { border-top: 1px solid var(--line); background: var(--bg-alt); padding: 18px 0; font-size: .84rem; color: var(--txt-3); }
+.ak-fuss .wrap { display: flex; justify-content: space-between; gap: 14px; flex-wrap: wrap; }
+.ak-fuss nav { display: flex; gap: 18px; flex-wrap: wrap; }
+.ak-fuss a:hover { color: var(--brass-text); }
+
+/* ---------- Responsive ---------- */
+@media (max-width: 960px) {
+  .ak-raster { grid-template-columns: minmax(0, 1fr); }
+  .ak-kennzahlen { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 640px) {
+  .ak-konto-name { display: none; }
+  .ak-marke { display: none; }
+  .ak-nav { padding-inline: 14px; }
+  .ak-nav .ak-nav-admin { margin-left: 0; }
+  .ak-stand { flex-direction: column; align-items: stretch; }
+  .ak-ring { margin-inline: auto; }
+  .ak-weiter { flex-direction: column; align-items: stretch; }
+  .ak-eintrag { padding: 14px; gap: 12px; }
+  .ak-eintrag .rechts { display: none; }
+  .ak-formular .zeile3 { grid-template-columns: minmax(0, 1fr); }
+  .ak-schnell { grid-template-columns: minmax(0, 1fr); }
+  .ak-karte { padding: 20px; }
+  .ak-termin .ak-knoepfe .btn { flex: 1 1 auto; }
+}
