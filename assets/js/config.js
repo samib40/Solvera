@@ -136,7 +136,7 @@ window.SOLVERA = {
      4. SOLVERA AKADEMIE (Schulungsbereich fuer Vertriebspartner)
      ---------------------------------------------------------------------
      Konten, Lektionen und Fortschritte liegen bei Supabase (Server in
-     Frankfurt). Einrichtung Schritt fuer Schritt: README, Abschnitt
+     Irland, EU). Einrichtung Schritt fuer Schritt: README, Abschnitt
      „Solvera Akademie“.
 
      SOLANGE supabaseUrl LEER IST, laeuft die Akademie im DEMO-MODUS:
