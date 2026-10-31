@@ -506,7 +506,7 @@
     if (!ziel) return;
     player = V.einbauen(ziel, inhalt.video_url, S.profil.id + '-' + inhalt.id, function (prozent, sek) {
       fortschrittSenden(inhalt.id, art, prozent >= SCHWELLE ? 100 : prozent, sek);
-    });
+    }, { zeichen: name(S.profil) + ' · ' + S.profil.email, adresse: D.videoAdresse });
   }
 
   var sendeKette = Promise.resolve();
@@ -802,7 +802,7 @@
           ls.map(function (l) {
             var info = V.erkennen(l.video_url);
             return '<tr><td class="zahlen">' + l.reihenfolge + '</td><td><strong>' + esc(l.titel) + '</strong>' + (!l.veroeffentlicht ? ' <span class="ak-tag warn">Entwurf</span>' : '') + '</td>' +
-              '<td>' + (info ? '<span class="ak-tag ok">' + { youtube: 'YouTube', vimeo: 'Vimeo', datei: 'Datei', einbettung: 'Einbettung' }[info.typ] + '</span>' : '<span class="ak-tag warn">fehlt</span>') + '</td>' +
+              '<td>' + (info ? '<span class="ak-tag ok">' + { speicher: 'Hochgeladen', youtube: 'YouTube', vimeo: 'Vimeo', datei: 'Datei', einbettung: 'Einbettung' }[info.typ] + '</span>' : '<span class="ak-tag warn">fehlt</span>') + '</td>' +
               '<td class="zahlen">' + gesehenVon(l.id) + ' / ' + aktive.length + '</td>' +
               '<td class="nowrap"><a class="btn btn-ghost btn-sm" href="#/admin/lektion/' + esc(l.id) + '">Bearbeiten</a></td></tr>';
           }).join('') + '</tbody></table></div>' : '<p class="ak-leer">Noch keine Lektionen in dieser Stufe.</p>') + '</section>';
@@ -812,8 +812,61 @@
 
   function parameter(n) { var m = location.hash.match(new RegExp('[?&]' + n + '=([^&]+)')); return m ? decodeURIComponent(m[1]) : ''; }
 
-  function videoHilfe() {
-    return '<span class="hilfe">YouTube (am besten „nicht gelistet“), Vimeo oder ein direkter Link auf eine .mp4-Datei. Bei diesen wird gemessen, wie viel tatsächlich angesehen wurde.</span>';
+  function speicherName(url) {
+    return String(url).replace(/^speicher:/, '').split('/').pop().replace(/^[0-9a-f]{8}-/, '');
+  }
+
+  /* Video hochladen oder alternativ einen Link angeben */
+  function videoFeld(url) {
+    var hoch = String(url || '').indexOf('speicher:') === 0;
+    return '<div class="field"><label for="video_datei">Video</label>' +
+      '<div class="ak-upload"><input type="file" id="video_datei" accept="video/mp4,video/webm,video/quicktime,video/x-m4v" hidden>' +
+      '<input type="hidden" name="video_pfad" id="video_pfad" value="' + (hoch ? esc(url.slice(9)) : '') + '">' +
+      '<button class="btn btn-outline btn-sm" type="button" data-aktion="video-waehlen">' + ico('laden').replace('M12 3v12M7 10l5 5 5-5', 'M12 15V3M7 8l5-5 5 5') + (hoch ? 'Anderes Video hochladen' : 'Video hochladen') + '</button>' +
+      '<span class="info" id="video_info">' + (hoch ? '<strong>Hochgeladen:</strong> ' + esc(speicherName(url)) : 'MP4 vom Handy oder Computer. Liegt privat bei uns und ist nur für freigeschaltete Partner abspielbar.') + '</span>' +
+      (hoch ? '<button class="btn btn-ghost btn-sm ak-gefahr" type="button" data-aktion="video-entfernen">Entfernen</button>' : '') +
+      '<div class="ak-balken" id="video_balken" hidden><i style="width:0%"></i></div></div></div>' +
+      '<div class="field" id="video_link_feld"' + (hoch ? ' hidden' : '') + '><label for="video_url"><span class="ak-oder">oder</span> Link zu YouTube oder Vimeo</label>' +
+      '<input class="input" id="video_url" name="video_url" type="url" placeholder="https://youtu.be/…" value="' + (hoch ? '' : esc(url)) + '">' +
+      '<span class="hilfe">Externe Links lassen sich weitergeben. Für interne Schulungen besser hochladen.</span></div>';
+  }
+  function videoAusFormular(w) { return w.video_pfad ? 'speicher:' + w.video_pfad : (w.video_url || ''); }
+
+  var hochladenLaeuft = false;
+  async function videoHochladen(eingabe) {
+    var datei = eingabe.files && eingabe.files[0];
+    eingabe.value = '';
+    if (!datei) return;
+    if (!/^video\//.test(datei.type) && !/\.(mp4|mov|m4v|webm)$/i.test(datei.name)) { toast('Bitte eine Videodatei wählen (am besten MP4).', true); return; }
+    var form = eingabe.closest('form');
+    var info = document.getElementById('video_info');
+    var balken = document.getElementById('video_balken');
+    var knopf = form.querySelector('[type=submit]');
+    var mb = (datei.size / 1048576).toFixed(0);
+    hochladenLaeuft = true; knopf.disabled = true; balken.hidden = false;
+    info.innerHTML = '<strong>Lädt hoch …</strong> ' + esc(datei.name) + ' (' + mb + ' MB). Bitte das Fenster offen lassen.';
+    try {
+      var pfad = await D.videoHochladen(datei, function (anteil) {
+        balken.firstChild.style.width = Math.round(anteil * 100) + '%';
+        info.innerHTML = '<strong>Lädt hoch … ' + Math.round(anteil * 100) + ' %</strong> ' + esc(datei.name) + ' (' + mb + ' MB)';
+      });
+      if (!document.body.contains(form)) { D.videoLoeschen(pfad).catch(function () {}); toast('Hochladen abgebrochen: Das Formular wurde verlassen.', true); return; }
+      var alt = document.getElementById('video_pfad').value;
+      if (alt && alt !== form.getAttribute('data-video-alt')) D.videoLoeschen(alt).catch(function () {});
+      document.getElementById('video_pfad').value = pfad;
+      document.getElementById('video_url').value = '';
+      document.getElementById('video_link_feld').hidden = true;
+      info.innerHTML = '<strong>Fertig hochgeladen:</strong> ' + esc(datei.name) + '. Jetzt noch speichern.';
+      toast('Video hochgeladen. Bitte noch speichern.');
+    } catch (e) {
+      balken.hidden = true;
+      info.innerHTML = '<strong class="ak-gefahr">Hochladen fehlgeschlagen.</strong> ' + esc(e && e.anzeigen ? e.message : 'Bitte noch einmal versuchen.');
+    } finally { hochladenLaeuft = false; knopf.disabled = false; }
+  }
+
+  /* Nach dem Speichern: ersetztes oder entferntes Video aus dem Speicher löschen */
+  function altesVideoAufraeumen(alt, neu) {
+    if (alt && alt.indexOf('speicher:') === 0 && alt !== neu) D.videoLoeschen(alt.slice(9)).catch(function () {});
   }
 
   function vLektionBearbeiten(id) {
@@ -823,14 +876,14 @@
     if (!l) return vNichtGefunden();
     setzen('<a class="ak-zurueck" href="#/admin/inhalte">' + ico('links') + 'Alle Inhalte</a>' +
       '<div class="ak-kopf"><div><span class="eyebrow">Lektion</span><h1>' + (neu ? 'Neue Lektion' : 'Lektion bearbeiten') + '</h1></div></div>' +
-      '<section class="ak-karte" style="max-width:820px"><form class="ak-formular" data-form="lektion" data-id="' + (neu ? '' : esc(l.id)) + '" novalidate>' +
+      '<section class="ak-karte" style="max-width:820px"><form class="ak-formular" data-form="lektion" data-id="' + (neu ? '' : esc(l.id)) + '" data-video-alt="' + esc(String(l.video_url || '').replace(/^speicher:/, '')) + '" novalidate>' +
       '<div class="zeile3"><div class="field"><label for="stufe">Stufe</label><select class="select" id="stufe" name="stufe">' +
       STUFEN.map(function (s) { return '<option value="' + s.id + '"' + (l.stufe === s.id ? ' selected' : '') + '>' + s.name + '</option>'; }).join('') + '</select></div>' +
       feld('reihenfolge', 'Reihenfolge', 'number', 'min="1" value="' + esc(l.reihenfolge) + '"') +
       feld('dauer_min', 'Dauer in Minuten', 'number', 'min="0" value="' + esc(l.dauer_min) + '"') + '</div>' +
       feld('titel', 'Titel', 'text', 'required value="' + esc(l.titel) + '"') +
       '<div class="field"><label for="beschreibung">Kurzbeschreibung</label><textarea class="textarea" id="beschreibung" name="beschreibung" style="min-height:80px">' + esc(l.beschreibung) + '</textarea></div>' +
-      '<div class="field"><label for="video_url">Video-Link</label><input class="input" id="video_url" name="video_url" type="url" placeholder="https://youtu.be/…" value="' + esc(l.video_url) + '">' + videoHilfe() + '</div>' +
+      videoFeld(l.video_url) +
       '<div class="field"><label for="inhalt">Das lernst du (ein Punkt je Zeile)</label><textarea class="textarea" id="inhalt" name="inhalt">' + esc(l.inhalt) + '</textarea></div>' +
       '<label class="ak-schalter"><input type="checkbox" name="veroeffentlicht"' + (l.veroeffentlicht ? ' checked' : '') + '> Veröffentlicht (für Partner sichtbar)</label>' +
       '<div class="form-msg err" role="alert"></div>' +
@@ -847,12 +900,12 @@
     setzen('<a class="ak-zurueck" href="#/admin/inhalte">' + ico('links') + 'Alle Inhalte</a>' +
       '<div class="ak-kopf"><div><span class="eyebrow">Beitrag</span><h1>' + (neu ? 'Neuer Beitrag' : 'Beitrag bearbeiten') + '</h1>' +
       '<p>Neue Beiträge erscheinen bei allen Partnern unter Neuigkeiten mit dem Hinweis „Neu“.</p></div></div>' +
-      '<section class="ak-karte" style="max-width:820px"><form class="ak-formular" data-form="beitrag" data-id="' + (neu ? '' : esc(b.id)) + '" novalidate>' +
+      '<section class="ak-karte" style="max-width:820px"><form class="ak-formular" data-form="beitrag" data-id="' + (neu ? '' : esc(b.id)) + '" data-video-alt="' + esc(String(b.video_url || '').replace(/^speicher:/, '')) + '" novalidate>' +
       '<div class="field"><label for="art">Art</label><select class="select" id="art" name="art" data-aktion-change="art">' +
       Object.keys(ARTEN).map(function (k) { return '<option value="' + k + '"' + (b.art === k ? ' selected' : '') + '>' + ARTEN[k] + '</option>'; }).join('') + '</select></div>' +
       feld('titel', 'Titel', 'text', 'required value="' + esc(b.titel) + '" placeholder="' + ({ woche: 'z. B. Wochenschulung KW 45: Einwandbehandlung', ansage: 'z. B. Neue Gebiete freigegeben', termin: 'z. B. Teams-Meeting: Wochenstart' }[b.art]) + '"') +
       '<div class="field"><label for="text">Text</label><textarea class="textarea" id="text" name="text">' + esc(b.text) + '</textarea></div>' +
-      '<div class="field" data-nur="woche ansage"><label for="video_url">Video-Link</label><input class="input" id="video_url" name="video_url" type="url" placeholder="https://youtu.be/…" value="' + esc(b.video_url) + '">' + videoHilfe() + '</div>' +
+      '<div data-nur="woche ansage" class="ak-formular">' + videoFeld(b.video_url) + '</div>' +
       '<div class="zeile3" data-nur="termin"><div class="field" style="grid-column:span 2"><label for="termin_am">Datum und Uhrzeit</label><input class="input" id="termin_am" name="termin_am" type="datetime-local" value="' + esc(fuerEingabe(b.termin_am)) + '"></div>' +
       feld('termin_dauer_min', 'Dauer (Min.)', 'number', 'min="5" value="' + esc(b.termin_dauer_min || 60) + '"') + '</div>' +
       '<div class="field" data-nur="termin"><label for="meeting_link">Link zum Meeting (Teams, Zoom …)</label><input class="input" id="meeting_link" name="meeting_link" type="url" placeholder="https://teams.microsoft.com/l/meetup-join/…" value="' + esc(b.meeting_link) + '"></div>' +
@@ -1021,11 +1074,14 @@
     },
     lektion: async function (form, w) {
       if (!pflicht(form, ['titel'])) return formFehler(form, 'Bitte gib einen Titel ein.');
-      if (w.video_url && !V.erkennen(w.video_url)) return formFehler(form, 'Der Video-Link wird nicht erkannt. Er muss mit https:// beginnen.');
+      if (hochladenLaeuft) return formFehler(form, 'Bitte warten, bis das Video fertig hochgeladen ist.');
+      if (w.video_url && !w.video_pfad && !V.erkennen(w.video_url)) return formFehler(form, 'Der Video-Link wird nicht erkannt. Er muss mit https:// beginnen.');
       var d = { stufe: w.stufe, reihenfolge: parseInt(w.reihenfolge, 10) || 1, titel: w.titel, beschreibung: w.beschreibung,
-                inhalt: w.inhalt, video_url: w.video_url, dauer_min: parseInt(w.dauer_min, 10) || 0, veroeffentlicht: w.veroeffentlicht };
-      if (form.getAttribute('data-id')) d.id = form.getAttribute('data-id');
+                inhalt: w.inhalt, video_url: videoAusFormular(w), dauer_min: parseInt(w.dauer_min, 10) || 0, veroeffentlicht: w.veroeffentlicht };
+      var vorher = null;
+      if (form.getAttribute('data-id')) { d.id = form.getAttribute('data-id'); vorher = S.lektionen.filter(function (x) { return x.id === d.id; })[0]; }
       await D.lektionSpeichern(d);
+      if (vorher) altesVideoAufraeumen(vorher.video_url, d.video_url);
       S.lektionen = await D.lektionen();
       toast('Lektion gespeichert.');
       geheZu('admin/inhalte');
@@ -1033,15 +1089,18 @@
     beitrag: async function (form, w) {
       if (!pflicht(form, ['titel'])) return formFehler(form, 'Bitte gib einen Titel ein.');
       if (w.art === 'termin' && !w.termin_am) return formFehler(form, 'Bitte Datum und Uhrzeit des Termins angeben.');
-      if (w.video_url && w.art !== 'termin' && !V.erkennen(w.video_url)) return formFehler(form, 'Der Video-Link wird nicht erkannt. Er muss mit https:// beginnen.');
+      if (hochladenLaeuft) return formFehler(form, 'Bitte warten, bis das Video fertig hochgeladen ist.');
+      if (w.video_url && !w.video_pfad && w.art !== 'termin' && !V.erkennen(w.video_url)) return formFehler(form, 'Der Video-Link wird nicht erkannt. Er muss mit https:// beginnen.');
       if (w.meeting_link && w.art === 'termin' && !sicherUrl(w.meeting_link)) return formFehler(form, 'Der Meeting-Link muss mit https:// beginnen.');
       var d = { art: w.art, titel: w.titel, text: w.text, angeheftet: w.angeheftet, veroeffentlicht: w.veroeffentlicht,
-                video_url: w.art === 'termin' ? '' : w.video_url,
+                video_url: w.art === 'termin' ? '' : videoAusFormular(w),
                 termin_am: w.art === 'termin' ? new Date(w.termin_am).toISOString() : null,
                 termin_dauer_min: parseInt(w.termin_dauer_min, 10) || 60,
                 meeting_link: w.art === 'termin' ? w.meeting_link : '' };
-      if (form.getAttribute('data-id')) d.id = form.getAttribute('data-id');
+      var vorher = null;
+      if (form.getAttribute('data-id')) { d.id = form.getAttribute('data-id'); vorher = S.beitraege.filter(function (x) { return x.id === d.id; })[0]; }
       await D.beitragSpeichern(d);
+      if (vorher) altesVideoAufraeumen(vorher.video_url, d.video_url);
       S.beitraege = await D.beitraege();
       toast(d.id ? 'Beitrag gespeichert.' : 'Beitrag veröffentlicht.');
       geheZu('admin/inhalte');
@@ -1167,6 +1226,13 @@
       zeigen();
     },
     csv: csvExport,
+    'video-waehlen': function () { document.getElementById('video_datei').click(); },
+    'video-entfernen': function (el) {
+      document.getElementById('video_pfad').value = '';
+      document.getElementById('video_link_feld').hidden = false;
+      document.getElementById('video_info').innerHTML = 'Video wird beim Speichern entfernt.';
+      el.remove();
+    },
     desktop: function () {
       Notification.requestPermission().then(function (r) {
         toast(r === 'granted' ? 'Desktop-Hinweise sind an, solange die Akademie geöffnet ist.' : 'Desktop-Hinweise wurden nicht erlaubt.');
@@ -1175,14 +1241,18 @@
     },
     'lektion-loeschen': async function (el) {
       if (!confirm('Lektion wirklich löschen? Der Fortschritt aller Partner zu dieser Lektion geht verloren.')) return;
+      var l = S.lektionen.filter(function (x) { return x.id === el.getAttribute('data-id'); })[0];
       await D.lektionLoeschen(el.getAttribute('data-id'));
+      if (l) altesVideoAufraeumen(l.video_url, '');
       S.lektionen = await D.lektionen();
       toast('Lektion gelöscht.');
       geheZu('admin/inhalte');
     },
     'beitrag-loeschen': async function (el) {
       if (!confirm('Beitrag wirklich löschen?')) return;
+      var b = S.beitraege.filter(function (x) { return x.id === el.getAttribute('data-id'); })[0];
       await D.beitragLoeschen(el.getAttribute('data-id'));
+      if (b) altesVideoAufraeumen(b.video_url, '');
       S.beitraege = await D.beitraege();
       toast('Beitrag gelöscht.');
       geheZu('admin/inhalte');
@@ -1207,9 +1277,11 @@
     var t = e.target.getAttribute('data-tabelle');
     if (t) { tabelle[t] = e.target.value; tabelleZeichnen(); }
     if (e.target.getAttribute('data-aktion-change') === 'art') artFelder(e.target.value);
+    if (e.target.id === 'video_datei') videoHochladen(e.target);
   });
 
   window.addEventListener('hashchange', zeigen);
+  window.addEventListener('beforeunload', function (e) { if (hochladenLaeuft) { e.preventDefault(); e.returnValue = ''; } });
   /* Beim Verlassen der Seite den letzten Stand des Videos noch senden */
   window.addEventListener('pagehide', function () { if (player) { player.zerstoeren(); player = null; } });
 

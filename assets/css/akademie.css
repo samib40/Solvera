@@ -4,6 +4,9 @@
    automatisch in Hell und Dunkel.
    ========================================================================= */
 
+/* hidden muss gegen display-Regeln wie .field { display: flex } gewinnen */
+.ak [hidden] { display: none !important; }
+
 body.ak { display: flex; flex-direction: column; min-height: 100vh; min-height: 100dvh; }
 
 /* ---------- Kopf ---------- */
@@ -259,6 +262,31 @@ a.ak-beitrag:hover { border-color: var(--brass-line); }
   background: #0b0b0d; border: 1px solid var(--line);
 }
 .ak-video iframe, .ak-video video, #ak-video > div { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+.ak-wasserzeichen {
+  position: absolute; z-index: 2; pointer-events: none; user-select: none;
+  max-width: 60%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font-size: clamp(.68rem, 1.4vw, .85rem); font-weight: 700; letter-spacing: .02em;
+  color: rgba(255, 255, 255, .34); text-shadow: 0 1px 2px rgba(0, 0, 0, .5);
+  transition: left 1.2s ease, top 1.2s ease;
+}
+.ak-vollbild {
+  position: absolute; z-index: 3; top: 10px; right: 10px;
+  width: 36px; height: 36px; border-radius: 9px; display: grid; place-items: center;
+  background: rgba(0, 0, 0, .45); color: #fff; opacity: .75; transition: opacity .2s ease;
+}
+.ak-vollbild:hover, .ak-vollbild:focus-visible { opacity: 1; }
+.ak-vollbild svg { width: 18px; height: 18px; }
+.ak-video:fullscreen { border-radius: 0; border: 0; }
+.ak-video-fehler {
+  position: absolute; inset: auto 12px 12px 12px; z-index: 3;
+  padding: 10px 14px; border-radius: 10px; background: rgba(0, 0, 0, .7); color: #fff; font-size: .88rem;
+}
+.ak-upload { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 14px; border: 1px dashed var(--brass-line); border-radius: var(--radius-sm); background: var(--brass-soft); }
+.ak-upload .info { flex: 1; min-width: 180px; font-size: .88rem; color: var(--txt-2); overflow-wrap: anywhere; }
+.ak-upload .info strong { color: var(--txt); }
+.ak-upload .ak-balken { flex-basis: 100%; }
+.ak-oder { font-size: .78rem; color: var(--txt-3); font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+
 .ak-video-leer {
   display: grid; place-items: center; text-align: center; padding: 24px;
   background: linear-gradient(135deg, var(--surface-2), var(--surface-3)); color: var(--txt-2);

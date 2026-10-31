@@ -2,6 +2,10 @@
    Solvera Akademie – Videoplayer mit Fortschrittsmessung
    -------------------------------------------------------------------------
    Unterstützt:
+     Speicher  selbst hochgeladene Videos im privaten Speicher der Akademie
+               (Adresse "speicher:<pfad>"). Abspielbar nur angemeldet und
+               freigeschaltet, über eine Adresse, die nach 3 Stunden verfällt.
+               Name und E-Mail des Zuschauers laufen als Wasserzeichen mit.
      YouTube   (am besten „nicht gelistet“) – über die IFrame-API
      Vimeo     (auch private Links mit Hash) – über postMessage
      Datei     .mp4 / .webm / .mov direkt verlinkt – HTML5-Video
@@ -18,6 +22,7 @@
   function erkennen(url) {
     url = String(url || '').trim();
     if (!url) return null;
+    if (url.indexOf('speicher:') === 0) return { typ: 'speicher', pfad: url.slice(9) };
     var m;
     if ((m = url.match(/(?:youtube(?:-nocookie)?\.com\/(?:watch\?(?:.*&)?v=|embed\/|shorts\/|live\/)|youtu\.be\/)([\w-]{11})/))) {
       return { typ: 'youtube', id: m[1] };
@@ -134,15 +139,73 @@
     return function () { window.removeEventListener('message', empfang); messung.ende(); };
   }
 
-  /* ---------- eigene Datei ---------- */
-  function datei(ziel, info, messung) {
+  /* ---------- eigene Datei / privater Speicher ---------- */
+  function geschuetzt(v) {
+    v.controls = true; v.playsInline = true; v.preload = 'metadata';
+    v.setAttribute('controlsList', 'nodownload');
+    v.disablePictureInPicture = true;
+    v.addEventListener('contextmenu', function (e) { e.preventDefault(); });
+  }
+
+  /* Name des Zuschauers, wandert alle 20 Sekunden an eine andere Stelle */
+  function wasserzeichen(ziel, text) {
+    if (!text) return function () {};
+    var w = document.createElement('span');
+    w.className = 'ak-wasserzeichen';
+    w.setAttribute('aria-hidden', 'true');
+    w.textContent = text;
+    ziel.appendChild(w);
+    var orte = [[8, 8], [62, 12], [12, 72], [55, 78], [34, 44]];
+    var i = 0;
+    function setzen() { var o = orte[i++ % orte.length]; w.style.left = o[0] + '%'; w.style.top = o[1] + '%'; }
+    setzen();
+    var t = setInterval(setzen, 20000);
+    return function () { clearInterval(t); };
+  }
+
+  /* Vollbild für den ganzen Rahmen, damit das Wasserzeichen sichtbar bleibt.
+     Wo das nicht geht (iPhone), bleibt das Vollbild des Players. */
+  function vollbild(ziel, v) {
+    if (!ziel.requestFullscreen) return;
+    v.setAttribute('controlsList', 'nodownload nofullscreen');
+    var b = document.createElement('button');
+    b.type = 'button'; b.className = 'ak-vollbild'; b.setAttribute('aria-label', 'Vollbild');
+    b.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>';
+    b.addEventListener('click', function () {
+      if (document.fullscreenElement) document.exitFullscreen(); else ziel.requestFullscreen();
+    });
+    ziel.appendChild(b);
+  }
+
+  function datei(ziel, info, messung, zusatz) {
     var v = document.createElement('video');
-    v.src = info.url; v.controls = true; v.playsInline = true; v.preload = 'metadata';
+    geschuetzt(v);
     ziel.appendChild(v);
+    var zeichenWeg = wasserzeichen(ziel, zusatz.zeichen);
+    vollbild(ziel, v);
+    var weg = false, erneuert = 0;
+
+    function quelle() {
+      if (info.typ !== 'speicher') { v.src = info.url; return; }
+      zusatz.adresse(info.pfad).then(function (u) {
+        if (weg) return;
+        var stelle = v.currentTime, lief = !v.paused;
+        v.src = u;
+        if (stelle) v.addEventListener('loadedmetadata', function () { v.currentTime = stelle; if (lief) v.play(); }, { once: true });
+      }).catch(function (e) {
+        ziel.insertAdjacentHTML('beforeend', '<span class="ak-video-fehler">' +
+          ((e && e.anzeigen && e.message) || 'Das Video konnte nicht geladen werden.') + '</span>');
+      });
+    }
+    /* Abgelaufene Adresse (Pause über Stunden) still erneuern */
+    v.addEventListener('error', function () {
+      if (info.typ === 'speicher' && erneuert++ < 2) quelle();
+    });
+    quelle();
     v.addEventListener('timeupdate', function () { if (!v.paused) messung.zeit(v.currentTime, v.duration); });
     v.addEventListener('pause', function () { messung.ende(); });
     v.addEventListener('ended', function () { messung.ende(); });
-    return function () { messung.ende(); v.pause(); };
+    return function () { weg = true; zeichenWeg(); messung.ende(); v.pause(); v.removeAttribute('src'); v.load(); };
   }
 
   function einbettung(ziel, info) {
@@ -152,13 +215,15 @@
     return function () {};
   }
 
-  /* Baut den Player in "ziel" ein. Gibt { messbar, zerstoeren } zurück. */
-  function einbauen(ziel, url, schluessel, beiFortschritt) {
+  /* Baut den Player in "ziel" ein. Gibt { messbar, zerstoeren } zurück.
+     zusatz.zeichen  Text für das Wasserzeichen
+     zusatz.adresse  Funktion pfad → Promise(Abspiel-Adresse) für "speicher:" */
+  function einbauen(ziel, url, schluessel, beiFortschritt, zusatz) {
     var info = erkennen(url);
     ziel.innerHTML = '';
     if (!info) return { messbar: false, zerstoeren: function () {} };
     var messung = Messung('solvera-ak-video-' + schluessel, beiFortschritt);
-    var weg = { youtube: youtube, vimeo: vimeo, datei: datei, einbettung: einbettung }[info.typ](ziel, info, messung);
+    var weg = { youtube: youtube, vimeo: vimeo, datei: datei, speicher: datei, einbettung: einbettung }[info.typ](ziel, info, messung, zusatz || {});
     return { messbar: info.typ !== 'einbettung', zerstoeren: weg };
   }
 

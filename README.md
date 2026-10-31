@@ -87,7 +87,7 @@ Termine (z. B. Teams-Meetings) mit „Teilnehmen“, „Ich bin dabei“ und Kal
 **Wie „angesehen“ gemessen wird:** Gezählt werden die Sekunden, die tatsächlich
 abgespielt wurden – Vorspulen zählt nicht. Ab 90 % gilt ein Video als erledigt
 (einstellbar in `config.js`, `akademie.abschlussAbProzent`). Das funktioniert mit
-YouTube, Vimeo und direkt verlinkten `.mp4`-Dateien. Lektionen ohne Video oder mit
+hochgeladenen Videos, YouTube, Vimeo und direkt verlinkten `.mp4`-Dateien. Lektionen ohne Video oder mit
 anderen Einbettungen haben einen Knopf „Als erledigt markieren“.
 
 ### Demo-Modus
@@ -117,8 +117,12 @@ reicht für deutlich über hundert Partner).
    *anon public*-Schlüssel in `assets/js/config.js` unter `akademie` eintragen,
    committen, pushen. Der Demo-Hinweis verschwindet dann.
 5. **Selbst registrieren** mit der Adresse aus Schritt 2 – dieses Konto ist sofort Admin.
-   Danach unter *Inhalte* die Video-Links zu den Lektionen eintragen.
-6. **E-Mail bei jeder Meldung (optional, empfohlen):**
+   Danach unter *Inhalte* die Videos zu den Lektionen hochladen.
+6. **Für eigene Videos auf den Pro-Tarif wechseln** (*Organization → Billing*, rund
+   25 $ im Monat, aktuelle Preise auf supabase.com/pricing). Der kostenlose Tarif
+   erlaubt nur Dateien bis 50 MB und 1 GB Speicher. Danach unter
+   *Storage → Settings* die *Upload file size limit* auf z. B. 2 GB setzen.
+7. **E-Mail bei jeder Meldung (optional, empfohlen):**
    1. Konto bei [Resend](https://resend.com) anlegen, Domain `solvera-sales.com`
       bestätigen, API-Schlüssel erzeugen.
    2. Supabase *Edge Functions → Deploy a new function → Via Editor*, Name
@@ -133,22 +137,49 @@ reicht für deutlich über hundert Partner).
    4. *Database → Webhooks → Create*: Tabelle `meldungen`, Ereignis *Insert*, Typ
       *Supabase Edge Functions* → `meldung-per-mail`, HTTP-Header
       `x-geheimnis` mit dem Wert aus `WEBHOOK_GEHEIMNIS`.
-7. **E-Mails an Partner zuverlässig machen:** Supabase verschickt Bestätigungs- und
+8. **E-Mails an Partner zuverlässig machen:** Supabase verschickt Bestätigungs- und
    Passwort-Mails ab Werk nur in sehr kleiner Zahl pro Stunde. Unter
    *Authentication → Emails → SMTP Settings* den eigenen Versand eintragen (Resend
    bietet dafür SMTP-Zugangsdaten). Dort lassen sich auch die Mail-Texte auf Deutsch
    umstellen.
-8. **Datenschutz:** Im Supabase-Dashboard (*Organization → Legal Documents*) den
+9. **Datenschutz:** Im Supabase-Dashboard (*Organization → Legal Documents*) den
    Vertrag zur Auftragsverarbeitung abschließen, ebenso mit Resend. Abschnitt 11 der
    Datenschutzerklärung beschreibt die Akademie bereits – bei abweichenden Diensten
    anpassen.
 
 ### Videos
 
-Am einfachsten: auf YouTube hochladen, Sichtbarkeit **„Nicht gelistet“**, Link in der
-Akademie eintragen. Abgespielt wird über `youtube-nocookie.com`. Nicht gelistete
-Videos sind für jeden mit dem Link erreichbar; wer das ausschließen will, nimmt Vimeo
-mit Einbettung nur auf der eigenen Domain.
+**Hochladen:** *Inhalte* → Lektion oder Wochenschulung öffnen → **„Video hochladen“** →
+Datei wählen → warten bis 100 % → **Speichern**. Geht auch vom Handy.
+
+**Schutz vor Weitergabe:**
+
+* Die Videos liegen im privaten Speicher-Bucket `videos`. Es gibt keine öffentliche
+  Adresse; abspielen dürfen nur angemeldete, freigeschaltete Partner (geregelt in der
+  Datenbank, nicht nur in der Oberfläche).
+* Jede Wiedergabe bekommt eine eigene Adresse, die nach **3 Stunden verfällt**. Ein
+  herauskopierter Link ist danach wertlos.
+* Kein Download-Knopf, kein Rechtsklick-Menü, kein Bild-im-Bild.
+* **Name und E-Mail des Zuschauers** laufen halbtransparent im Bild mit und wechseln
+  alle 20 Sekunden die Stelle – auch im Vollbild (außer auf dem iPhone, das nur sein
+  eigenes Vollbild kennt). Taucht eine Bildschirmaufnahme irgendwo auf, sieht man,
+  von wem sie stammt.
+* Gesperrte Partner kommen sofort an kein Video mehr.
+
+Ganz verhindern lässt sich das Abfilmen des Bildschirms technisch nicht – das kann
+keine Website. Das Wasserzeichen macht es aber nachvollziehbar.
+
+**Dateigröße:** Am besten MP4 in 720p oder 1080p. Ein 10-Minuten-Video vom Handy hat
+oft 500 MB bis 1 GB; exportiert in 720p (z. B. mit dem kostenlosen HandBrake,
+Voreinstellung „Fast 720p30“) sind es meist 80–150 MB. Kleinere Dateien laden bei den
+Partnern unterwegs schneller und schonen das Datenvolumen des Tarifs.
+
+**Kosten grob überschlagen:** 40 Partner × 10 Lektionen × 120 MB ≈ 48 GB
+Datenverkehr für eine komplette Ausbildungsrunde, dazu je Wochenschulung etwa 5 GB.
+Das liegt innerhalb dessen, was im Pro-Tarif enthalten ist.
+
+Weiterhin möglich: statt hochzuladen einen YouTube- oder Vimeo-Link eintragen. Solche
+Links lassen sich aber weitergeben.
 
 ### Wissenswert
 
@@ -168,7 +199,7 @@ mit Einbettung nur auf der eigenen Domain.
 | `assets/css/akademie.css` | zusätzliche Gestaltung |
 | `assets/js/akademie.js` | Oberfläche, Ansichten, Admin-Bereich |
 | `assets/js/akademie-daten.js` | Anbindung an Supabase bzw. Demo-Daten |
-| `assets/js/akademie-video.js` | Player und Messung für YouTube, Vimeo, MP4 |
+| `assets/js/akademie-video.js` | Player, Wasserzeichen und Messung für hochgeladene Videos, YouTube, Vimeo |
 | `supabase/einrichtung.sql` | Datenbank, Rechte, Meldungen, Startlektionen |
 | `supabase/functions/meldung-per-mail/` | E-Mail-Versand der Meldungen |
 

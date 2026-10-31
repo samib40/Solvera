@@ -34,10 +34,25 @@
       [/rate limit|too many/i, 'Zu viele Versuche in kurzer Zeit. Bitte warte einen Moment.'],
       [/invalid email|unable to validate email/i, 'Die E-Mail-Adresse ist ungültig.'],
       [/failed to fetch|networkerror|load failed/i, 'Keine Verbindung zum Server. Bitte prüfe deine Internetverbindung.'],
-      [/jwt expired/i, 'Deine Sitzung ist abgelaufen. Bitte melde dich neu an.']
+      [/jwt expired/i, 'Deine Sitzung ist abgelaufen. Bitte melde dich neu an.'],
+      [/payload too large|maximum allowed size|exceeded the maximum|entity too large/i, 'Das Video ist zu groß für den Speicher. Bitte kleiner exportieren (z. B. 720p) oder die Obergrenze in Supabase erhöhen.'],
+      [/mime type .* is not supported|invalid mime/i, 'Dieses Dateiformat wird nicht unterstützt. Bitte MP4 verwenden.']
     ];
     for (var i = 0; i < t.length; i++) if (t[i][0].test(m)) return t[i][1];
     return m || 'Unbekannter Fehler.';
+  }
+
+  function uuid() {
+    if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
+    return 'id-' + Math.random().toString(36).slice(2) + Date.now().toString(36);
+  }
+
+  /* Ablageort eines hochgeladenen Videos: Monat/Zufall-dateiname.mp4 */
+  function videoPfad(datei) {
+    var teile = String(datei.name || 'video.mp4').toLowerCase().split('.');
+    var endung = teile.length > 1 ? teile.pop().replace(/[^a-z0-9]/g, '') : 'mp4';
+    var name = teile.join('-').normalize('NFKD').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 50) || 'video';
+    return new Date().toISOString().slice(0, 7) + '/' + uuid().slice(0, 8) + '-' + name + '.' + (endung || 'mp4');
   }
 
   /* =======================================================================
@@ -106,16 +121,20 @@
       }
     }
 
-    /* Anfrage an die Datenbank; frischt die Sitzung bei Bedarf auf */
-    async function db(pfad, opt) {
+    /* Anfrage mit Anmeldung; frischt die Sitzung bei Bedarf auf */
+    async function frisch() {
       if (sitzung && sitzung.expires_at - 60 < Date.now() / 1000) await auffrischen();
+    }
+    async function angemeldet(pfad, opt) {
+      await frisch();
       try {
-        return await roh('/rest/v1/' + pfad, opt);
+        return await roh(pfad, opt);
       } catch (e) {
-        if (e.status === 401 && await auffrischen()) return roh('/rest/v1/' + pfad, opt);
+        if (e.status === 401 && await auffrischen()) return roh(pfad, opt);
         throw e;
       }
     }
+    function db(pfad, opt) { return angemeldet('/rest/v1/' + pfad, opt); }
 
     function hinterlegen() { return { Prefer: 'return=representation' }; }
     var rueckweg = function () { return location.href.split('#')[0]; };
@@ -243,7 +262,40 @@
         if (id) return db('beitraege?id=eq.' + id, { methode: 'PATCH', daten: d, kopf: hinterlegen() });
         return db('beitraege', { methode: 'POST', daten: d, kopf: hinterlegen() });
       },
-      beitragLoeschen: function (id) { return db('beitraege?id=eq.' + id, { methode: 'DELETE' }); }
+      beitragLoeschen: function (id) { return db('beitraege?id=eq.' + id, { methode: 'DELETE' }); },
+
+      /* ---- Videos im privaten Speicher (Bucket "videos") ---- */
+      videoHochladen: async function (datei, beiFortschritt) {
+        await frisch();
+        var pfad = videoPfad(datei);
+        await new Promise(function (fertig, fehler) {
+          var x = new XMLHttpRequest();
+          x.open('POST', BASIS + '/storage/v1/object/videos/' + pfad);
+          x.setRequestHeader('apikey', KEY);
+          x.setRequestHeader('Authorization', 'Bearer ' + (sitzung && sitzung.access_token));
+          x.setRequestHeader('Content-Type', datei.type || 'video/mp4');
+          x.setRequestHeader('x-upsert', 'false');
+          x.upload.onprogress = function (e) { if (e.lengthComputable && beiFortschritt) beiFortschritt(e.loaded / e.total); };
+          x.onload = function () {
+            if (x.status < 300) return fertig();
+            var d = {}; try { d = JSON.parse(x.responseText); } catch (e) { /* egal */ }
+            fehler(Fehler(uebersetzen(d.message || d.error || (x.status === 413 ? 'Payload too large' : 'Hochladen fehlgeschlagen (' + x.status + ')'))));
+          };
+          x.onerror = function () { fehler(Fehler('Die Verbindung ist beim Hochladen abgebrochen. Bitte noch einmal versuchen.')); };
+          x.send(datei);
+        });
+        return pfad;
+      },
+      /* Zeitlich begrenzte Abspiel-Adresse (3 Stunden). Wird ein Link
+         weitergegeben, funktioniert er danach nicht mehr. */
+      videoAdresse: async function (pfad) {
+        var d = await angemeldet('/storage/v1/object/sign/videos/' + pfad, { methode: 'POST', daten: { expiresIn: 10800 } });
+        var u = d.signedURL || d.signedUrl;
+        return /^https?:/.test(u) ? u : BASIS + '/storage/v1' + u;
+      },
+      videoLoeschen: function (pfad) {
+        return angemeldet('/storage/v1/object/videos/' + pfad, { methode: 'DELETE' });
+      }
     };
   }
 
@@ -254,10 +306,6 @@
     var SCHLUESSEL = 'solvera-akademie-demo';
     var speicher = null;
 
-    function uuid() {
-      if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
-      return 'id-' + Math.random().toString(36).slice(2) + Date.now().toString(36);
-    }
     function jetzt() { return new Date().toISOString(); }
     function vor(tage, stunden) { return new Date(Date.now() - (tage * 24 + (stunden || 0)) * 3600000).toISOString(); }
     function kopie(x) { return JSON.parse(JSON.stringify(x)); }
@@ -349,6 +397,20 @@
       return { konten: [admin, partner].concat(beispiele), lektionen: L, beitraege: B,
                fortschritt: F, meldungen: M, zusagen: [{ nutzer_id: beispiele[0].id, beitrag_id: B[0].id, erstellt_am: vor(0) }],
                sitzung: null };
+    }
+
+    function videoDb(art, arbeit) {
+      return new Promise(function (fertig, fehler) {
+        var auf = indexedDB.open('solvera-akademie-videos', 1);
+        auf.onupgradeneeded = function () { auf.result.createObjectStore('videos'); };
+        auf.onerror = function () { fehler(Fehler('Der Browser erlaubt hier keine Ablage von Videos.')); };
+        auf.onsuccess = function () {
+          var tx = auf.result.transaction('videos', art);
+          var anfrage = arbeit(tx.objectStore('videos'));
+          tx.oncomplete = function () { fertig(anfrage && anfrage.result); };
+          tx.onerror = function () { fehler(Fehler('Das Video konnte nicht gespeichert werden (Speicher voll?).')); };
+        };
+      });
     }
 
     function laden() {
@@ -521,6 +583,23 @@
         s.beitraege = s.beitraege.filter(function (x) { return x.id !== id; });
         s.zusagen = s.zusagen.filter(function (x) { return x.beitrag_id !== id; });
         sichern();
+      },
+
+      /* Videos im Demo-Modus: im IndexedDB-Speicher dieses Browsers */
+      videoHochladen: async function (datei, beiFortschritt) {
+        mussAdmin();
+        var pfad = videoPfad(datei);
+        for (var i = 1; i <= 10; i++) { await new Promise(function (r) { setTimeout(r, 70); }); if (beiFortschritt) beiFortschritt(i / 10); }
+        await videoDb('readwrite', function (st) { st.put(datei, pfad); });
+        return pfad;
+      },
+      videoAdresse: async function (pfad) {
+        var blob = await videoDb('readonly', function (st) { return st.get(pfad); });
+        if (!blob) throw Fehler('Das Video ist in diesem Browser nicht mehr vorhanden.');
+        return URL.createObjectURL(blob);
+      },
+      videoLoeschen: function (pfad) {
+        return videoDb('readwrite', function (st) { st.delete(pfad); }).catch(function () {});
       },
 
       /* Nur im Demo-Modus: alles auf die Beispieldaten zuruecksetzen */

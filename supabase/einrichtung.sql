@@ -302,6 +302,34 @@ create policy zusage_setzen  on public.zusagen for insert with check (nutzer_id 
 create policy zusage_loeschen on public.zusagen for delete using (nutzer_id = auth.uid());
 
 
+-- ---------- 4b. Privater Videospeicher ----------------------------------
+-- Hochgeladene Schulungsvideos liegen im Bucket "videos". Er ist NICHT
+-- öffentlich: Abspielen geht nur über eine zeitlich begrenzte Adresse, die
+-- die Akademie für angemeldete, freigeschaltete Partner erzeugt.
+-- Obergrenze je Datei: 2 GB (im Pro-Tarif; im kostenlosen Tarif gelten 50 MB).
+
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values ('videos', 'videos', false, 2147483648,
+        array['video/mp4', 'video/webm', 'video/quicktime', 'video/x-m4v'])
+on conflict (id) do update
+  set public = false,
+      file_size_limit = excluded.file_size_limit,
+      allowed_mime_types = excluded.allowed_mime_types;
+
+drop policy if exists video_ansehen on storage.objects;
+drop policy if exists video_hochladen on storage.objects;
+drop policy if exists video_aendern on storage.objects;
+drop policy if exists video_loeschen on storage.objects;
+create policy video_ansehen   on storage.objects for select
+  using (bucket_id = 'videos' and public.ist_aktiv());
+create policy video_hochladen on storage.objects for insert
+  with check (bucket_id = 'videos' and public.ist_admin());
+create policy video_aendern   on storage.objects for update
+  using (bucket_id = 'videos' and public.ist_admin());
+create policy video_loeschen  on storage.objects for delete
+  using (bucket_id = 'videos' and public.ist_admin());
+
+
 -- ---------- 5. Startinhalte ----------------------------------------------
 -- Ein Grundgerüst des Ausbildungsplans. Videos werden später im
 -- Admin-Bereich der Akademie eingetragen. Läuft nur, solange es noch
