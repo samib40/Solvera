@@ -119,7 +119,7 @@ $$;
 create or replace function public.neues_konto() returns trigger
 language plpgsql security definer set search_path = public as $$
 declare
-  ADMIN_EMAILS constant text[] := array['info@solvera-sales.com', 'info@solvera-immobilien.de'];  -- ◄ Admin-Adressen
+  ADMIN_EMAILS constant text[] := array['info@solvera-sales.com', 'info@solvera-sales.de', 'info@solvera-immobilien.de'];  -- ◄ Admin-Adressen
   ist_chef boolean := lower(new.email) = any (ADMIN_EMAILS);
   m jsonb := coalesce(new.raw_user_meta_data, '{}'::jsonb);
 begin
@@ -144,11 +144,12 @@ drop trigger if exists bei_neuem_konto on auth.users;
 create trigger bei_neuem_konto after insert on auth.users
   for each row execute function public.neues_konto();
 
--- Partner dürfen Rolle und Status nicht selbst ändern.
+-- Partner dürfen Rolle und Status nicht selbst ändern. Änderungen ohne
+-- angemeldeten Nutzer (SQL Editor im Supabase-Dashboard) sind erlaubt.
 create or replace function public.profil_schuetzen() returns trigger
 language plpgsql security definer set search_path = public as $$
 begin
-  if not public.ist_admin() then
+  if auth.uid() is not null and not public.ist_admin() then
     new.rolle  := old.rolle;
     new.status := old.status;
     new.email  := old.email;
