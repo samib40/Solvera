@@ -126,9 +126,9 @@ window.SOLVERA = {
   provision: {
     proLead: 70,        // EUR je qualifiziertem Lead
     proAbschluss: 200,  // EUR zusaetzlich, wenn aus dem Lead ein Abschluss wird
-    abschlussquote: 0.15, // Anteil der Leads mit Abschluss (derzeit 15 %)
+    abschlussquote: 0.10, // Anteil der Leads mit Abschluss (derzeit 10 %)
     proWaermepumpe: 200,  // EUR zusaetzlich, wenn eine Waermepumpe verbaut wird
-    waermepumpenquote: 0.10, // Anteil der Leads mit verbauter Waermepumpe (derzeit 10 %)
+    waermepumpenquote: 0.05, // Anteil der Leads mit verbauter Waermepumpe (derzeit 5 %)
     tageProMonat: 20    // uebliche Einsatztage pro Monat
   }
 };
