@@ -165,7 +165,8 @@
     if (!link) return;
     var id = link.getAttribute('href');
     if (!id || id === '#') return;
-    var target = document.querySelector(id);
+    var target = null;
+    try { target = document.querySelector(id); } catch (err) { return; }  /* z. B. #/lektionen in der Akademie */
     if (!target) return;
     e.preventDefault();
     closeNav();

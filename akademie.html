@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Solvera Akademie – Schulungsbereich für Vertriebspartner</title>
+<meta name="description" content="Interner Schulungsbereich für Vertriebspartner von Solvera Sales: Lektionen, Wochenschulungen, Ansagen und Termine.">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#f7f4ef">
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="icon" href="assets/img/favicon-48.png" sizes="48x48" type="image/png">
+<link rel="apple-touch-icon" href="assets/img/favicon-180.png">
+<link rel="stylesheet" href="assets/css/style.css">
+<link rel="stylesheet" href="assets/css/akademie.css">
+<script>/* Modus vor dem ersten Anzeigen setzen, sonst blitzt Hell auf */
+(function(){try{if(localStorage.getItem('solvera-modus')==='dark')document.documentElement.setAttribute('data-theme','dark');}catch(e){}})();</script>
+</head>
+<body class="ak">
+<a class="skip" href="#ak-main">Zum Inhalt springen</a>
+
+<header class="header is-stuck ak-header" id="header">
+  <div class="wrap">
+    <a class="brand" href="#/" aria-label="Solvera Akademie – Übersicht">
+      <img class="brand-mark nur-hell" src="assets/img/logo-mark-hell.png" alt="" width="240" height="331"><img class="brand-mark nur-dunkel" src="assets/img/logo-mark.png" alt="" width="240" height="331">
+      <img class="brand-wort nur-hell" src="assets/img/logo-wortmarke-hell.png" alt="Solvera Sales" width="620" height="154"><img class="brand-wort nur-dunkel" src="assets/img/logo-wortmarke.png" alt="Solvera Sales" width="620" height="154">
+      <span class="ak-marke">Akademie</span>
+    </a>
+    <div class="header-cta">
+      <div class="ak-konto" id="ak-konto" hidden></div>
+      <button class="modus" id="modus" type="button" aria-label="Zu dunkler Darstellung wechseln" title="Hell oder dunkel">
+        <svg class="modus-mond" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.5 14.3A8.6 8.6 0 0 1 9.7 3.5a8.7 8.7 0 1 0 10.8 10.8Z"/></svg>
+        <svg class="modus-sonne" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.4v2.2M12 19.4v2.2M2.4 12h2.2M19.4 12h2.2M5.2 5.2l1.6 1.6M17.2 17.2l1.6 1.6M18.8 5.2l-1.6 1.6M6.8 17.2l-1.6 1.6"/></svg>
+      </button>
+    </div>
+  </div>
+  <nav class="ak-nav" id="ak-nav" aria-label="Akademie-Navigation" hidden></nav>
+</header>
+
+<div class="ak-demo" id="ak-demo" hidden></div>
+
+<main id="ak-main" class="ak-main" tabindex="-1">
+  <h1 class="ak-laden" id="ak-start-titel">Solvera Akademie</h1>
+  <noscript><p class="wrap">Die Akademie braucht JavaScript. Bitte aktiviere es in deinem Browser.</p></noscript>
+</main>
+
+<footer class="ak-fuss">
+  <div class="wrap">
+    <span>© <span data-year>2026</span> Solvera Sales</span>
+    <nav>
+      <a href="index.html">Zur Website</a>
+      <a href="impressum.html">Impressum</a>
+      <a href="datenschutz.html#akademie">Datenschutz</a>
+    </nav>
+  </div>
+</footer>
+
+<div class="ak-toast" id="ak-toast" role="status" aria-live="polite"></div>
+
+<script src="assets/js/config.js"></script>
+<script src="assets/js/main.js"></script>
+<script src="assets/js/akademie-daten.js"></script>
+<script src="assets/js/akademie-video.js"></script>
+<script src="assets/js/akademie.js"></script>
+</body>
+</html>

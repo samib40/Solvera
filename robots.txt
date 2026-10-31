@@ -10,6 +10,9 @@ Disallow: /danke-beratung.html
 Disallow: /danke-firmen.html
 Disallow: /danke.html
 
+# Interner Schulungsbereich fuer Vertriebspartner.
+Disallow: /akademie.html
+
 # Impressum und Datenschutz tragen noindex, duerfen aber gelesen werden:
 # ein auffindbares Impressum ist ein Vertrauenssignal.
 

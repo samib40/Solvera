@@ -67,6 +67,8 @@ def main():
         'Disallow: /Solvera-Sales-Website.html\n\n'
         '# Dankeseiten: kein eigenstaendiger Inhalt.\n'
         + ''.join('Disallow: /%s\n' % s for s in danke)
+        + '\n# Interner Schulungsbereich fuer Vertriebspartner.\n'
+          'Disallow: /akademie.html\n'
         + '\n# Impressum und Datenschutz tragen noindex, duerfen aber gelesen werden:\n'
           '# ein auffindbares Impressum ist ein Vertrauenssignal.\n\n'
           'Sitemap: %ssitemap.xml\n' % BASIS,

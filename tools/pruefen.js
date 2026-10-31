@@ -130,7 +130,7 @@ function tagBilanz(quelle) {
     const toteAnker = await seite.evaluate(() =>
       [...document.querySelectorAll('a[href^="#"]')]
         .map(a => a.getAttribute('href'))
-        .filter(h => h.length > 1 && !document.querySelector(h)));
+        .filter(h => h.length > 1 && !h.startsWith('#/') && !document.querySelector(h)));  // #/… = Adressen der Akademie
 
     const suche = await seite.evaluate(() => {
       const wert = (sel, at) => { const e = document.querySelector(sel); return e ? e.getAttribute(at) : null; };

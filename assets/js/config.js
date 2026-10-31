@@ -130,5 +130,32 @@ window.SOLVERA = {
     proWaermepumpe: 200,  // EUR zusaetzlich, wenn eine Waermepumpe verbaut wird
     waermepumpenquote: 0.05, // Anteil der Leads mit verbauter Waermepumpe (derzeit 5 %)
     tageProMonat: 20    // uebliche Einsatztage pro Monat
+  },
+
+  /* ---------------------------------------------------------------------
+     4. SOLVERA AKADEMIE (Schulungsbereich fuer Vertriebspartner)
+     ---------------------------------------------------------------------
+     Konten, Lektionen und Fortschritte liegen bei Supabase (Server in
+     Frankfurt). Einrichtung Schritt fuer Schritt: README, Abschnitt
+     „Solvera Akademie“.
+
+     SOLANGE supabaseUrl LEER IST, laeuft die Akademie im DEMO-MODUS:
+     alles funktioniert, die Daten bleiben aber nur im eigenen Browser.
+     Zum Ausprobieren und Vorfuehren gedacht, nicht fuer echte Partner.
+
+     supabaseUrl  Project Settings → API → Project URL
+     supabaseKey  Project Settings → API → „anon public“-Schluessel
+                  (dieser Schluessel ist zur Veroeffentlichung gedacht; die
+                  Rechte regelt die Datenbank selbst)
+     --------------------------------------------------------------------- */
+  akademie: {
+    supabaseUrl: '',   // z. B. 'https://abcdefghijkl.supabase.co'
+    supabaseKey: '',   // beginnt mit 'eyJ…' oder 'sb_publishable_…'
+
+    /* Fortgeschritten erst nach Starter, Profi erst nach Fortgeschritten */
+    stufenNacheinander: true,
+
+    /* Ab wie viel Prozent gesehener Laufzeit ein Video als erledigt gilt */
+    abschlussAbProzent: 90
   }
 };

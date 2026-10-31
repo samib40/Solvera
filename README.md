@@ -65,6 +65,115 @@ tools/
 
 ---
 
+## Solvera Akademie (Schulungsbereich für Vertriebspartner)
+
+`akademie.html` ist ein geschützter Bereich, in dem neue Vertriebspartner ausgebildet
+werden. Verlinkt ist er in der Fußzeile jeder Seite als „Partner-Login (Akademie)“;
+er trägt `noindex` und steht in `robots.txt` auf `Disallow`.
+
+**Für Partner:** Registrieren → Freischaltung abwarten → Lektionen in drei Stufen
+(Starter, Fortgeschritten, Profi) abarbeiten. Die nächste Stufe öffnet sich erst, wenn
+die vorige abgeschlossen ist. Unter „Neuigkeiten“ stehen Wochenschulungen, Ansagen und
+Termine (z. B. Teams-Meetings) mit „Teilnehmen“, „Ich bin dabei“ und Kalender-Datei.
+
+**Für den Admin** (zusätzliche Menüpunkte):
+
+| Bereich | Inhalt |
+|---------|--------|
+| Partner | Neue Registrierungen freischalten oder ablehnen, Tabelle aller Partner mit Stufe, Fortschritt, gesehenen Wochenschulungen und letzter Aktivität, Suche, Filter, CSV-Export. Klick auf einen Partner zeigt jede Lektion mit Datum. |
+| Inhalte | Lektionen, Wochenschulungen, Ansagen und Termine anlegen, ändern, als Entwurf speichern, anheften, löschen. Zeigt, wie viele Partner etwas gesehen bzw. zugesagt haben. |
+| Meldungen | „X hat sich registriert“, „X hat ‚Lektion‘ abgeschlossen“, „X hat Stufe Starter abgeschlossen“. Zähler im Menü, Abfrage jede Minute, auf Wunsch Desktop-Hinweis. Per E-Mail: siehe Schritt 6. |
+
+**Wie „angesehen“ gemessen wird:** Gezählt werden die Sekunden, die tatsächlich
+abgespielt wurden – Vorspulen zählt nicht. Ab 90 % gilt ein Video als erledigt
+(einstellbar in `config.js`, `akademie.abschlussAbProzent`). Das funktioniert mit
+YouTube, Vimeo und direkt verlinkten `.mp4`-Dateien. Lektionen ohne Video oder mit
+anderen Einbettungen haben einen Knopf „Als erledigt markieren“.
+
+### Demo-Modus
+
+Solange in `assets/js/config.js` unter `akademie` nichts eingetragen ist, läuft die
+Akademie im Demo-Modus mit Beispieldaten – alles bleibt im eigenen Browser.
+Zugänge: `partner@demo.de` und `admin@demo.de`, Passwort `demo1234`. **Nicht für echte
+Partner verwenden:** Jeder sähe nur seine eigenen Browserdaten.
+
+### Einrichtung (einmalig, ca. 20 Minuten)
+
+Konten und Fortschritte liegen bei [Supabase](https://supabase.com) (kostenloser Tarif
+reicht für deutlich über hundert Partner).
+
+1. **Projekt anlegen:** Auf supabase.com registrieren → *New project* → Region
+   **Central EU (Frankfurt)** wählen, Datenbank-Passwort sicher notieren.
+2. **Datenbank einrichten:** In `supabase/einrichtung.sql` die Zeile mit `ADMIN_EMAIL`
+   auf die eigene Adresse setzen. Dann im Dashboard *SQL Editor → New query* den
+   ganzen Inhalt einfügen und *Run*. Legt Tabellen, Rechte, Automatik und die zehn
+   Startlektionen an.
+3. **Adressen eintragen:** *Authentication → URL Configuration*
+   * *Site URL*: `https://solvera-sales.com/akademie.html`
+   * *Redirect URLs*: dieselbe Adresse und, solange die Domain noch nicht läuft,
+     `https://samib40.github.io/Solvera/akademie.html`
+   Dorthin führen die Links aus der Bestätigungs- und der Passwort-Mail.
+4. **Schlüssel eintragen:** *Project Settings → API* → *Project URL* und den
+   *anon public*-Schlüssel in `assets/js/config.js` unter `akademie` eintragen,
+   committen, pushen. Der Demo-Hinweis verschwindet dann.
+5. **Selbst registrieren** mit der Adresse aus Schritt 2 – dieses Konto ist sofort Admin.
+   Danach unter *Inhalte* die Video-Links zu den Lektionen eintragen.
+6. **E-Mail bei jeder Meldung (optional, empfohlen):**
+   1. Konto bei [Resend](https://resend.com) anlegen, Domain `solvera-sales.com`
+      bestätigen, API-Schlüssel erzeugen.
+   2. Supabase *Edge Functions → Deploy a new function → Via Editor*, Name
+      `meldung-per-mail`, Inhalt von `supabase/functions/meldung-per-mail/index.ts`
+      einfügen, deployen. In den Einstellungen der Funktion *Verify JWT* ausschalten
+      (die Funktion prüft stattdessen einen eigenen geheimen Header).
+   3. *Edge Functions → Secrets*: `RESEND_API_KEY`, `MELDUNG_AN`
+      (z. B. `info@solvera-sales.com`), `MELDUNG_VON`
+      (z. B. `Solvera Akademie <akademie@solvera-sales.com>`), `WEBHOOK_GEHEIMNIS`
+      (lange Zufallszeichenkette). Wer nicht jede abgeschlossene Lektion als Mail
+      will: `MELDUNG_ARTEN` = `registrierung,stufe`.
+   4. *Database → Webhooks → Create*: Tabelle `meldungen`, Ereignis *Insert*, Typ
+      *Supabase Edge Functions* → `meldung-per-mail`, HTTP-Header
+      `x-geheimnis` mit dem Wert aus `WEBHOOK_GEHEIMNIS`.
+7. **E-Mails an Partner zuverlässig machen:** Supabase verschickt Bestätigungs- und
+   Passwort-Mails ab Werk nur in sehr kleiner Zahl pro Stunde. Unter
+   *Authentication → Emails → SMTP Settings* den eigenen Versand eintragen (Resend
+   bietet dafür SMTP-Zugangsdaten). Dort lassen sich auch die Mail-Texte auf Deutsch
+   umstellen.
+8. **Datenschutz:** Im Supabase-Dashboard (*Organization → Legal Documents*) den
+   Vertrag zur Auftragsverarbeitung abschließen, ebenso mit Resend. Abschnitt 11 der
+   Datenschutzerklärung beschreibt die Akademie bereits – bei abweichenden Diensten
+   anpassen.
+
+### Videos
+
+Am einfachsten: auf YouTube hochladen, Sichtbarkeit **„Nicht gelistet“**, Link in der
+Akademie eintragen. Abgespielt wird über `youtube-nocookie.com`. Nicht gelistete
+Videos sind für jeden mit dem Link erreichbar; wer das ausschließen will, nimmt Vimeo
+mit Einbettung nur auf der eigenen Domain.
+
+### Wissenswert
+
+* Rechte regelt die Datenbank selbst (Row Level Security): Partner sehen nur ihre
+  eigenen Daten und Inhalte erst nach Freischaltung, nur der Admin sieht alle.
+* Ein gesperrter Partner kommt nicht mehr an die Inhalte. Ein Konto endgültig löschen:
+  Supabase *Authentication → Users* – Profil und Fortschritt verschwinden mit.
+* Weitere Admins: im SQL Editor
+  `update public.profile set rolle = 'admin' where email = '…';`
+* Die Messung läuft im Browser. Gegen versehentliches Überspringen ist sie sicher,
+  gegen gezielte Manipulation durch technisch versierte Nutzer nicht.
+* Die Akademie ist nicht Teil von `vorschau.html`; zum Ansehen `akademie.html` direkt öffnen.
+
+| Datei | Zweck |
+|-------|-------|
+| `akademie.html` | Seite der Akademie |
+| `assets/css/akademie.css` | zusätzliche Gestaltung |
+| `assets/js/akademie.js` | Oberfläche, Ansichten, Admin-Bereich |
+| `assets/js/akademie-daten.js` | Anbindung an Supabase bzw. Demo-Daten |
+| `assets/js/akademie-video.js` | Player und Messung für YouTube, Vimeo, MP4 |
+| `supabase/einrichtung.sql` | Datenbank, Rechte, Meldungen, Startlektionen |
+| `supabase/functions/meldung-per-mail/` | E-Mail-Versand der Meldungen |
+
+---
+
 ## Formulare
 
 Alle drei Formulare (Photovoltaik-Rechner, Bewerbung, Firmenanfrage) laufen über
