@@ -14,9 +14,9 @@
   var P = (window.SOLVERA && window.SOLVERA.provision) || {};
   var PRO_LEAD = P.proLead || 70;
   var BONUS    = P.proAbschluss || 200;
-  var QUOTE    = typeof P.abschlussquote === 'number' ? P.abschlussquote : 0.15;
+  var QUOTE    = typeof P.abschlussquote === 'number' ? P.abschlussquote : 0.10;
   var WP       = P.proWaermepumpe || 200;
-  var WP_QUOTE = typeof P.waermepumpenquote === 'number' ? P.waermepumpenquote : 0.10;
+  var WP_QUOTE = typeof P.waermepumpenquote === 'number' ? P.waermepumpenquote : 0.05;
   var SCHNITT  = PRO_LEAD + BONUS * QUOTE + WP * WP_QUOTE;   // durchschnittlich je Lead
 
   var out = {
