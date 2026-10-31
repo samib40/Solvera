@@ -509,7 +509,7 @@
     if (!ziel) return;
     player = V.einbauen(ziel, inhalt.video_url, S.profil.id + '-' + inhalt.id, function (prozent, sek) {
       fortschrittSenden(inhalt.id, art, prozent >= SCHWELLE ? 100 : prozent, sek);
-    }, { zeichen: name(S.profil) + ' · ' + S.profil.email, adresse: D.videoAdresse });
+    }, { zeichen: CFG.wasserzeichen ? name(S.profil) + ' · ' + S.profil.email : '', adresse: D.videoAdresse });
   }
 
   var sendeKette = Promise.resolve();
