@@ -161,9 +161,14 @@ create trigger profil_schutz before update on public.profile
   for each row execute function public.profil_schuetzen();
 
 -- Fortschritt geht nie zurück: Prozent nur nach oben, ein Abschluss bleibt.
+-- Eine Lektion ohne Video kann nicht abgeschlossen werden.
 create or replace function public.fortschritt_festhalten() returns trigger
-language plpgsql as $$
+language plpgsql security definer set search_path = public as $$
 begin
+  if new.art = 'lektion' and new.prozent >= 100
+     and exists (select 1 from public.lektionen where id = new.inhalt_id and video_url = '') then
+    new.prozent := 99;
+  end if;
   if tg_op = 'UPDATE' then
     new.prozent          := greatest(old.prozent, new.prozent);
     new.sekunden         := greatest(old.sekunden, new.sekunden);
@@ -211,10 +216,10 @@ begin
           coalesce(wer, 'Ein Partner') || ' hat „' || coalesce(was, 'ein Video') || '“ abgeschlossen.');
 
   if welche is not null then
-    select count(*) into gesamt from public.lektionen where stufe = welche and veroeffentlicht;
+    select count(*) into gesamt from public.lektionen where stufe = welche and veroeffentlicht and video_url <> '';
     select count(*) into erledigt
       from public.fortschritt f join public.lektionen l on l.id = f.inhalt_id
-     where f.nutzer_id = new.nutzer_id and l.stufe = welche and l.veroeffentlicht
+     where f.nutzer_id = new.nutzer_id and l.stufe = welche and l.veroeffentlicht and l.video_url <> ''
        and f.abgeschlossen_am is not null;
     if gesamt > 0 and erledigt >= gesamt then
       stufenname := case welche when 'starter' then 'Starter'
@@ -331,11 +336,11 @@ create policy video_loeschen  on storage.objects for delete
 
 
 -- ---------- 5. Startinhalte ----------------------------------------------
--- Ein Grundgerüst des Ausbildungsplans. Videos werden später im
--- Admin-Bereich der Akademie eingetragen. Läuft nur, solange es noch
--- keine einzige Lektion gibt.
+-- Ein Grundgerüst des Ausbildungsplans, angelegt als ENTWÜRFE: Partner
+-- sehen eine Lektion erst, wenn im Admin-Bereich ein Video hochgeladen und
+-- sie veröffentlicht wurde. Läuft nur, solange es noch keine Lektion gibt.
 
-insert into public.lektionen (stufe, reihenfolge, titel, beschreibung, inhalt, dauer_min)
+insert into public.lektionen (stufe, reihenfolge, titel, beschreibung, inhalt, dauer_min, veroeffentlicht)
 select * from (values
   ('starter', 1, 'Willkommen bei Solvera Sales',
    'Wer wir sind, wie der Ablauf funktioniert und was dich in den ersten Wochen erwartet.',
@@ -368,6 +373,7 @@ select * from (values
    'Was es braucht, um selbst neue Partner einzuarbeiten und ein Team zu führen.',
    E'Neue Partner begleiten und ausbilden\nVorbild an der Tür sein\nDer Weg im Entwicklungsmodell von Solvera Sales', 16)
 ) as v(stufe, reihenfolge, titel, beschreibung, inhalt, dauer_min)
+cross join (values (false)) as e(veroeffentlicht)
 where not exists (select 1 from public.lektionen);
 
 -- ---------- 6. Admin nachträglich festlegen (bei Bedarf) -----------------

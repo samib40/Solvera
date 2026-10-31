@@ -21,7 +21,7 @@
   var D = window.AkademieDaten;
   var V = window.AkademieVideo;
   var CFG = (window.SOLVERA && window.SOLVERA.akademie) || {};
-  var SCHWELLE = CFG.abschlussAbProzent || 90;
+  var SCHWELLE = CFG.abschlussAbProzent || 100;
   var NACHEINANDER = CFG.stufenNacheinander !== false;
 
   var main = document.getElementById('ak-main');
@@ -138,9 +138,13 @@
     return S.lektionen.filter(function (l) { return l.stufe === stufe && l.veroeffentlicht; })
       .sort(function (a, b) { return a.reihenfolge - b.reihenfolge; });
   }
+  /* Zählt für den Ausbildungsstand: nur Lektionen mit Video – nur die lassen
+     sich abschließen. */
+  function hatVideo(l) { return !!V.erkennen(l.video_url); }
+  function zaehlbar(stufe) { return lektionenDer(stufe).filter(hatVideo); }
   function stufenStand(nutzerId) {
     return STUFEN.map(function (s) {
-      var ls = lektionenDer(s.id);
+      var ls = zaehlbar(s.id);
       var n = ls.filter(function (l) { return fertig(l.id, nutzerId); }).length;
       return { stufe: s, gesamt: ls.length, fertig: n, prozent: ls.length ? Math.round(n / ls.length * 100) : 0 };
     });
@@ -165,7 +169,7 @@
   function naechsteLektion() {
     for (var i = 0; i < STUFEN.length; i++) {
       if (!stufeOffen(STUFEN[i].id)) return null;
-      var offen = lektionenDer(STUFEN[i].id).filter(function (l) { return !fertig(l.id); })[0];
+      var offen = zaehlbar(STUFEN[i].id).filter(function (l) { return !fertig(l.id); })[0];
       if (offen) return offen;
     }
     return null;
@@ -284,9 +288,9 @@
       : erledigt ? '<span class="ak-symbol fertig">' + ico('haken') + '</span>'
       : f ? '<span class="ak-symbol laeuft">' + ico('play') + '</span>'
       : '<span class="ak-symbol">' + nr + '</span>';
-    var rechts = erledigt ? 'Erledigt' : f ? f.prozent + ' %' : '';
+    var rechts = erledigt ? 'Erledigt' : !hatVideo(l) ? 'Video folgt' : f ? f.prozent + ' %' : '';
     var inhalt = sym + '<div class="txt"><strong>' + esc(l.titel) + '</strong><p>' + esc(l.beschreibung) + '</p>' +
-      '<div class="meta">' + (l.video_url ? '<span>Video</span>' : '<span>Text</span>') +
+      '<div class="meta">' + (hatVideo(l) ? '<span>Video</span>' : '<span>Video folgt</span>') +
       (l.dauer_min ? '<span>' + l.dauer_min + ' Min.</span>' : '') +
       (!l.veroeffentlicht ? '<span class="ak-tag warn">Entwurf</span>' : '') + '</div></div>' +
       '<div class="rechts">' + rechts + '</div>';
@@ -461,7 +465,7 @@
 
   function vLektionen() {
     var html = '<div class="ak-kopf"><div><span class="eyebrow">Ausbildungsplan</span><h1>Deine Lektionen</h1>' +
-      '<p>Drei Stufen, Schritt für Schritt. Ein Video gilt als erledigt, sobald du ' + SCHWELLE + ' % davon gesehen hast.' +
+      '<p>Drei Stufen, Schritt für Schritt. Eine Lektion ist erledigt, sobald du das Video vollständig angesehen hast. Vorspulen zählt nicht.' +
       (NACHEINANDER ? ' Die nächste Stufe öffnet sich, wenn die vorige abgeschlossen ist.' : '') + '</p></div></div>';
     stufenStand().forEach(function (x) {
       var offen = stufeOffen(x.stufe.id);
@@ -492,13 +496,12 @@
   function statusBereich(id, url) {
     var f = S.meinF[id];
     var info = V.erkennen(url);
-    var messbar = info && info.typ !== 'einbettung';
     if (f && f.abgeschlossen_am) {
       return '<span class="ak-tag ok">' + ico('haken').replace('<svg', '<svg width="13" height="13"') + 'Abgeschlossen am ' + datum(f.abgeschlossen_am) + '</span>';
     }
+    if (!info) return '<span class="small muted">Sobald das Video da ist, kannst du diese Lektion abschließen.</span>';
     return balken(f ? f.prozent : 0) + '<span class="zahl">' + (f ? f.prozent : 0) + ' % gesehen</span>' +
-      (messbar ? '<span class="small muted" style="flex-basis:100%">Wird automatisch abgeschlossen, sobald du ' + SCHWELLE + ' % des Videos gesehen hast.</span>'
-        : '<button class="btn btn-primary btn-sm" type="button" data-aktion="erledigt" data-id="' + esc(id) + '">' + ico('haken') + 'Als erledigt markieren</button>');
+      '<span class="small muted" style="flex-basis:100%">Wird automatisch als erledigt markiert, sobald du das Video vollständig angesehen hast. Vorspulen zählt nicht.</span>';
   }
 
   function playerStarten(inhalt, art) {
@@ -802,7 +805,7 @@
           ls.map(function (l) {
             var info = V.erkennen(l.video_url);
             return '<tr><td class="zahlen">' + l.reihenfolge + '</td><td><strong>' + esc(l.titel) + '</strong>' + (!l.veroeffentlicht ? ' <span class="ak-tag warn">Entwurf</span>' : '') + '</td>' +
-              '<td>' + (info ? '<span class="ak-tag ok">' + { speicher: 'Hochgeladen', youtube: 'YouTube', vimeo: 'Vimeo', datei: 'Datei', einbettung: 'Einbettung' }[info.typ] + '</span>' : '<span class="ak-tag warn">fehlt</span>') + '</td>' +
+              '<td>' + (info ? '<span class="ak-tag ok">' + { speicher: 'Hochgeladen', youtube: 'YouTube', vimeo: 'Vimeo', datei: 'Datei', demo: 'Beispiel' }[info.typ] + '</span>' : '<span class="ak-tag warn">fehlt</span>') + '</td>' +
               '<td class="zahlen">' + gesehenVon(l.id) + ' / ' + aktive.length + '</td>' +
               '<td class="nowrap"><a class="btn btn-ghost btn-sm" href="#/admin/lektion/' + esc(l.id) + '">Bearbeiten</a></td></tr>';
           }).join('') + '</tbody></table></div>' : '<p class="ak-leer">Noch keine Lektionen in dieser Stufe.</p>') + '</section>';
@@ -1075,7 +1078,8 @@
     lektion: async function (form, w) {
       if (!pflicht(form, ['titel'])) return formFehler(form, 'Bitte gib einen Titel ein.');
       if (hochladenLaeuft) return formFehler(form, 'Bitte warten, bis das Video fertig hochgeladen ist.');
-      if (w.video_url && !w.video_pfad && !V.erkennen(w.video_url)) return formFehler(form, 'Der Video-Link wird nicht erkannt. Er muss mit https:// beginnen.');
+      if (w.video_url && !w.video_pfad && !V.erkennen(w.video_url)) return formFehler(form, 'Der Link wird nicht erkannt. Möglich sind YouTube, Vimeo oder ein direkter Link auf eine MP4-Datei – nur bei diesen lässt sich messen, ob das Video komplett gesehen wurde.');
+      if (w.veroeffentlicht && !w.video_pfad && !w.video_url) return formFehler(form, 'Eine veröffentlichte Lektion braucht ein Video, sonst kann sie niemand abschließen. Lade ein Video hoch oder speichere die Lektion als Entwurf (Haken bei „Veröffentlicht“ entfernen).');
       var d = { stufe: w.stufe, reihenfolge: parseInt(w.reihenfolge, 10) || 1, titel: w.titel, beschreibung: w.beschreibung,
                 inhalt: w.inhalt, video_url: videoAusFormular(w), dauer_min: parseInt(w.dauer_min, 10) || 0, veroeffentlicht: w.veroeffentlicht };
       var vorher = null;
@@ -1090,7 +1094,7 @@
       if (!pflicht(form, ['titel'])) return formFehler(form, 'Bitte gib einen Titel ein.');
       if (w.art === 'termin' && !w.termin_am) return formFehler(form, 'Bitte Datum und Uhrzeit des Termins angeben.');
       if (hochladenLaeuft) return formFehler(form, 'Bitte warten, bis das Video fertig hochgeladen ist.');
-      if (w.video_url && !w.video_pfad && w.art !== 'termin' && !V.erkennen(w.video_url)) return formFehler(form, 'Der Video-Link wird nicht erkannt. Er muss mit https:// beginnen.');
+      if (w.video_url && !w.video_pfad && w.art !== 'termin' && !V.erkennen(w.video_url)) return formFehler(form, 'Der Link wird nicht erkannt. Möglich sind YouTube, Vimeo oder ein direkter Link auf eine MP4-Datei.');
       if (w.meeting_link && w.art === 'termin' && !sicherUrl(w.meeting_link)) return formFehler(form, 'Der Meeting-Link muss mit https:// beginnen.');
       var d = { art: w.art, titel: w.titel, text: w.text, angeheftet: w.angeheftet, veroeffentlicht: w.veroeffentlicht,
                 video_url: w.art === 'termin' ? '' : videoAusFormular(w),
@@ -1190,12 +1194,6 @@
       await anmeldungAbschliessen();
       zeigen();
       if (S.profil.status !== 'aktiv') toast('Noch nicht freigeschaltet.');
-    },
-    erledigt: function (el) {
-      var id = el.getAttribute('data-id');
-      el.disabled = true;
-      var art = S.lektionen.some(function (l) { return l.id === id; }) ? 'lektion' : 'beitrag';
-      return fortschrittSenden(id, art, 100, 0);
     },
     filter: function (el) {
       var w = el.getAttribute('data-wert');

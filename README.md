@@ -85,10 +85,12 @@ Termine (z. B. Teams-Meetings) mit „Teilnehmen“, „Ich bin dabei“ und Kal
 | Meldungen | „X hat sich registriert“, „X hat ‚Lektion‘ abgeschlossen“, „X hat Stufe Starter abgeschlossen“. Zähler im Menü, Abfrage jede Minute, auf Wunsch Desktop-Hinweis. Per E-Mail: siehe Schritt 6. |
 
 **Wie „angesehen“ gemessen wird:** Gezählt werden die Sekunden, die tatsächlich
-abgespielt wurden – Vorspulen zählt nicht. Ab 90 % gilt ein Video als erledigt
-(einstellbar in `config.js`, `akademie.abschlussAbProzent`). Das funktioniert mit
-hochgeladenen Videos, YouTube, Vimeo und direkt verlinkten `.mp4`-Dateien. Lektionen ohne Video oder mit
-anderen Einbettungen haben einen Knopf „Als erledigt markieren“.
+abgespielt wurden – Vorspulen zählt nicht. Erledigt ist eine Lektion erst, wenn das
+Video **komplett** gesehen wurde (`config.js`, `akademie.abschlussAbProzent: 100`).
+Selbst abhaken können Partner nichts. Deshalb sind nur messbare Videos erlaubt:
+hochgeladene Videos, YouTube, Vimeo und direkte `.mp4`-Links. Eine Lektion lässt sich
+nur mit Video veröffentlichen; die zehn Startlektionen sind Entwürfe, bis ein Video
+drin ist.
 
 ### Demo-Modus
 
@@ -117,7 +119,8 @@ reicht für deutlich über hundert Partner).
    *anon public*-Schlüssel in `assets/js/config.js` unter `akademie` eintragen,
    committen, pushen. Der Demo-Hinweis verschwindet dann.
 5. **Selbst registrieren** mit der Adresse aus Schritt 2 – dieses Konto ist sofort Admin.
-   Danach unter *Inhalte* die Videos zu den Lektionen hochladen.
+   Danach unter *Inhalte* die Videos zu den Lektionen hochladen und jede Lektion
+   veröffentlichen (Haken „Veröffentlicht“).
 6. **Für eigene Videos auf den Pro-Tarif wechseln** (*Organization → Billing*, rund
    25 $ im Monat, aktuelle Preise auf supabase.com/pricing). Der kostenlose Tarif
    erlaubt nur Dateien bis 50 MB und 1 GB Speicher. Danach unter
@@ -189,8 +192,9 @@ Links lassen sich aber weitergeben.
   Supabase *Authentication → Users* – Profil und Fortschritt verschwinden mit.
 * Weitere Admins: im SQL Editor
   `update public.profile set rolle = 'admin' where email = '…';`
-* Die Messung läuft im Browser. Gegen versehentliches Überspringen ist sie sicher,
-  gegen gezielte Manipulation durch technisch versierte Nutzer nicht.
+* Die Messung läuft im Browser. Gegen Vorspulen und Überspringen ist sie sicher,
+  gegen gezielte Manipulation durch Programmierkundige, die die Schnittstelle von
+  Hand ansprechen, nicht vollständig.
 * Die Akademie ist nicht Teil von `vorschau.html`; zum Ansehen `akademie.html` direkt öffnen.
 
 | Datei | Zweck |

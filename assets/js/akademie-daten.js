@@ -332,7 +332,7 @@
         ['profi', 3, 'Vom Partner zur Teamleitung', 'Was es braucht, um selbst neue Partner einzuarbeiten und ein Team zu führen.', 'Neue Partner begleiten und ausbilden\nVorbild an der Tür sein\nDer Weg im Entwicklungsmodell von Solvera Sales', 16]
       ].map(function (x) {
         return { id: uuid(), stufe: x[0], reihenfolge: x[1], titel: x[2], beschreibung: x[3], inhalt: x[4],
-                 video_url: '', dauer_min: x[5], veroeffentlicht: true, erstellt_am: vor(30) };
+                 video_url: 'demo:' + (20 + x[1] * 5), dauer_min: x[5], veroeffentlicht: true, erstellt_am: vor(30) };
       });
 
       var B = [
@@ -342,13 +342,13 @@
           meeting_link: 'https://teams.microsoft.com/l/meetup-join/beispiel', erstellt_am: vor(1) },
         { art: 'woche', titel: 'Wochenschulung: Die ersten 10 Sekunden an der Tür',
           text: 'Warum der Einstieg über Erfolg oder Misserfolg entscheidet – mit drei Formulierungen zum direkten Ausprobieren.',
-          dauer_min: 12, erstellt_am: vor(2) },
+          video_url: 'demo:25', erstellt_am: vor(2) },
         { art: 'ansage', titel: 'Neue Gebiete in Baden-Württemberg freigegeben',
           text: 'Ab Montag sind die Gebiete rund um Pforzheim und Bruchsal freigegeben. Bitte vorher mit der Vertriebsleitung abstimmen, wer wo unterwegs ist.',
           erstellt_am: vor(3) },
         { art: 'woche', titel: 'Wochenschulung: Einwand „Wir haben kein Geld“',
           text: 'Wie du mit Finanzierung und Förderung souverän auf den häufigsten Einwand reagierst.',
-          dauer_min: 9, erstellt_am: vor(9) }
+          video_url: 'demo:20', erstellt_am: vor(9) }
       ].map(function (b) {
         return Object.assign({ id: uuid(), video_url: '', termin_am: null, termin_dauer_min: 60,
                                meeting_link: '', angeheftet: false, veroeffentlicht: true }, b);
@@ -416,7 +416,7 @@
     function laden() {
       if (speicher) return speicher;
       try { speicher = JSON.parse(localStorage.getItem(SCHLUESSEL)); } catch (e) { speicher = null; }
-      if (!speicher || !speicher.konten) { speicher = beispielDaten(); sichern(); }
+      if (!speicher || !speicher.konten || speicher.version !== 2) { speicher = beispielDaten(); speicher.version = 2; sichern(); }
       return speicher;
     }
     function sichern() {
@@ -603,7 +603,8 @@
       },
 
       /* Nur im Demo-Modus: alles auf die Beispieldaten zuruecksetzen */
-      zuruecksetzen: function () { speicher = beispielDaten(); sichern(); }
+      version: 2,
+      zuruecksetzen: function () { speicher = beispielDaten(); speicher.version = 2; sichern(); }
     };
   }
 

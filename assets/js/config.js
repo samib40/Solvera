@@ -155,7 +155,9 @@ window.SOLVERA = {
     /* Fortgeschritten erst nach Starter, Profi erst nach Fortgeschritten */
     stufenNacheinander: true,
 
-    /* Ab wie viel Prozent gesehener Laufzeit ein Video als erledigt gilt */
-    abschlussAbProzent: 90
+    /* Ab wie viel Prozent gesehener Laufzeit ein Video als erledigt gilt.
+       100 = komplett angesehen (Vorspulen zaehlt nicht). Einen Knopf
+       „Als erledigt markieren“ gibt es bewusst nicht. */
+    abschlussAbProzent: 100
   }
 };

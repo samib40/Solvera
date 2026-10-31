@@ -9,7 +9,10 @@
      YouTube   (am besten „nicht gelistet“) – über die IFrame-API
      Vimeo     (auch private Links mit Hash) – über postMessage
      Datei     .mp4 / .webm / .mov direkt verlinkt – HTML5-Video
-     Sonstige  beliebige Einbettungs-Adresse – ohne Messung
+     Demo      "demo:<sekunden>" – simuliertes Beispielvideo im Demo-Modus
+
+   Andere Adressen werden nicht angenommen: Jedes Video muss messbar sein,
+   denn erledigt ist eine Lektion nur, wenn das Video komplett gesehen wurde.
 
    Gemessen wird, welche Sekunden tatsächlich abgespielt wurden. Vorspulen
    zählt also nicht als gesehen. Die gesehenen Sekunden merkt sich der
@@ -23,6 +26,7 @@
     url = String(url || '').trim();
     if (!url) return null;
     if (url.indexOf('speicher:') === 0) return { typ: 'speicher', pfad: url.slice(9) };
+    if (url.indexOf('demo:') === 0) return { typ: 'demo', sek: parseInt(url.slice(5), 10) || 30 };
     var m;
     if ((m = url.match(/(?:youtube(?:-nocookie)?\.com\/(?:watch\?(?:.*&)?v=|embed\/|shorts\/|live\/)|youtu\.be\/)([\w-]{11})/))) {
       return { typ: 'youtube', id: m[1] };
@@ -31,7 +35,6 @@
       return { typ: 'vimeo', id: m[1], h: m[2] || m[3] || '' };
     }
     if (/^https?:\/\//i.test(url) && /\.(mp4|webm|mov|m4v)(\?|#|$)/i.test(url)) return { typ: 'datei', url: url };
-    if (/^https:\/\//i.test(url)) return { typ: 'einbettung', url: url };
     return null;
   }
 
@@ -50,7 +53,9 @@
     function sichern() {
       try { localStorage.setItem(schluessel, JSON.stringify(Object.keys(gesehen).map(Number))); } catch (e) { /* voll */ }
     }
-    function prozent() { return dauer ? Math.min(100, anzahl / Math.floor(dauer) * 100) : 0; }
+    /* Die letzten 2 Sekunden muessen nicht einzeln erfasst sein: Player
+       melden die Zeit nur grob, das Ende wird sonst manchmal verpasst. */
+    function prozent() { return dauer ? Math.min(100, anzahl / Math.max(1, Math.floor(dauer) - 2) * 100) : 0; }
 
     return {
       zeit: function (sek, gesamt) {
@@ -208,23 +213,44 @@
     return function () { weg = true; zeichenWeg(); messung.ende(); v.pause(); v.removeAttribute('src'); v.load(); };
   }
 
-  function einbettung(ziel, info) {
-    var f = document.createElement('iframe');
-    f.src = info.url; f.allow = 'autoplay; fullscreen'; f.allowFullscreen = true; f.title = 'Schulungsvideo';
-    ziel.appendChild(f);
-    return function () {};
+  /* Nur Demo-Modus: simuliertes Video ohne Vorspulen */
+  function demo(ziel, info, messung) {
+    var d = document.createElement('div');
+    d.className = 'ak-demo-player';
+    d.innerHTML = '<button type="button" class="ak-demo-play" aria-label="Abspielen">' +
+      '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7Z"/></svg></button>' +
+      '<span class="ak-demo-titel">Beispielvideo · im Demo-Modus simuliert</span>' +
+      '<div class="ak-demo-leiste"><i></i></div><span class="ak-demo-zeit">0:00 / ' + mmss(info.sek) + '</span>';
+    ziel.appendChild(d);
+    var t = 0, takt = null;
+    var knopf = d.querySelector('button'), leiste = d.querySelector('.ak-demo-leiste i'), zeit = d.querySelector('.ak-demo-zeit');
+    function mmss(x) { x = Math.floor(x); return Math.floor(x / 60) + ':' + String(x % 60).padStart(2, '0'); }
+    function stopp() { clearInterval(takt); takt = null; knopf.classList.remove('laeuft'); knopf.setAttribute('aria-label', 'Abspielen'); messung.ende(); }
+    knopf.addEventListener('click', function () {
+      if (takt) return stopp();
+      if (t >= info.sek) t = 0;
+      knopf.classList.add('laeuft'); knopf.setAttribute('aria-label', 'Pause');
+      takt = setInterval(function () {
+        t = Math.min(info.sek, t + 0.25);
+        messung.zeit(t, info.sek);
+        leiste.style.width = (t / info.sek * 100) + '%';
+        zeit.textContent = mmss(t) + ' / ' + mmss(info.sek);
+        if (t >= info.sek) stopp();
+      }, 250);
+    });
+    return function () { clearInterval(takt); messung.ende(); };
   }
 
-  /* Baut den Player in "ziel" ein. Gibt { messbar, zerstoeren } zurück.
+  /* Baut den Player in "ziel" ein. Gibt { zerstoeren } zurück.
      zusatz.zeichen  Text für das Wasserzeichen
      zusatz.adresse  Funktion pfad → Promise(Abspiel-Adresse) für "speicher:" */
   function einbauen(ziel, url, schluessel, beiFortschritt, zusatz) {
     var info = erkennen(url);
     ziel.innerHTML = '';
-    if (!info) return { messbar: false, zerstoeren: function () {} };
+    if (!info) return { zerstoeren: function () {} };
     var messung = Messung('solvera-ak-video-' + schluessel, beiFortschritt);
-    var weg = { youtube: youtube, vimeo: vimeo, datei: datei, speicher: datei, einbettung: einbettung }[info.typ](ziel, info, messung, zusatz || {});
-    return { messbar: info.typ !== 'einbettung', zerstoeren: weg };
+    var weg = { youtube: youtube, vimeo: vimeo, datei: datei, speicher: datei, demo: demo }[info.typ](ziel, info, messung, zusatz || {});
+    return { zerstoeren: weg };
   }
 
   window.AkademieVideo = { erkennen: erkennen, einbauen: einbauen };

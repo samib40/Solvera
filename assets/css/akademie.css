@@ -287,6 +287,22 @@ a.ak-beitrag:hover { border-color: var(--brass-line); }
 .ak-upload .ak-balken { flex-basis: 100%; }
 .ak-oder { font-size: .78rem; color: var(--txt-3); font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
 
+.ak-demo-player {
+  display: grid; place-items: center; align-content: center; gap: 14px; padding: 24px;
+  background: radial-gradient(ellipse at center, #2a2620 0%, #0b0b0d 75%); color: #f5f4f2;
+}
+.ak-demo-play {
+  width: 68px; height: 68px; border-radius: 50%; display: grid; place-items: center;
+  background: rgba(255, 255, 255, .14); border: 1px solid rgba(255, 255, 255, .3); color: #fff;
+}
+.ak-demo-play svg { width: 28px; height: 28px; margin-left: 4px; }
+.ak-demo-play.laeuft svg { display: none; }
+.ak-demo-play.laeuft::before { content: ""; width: 20px; height: 24px; border-left: 6px solid #fff; border-right: 6px solid #fff; }
+.ak-demo-titel { font-size: .85rem; color: rgba(255, 255, 255, .7); }
+.ak-demo-leiste { width: min(420px, 80%); height: 5px; border-radius: 9px; background: rgba(255, 255, 255, .18); overflow: hidden; }
+.ak-demo-leiste i { display: block; height: 100%; width: 0; background: #d9b45c; }
+.ak-demo-zeit { font-size: .8rem; font-variant-numeric: tabular-nums; color: rgba(255, 255, 255, .7); }
+
 .ak-video-leer {
   display: grid; place-items: center; text-align: center; padding: 24px;
   background: linear-gradient(135deg, var(--surface-2), var(--surface-3)); color: var(--txt-2);
