@@ -100,7 +100,7 @@
       var d = null;
       try { d = text ? JSON.parse(text) : null; } catch (e) { d = text; }
       if (!r.ok) {
-        var msg = d && (d.msg || d.message || d.error_description || d.error);
+        var msg = d && (d.meldung || d.msg || d.message || d.error_description || d.error);
         var err = Fehler(uebersetzen(msg || ('Fehler ' + r.status)));
         err.status = r.status;
         throw err;
@@ -316,6 +316,24 @@
       mitteilungSenden: function (m) { return db('mitteilungen', { methode: 'POST', daten: m, kopf: hinterlegen() }); },
       mitteilungLoeschen: function (id) { return db('mitteilungen?id=eq.' + id, { methode: 'DELETE' }); },
       gelesen: function () { return db('mitteilung_gelesen?select=*'); },
+
+      /* ---- CRM-Abgleich ---- */
+      crmZahlen: function () { return db('crm_zahlen?select=*&limit=10000'); },
+      crmAbgleiche: function () { return db('crm_abgleiche?select=*&order=zeit.desc&limit=10'); },
+      einstellung: async function (schluessel) {
+        var r = await db('einstellungen?select=wert&schluessel=eq.' + encodeURIComponent(schluessel));
+        return r && r[0] ? r[0].wert : null;
+      },
+      einstellungSpeichern: function (schluessel, wert) {
+        return db('einstellungen?on_conflict=schluessel', { methode: 'POST', daten: { schluessel: schluessel, wert: wert },
+          kopf: { Prefer: 'resolution=merge-duplicates,return=representation' } });
+      },
+      crmNameSpeichern: function (id, crmName) {
+        return db('profile?id=eq.' + id, { methode: 'PATCH', daten: { crm_name: crmName }, kopf: hinterlegen() });
+      },
+      crmAufrufen: function (modus) {
+        return angemeldet('/functions/v1/crm-abgleich', { methode: 'POST', daten: { modus: modus } });
+      },
       gelesenSetzen: function (nutzerId, mitteilungId, antwort) {
         return db('mitteilung_gelesen?on_conflict=mitteilung_id,nutzer_id', {
           methode: 'POST', kopf: { Prefer: 'resolution=merge-duplicates,return=representation' },
@@ -459,7 +477,14 @@
       M.unshift({ id: M.length + 1, art: 'antwort', nutzer_id: beispiele[0].id, inhalt_id: mitteilungen[1].id, gelesen: false,
                   text: 'Lena Beispiel hat auf „Bitte Steuernummer schicken“ geantwortet: 12/345/67890 – liebe Grüße, Lena', erstellt_am: vor(0, 20) });
 
+      var crmZahlen = berichte.filter(function (b) { return b.abschluesse; }).map(function (b) {
+        return { nutzer_id: b.nutzer_id, datum: b.datum, leads: b.abschluesse, stornos: b.stornos || 0, aktualisiert_am: vor(0, 6) };
+      });
+      var crmAbgleiche = [{ id: 1, zeit: vor(0, 6), ok: true, leads: 1402, zugeordnet: 1388,
+                            nicht_zugeordnet: { 'Kai T.': 14 }, meldung: '' }];
+
       return { berichte: berichte, bewertungen: bewertungen, mitteilungen: mitteilungen, gelesen: gelesen,
+               crmZahlen: crmZahlen, crmAbgleiche: crmAbgleiche, einstellungen: { crm_storno: { regeln: ['status=Storniert'] } },
                konten: [admin, partner].concat(beispiele), lektionen: L, beitraege: B,
                fortschritt: F, meldungen: M, zusagen: [{ nutzer_id: beispiele[0].id, beitrag_id: B[0].id, erstellt_am: vor(0) }],
                sitzung: null };
@@ -482,7 +507,7 @@
     function laden() {
       if (speicher) return speicher;
       try { speicher = JSON.parse(localStorage.getItem(SCHLUESSEL)); } catch (e) { speicher = null; }
-      if (!speicher || !speicher.konten || speicher.version !== 4) { speicher = beispielDaten(); speicher.version = 4; sichern(); }
+      if (!speicher || !speicher.konten || speicher.version !== 5) { speicher = beispielDaten(); speicher.version = 5; sichern(); }
       return speicher;
     }
     function sichern() {
@@ -714,6 +739,33 @@
         sichern(); return [kopie(g)];
       },
 
+      /* ---- CRM-Abgleich (Demo mit Beispielwerten) ---- */
+      crmZahlen: async function () {
+        var k = ich();
+        return kopie(laden().crmZahlen.filter(function (z) { return k.rolle === 'admin' || z.nutzer_id === k.id; }));
+      },
+      crmAbgleiche: async function () { mussAdmin(); return kopie(laden().crmAbgleiche); },
+      einstellung: async function (schluessel) { return kopie(laden().einstellungen[schluessel] || null); },
+      einstellungSpeichern: async function (schluessel, wert) { mussAdmin(); laden().einstellungen[schluessel] = wert; sichern(); },
+      crmNameSpeichern: async function (id, crmName) {
+        mussAdmin(); var k = laden().konten.filter(function (x) { return x.id === id; })[0];
+        k.crm_name = crmName; sichern(); return [ohnePasswort(k)];
+      },
+      crmAufrufen: async function (modus) {
+        mussAdmin(); await new Promise(function (r) { setTimeout(r, 600); });
+        var s = laden();
+        if (modus === 'pruefen') {
+          return { ok: true, modus: 'pruefen', anzahl: 1402, datumErkannt: 1402,
+            felder: ['agency_name', 'assigned_to_name', 'billed_at', 'call_status', 'erstellt', 'erstellt_von_name', 'id', 'lead_type', 'projekt', 'pv_status', 'status', 'wp_status'],
+            werte: { status: { 'Offen': 512, 'Qualifiziert': 431, 'Termin gelegt': 288, 'Storniert': 171 }, pv_status: { 'Neu': 640, 'Angebot': 410, 'Verkauft': 352 },
+                     wp_status: {}, call_status: { 'Erreicht': 980, 'Nicht erreicht': 422 }, lead_type: { 'pv': 1210, 'pv_wp': 192 } },
+            ersteller: { 'Lena Beispiel': 520, 'Tom Probe': 401, 'Max Muster': 318, 'Jana Muster': 149, 'Kai T.': 14 } };
+        }
+        s.crmAbgleiche.unshift({ id: Date.now(), zeit: jetzt(), ok: true, leads: 1402, zugeordnet: 1388, nicht_zugeordnet: { 'Kai T.': 14 }, meldung: '' });
+        sichern();
+        return { ok: true, modus: 'abgleich', leads: 1402, zugeordnet: 1388, nicht_zugeordnet: { 'Kai T.': 14 } };
+      },
+
       /* Videos im Demo-Modus: im IndexedDB-Speicher dieses Browsers */
       videoHochladen: async function (datei, beiFortschritt) {
         mussAdmin();
@@ -733,7 +785,7 @@
 
       /* Nur im Demo-Modus: alles auf die Beispieldaten zuruecksetzen */
       version: 2,
-      zuruecksetzen: function () { speicher = beispielDaten(); speicher.version = 4; sichern(); }
+      zuruecksetzen: function () { speicher = beispielDaten(); speicher.version = 5; sichern(); }
     };
   }
 

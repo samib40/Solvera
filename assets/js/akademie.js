@@ -39,7 +39,8 @@
   var S = {
     profil: null, lektionen: [], beitraege: [], meinF: {}, alleF: [], zusagen: [],
     profile: [], meldungen: [], geladen: false,
-    berichte: [], bewertungen: [], mitteilungen: [], gelesen: [], erweiterungFehlt: false
+    berichte: [], bewertungen: [], mitteilungen: [], gelesen: [], erweiterungFehlt: false,
+    crmZahlen: [], crmAbgleiche: [], crmRegeln: [], crmPruefung: null, crmFehlt: false
   };
   var player = null;
   var abfrage = null;
@@ -222,6 +223,14 @@
       console.warn('Dashboard/Mitteilungen nicht verfügbar:', err);
       S.erweiterungFehlt = true;
     }
+    try {
+      S.crmZahlen = await D.crmZahlen() || [];
+      if (istAdmin()) {
+        var c = await Promise.all([D.crmAbgleiche(), D.einstellung('crm_storno')]);
+        S.crmAbgleiche = c[0] || []; S.crmRegeln = (c[1] && c[1].regeln) || [];
+      }
+      S.crmFehlt = false;
+    } catch (err) { S.crmZahlen = []; S.crmFehlt = true; }
     S.geladen = true;
   }
 
@@ -267,6 +276,7 @@
     if (istAdmin()) {
       punkte.push(['admin', 'gruppe', 'Partner', h === 'admin' && (!p[1] || p[1] === 'partner'), 'ak-nav-admin']);
       punkte.push(['admin/team', 'pokal', 'Team', h === 'admin' && /team|leistung|bewertung/.test(p[1] || '')]);
+      punkte.push(['admin/crm', 'laden', 'CRM', h === 'admin' && p[1] === 'crm']);
       punkte.push(['admin/inhalte', 'stift', 'Inhalte', h === 'admin' && /inhalte|lektion|beitrag/.test(p[1] || '')]);
       punkte.push(['admin/mitteilungen', 'brief', 'Mitteilungen', h === 'admin' && p[1] === 'mitteilungen']);
       punkte.push(['admin/meldungen', 'glocke', 'Meldungen' + (meld ? ' <span class="ak-zahl">' + meld + '</span>' : ''), h === 'admin' && p[1] === 'meldungen']);
@@ -1052,7 +1062,14 @@
       info.einwand = prozent(s30.quote) + ' Abschlüsse bei angetroffenen Kunden (letzte 30 Tage) · Ziel über ' + ZIELE.abschlussquote + ' %';
     } else { w.einwand = null; info.einwand = 'Noch keine angetroffenen Kunden erfasst'; }
 
-    if (s90.abs) {
+    var crm90 = letzteTage(S.crmZahlen.filter(function (c) { return c.nutzer_id === id; }), 90);
+    var crmLeads = crm90.reduce(function (a, c) { return a + c.leads; }, 0);
+    if (crmLeads) {
+      var crmSto = crm90.reduce(function (a, c) { return a + c.stornos; }, 0);
+      var cq = crmSto / crmLeads * 100, cz = ZIELE.stornoquote;
+      w.storno = begrenzt(cq <= cz ? 99 - 24 * cq / cz : 75 - (cq - cz) / (100 - cz) * 74);
+      info.storno = prozent(cq) + ' Stornos laut CRM (' + fmt(crmSto) + ' von ' + fmt(crmLeads) + ' Leads, letzte 90 Tage) · Ziel unter ' + cz + ' %';
+    } else if (s90.abs) {
       var q = s90.storno, z = ZIELE.stornoquote;
       /* bis zum Ziel gut (99 → 75), darüber mittelmäßig bis schlecht (75 → 1) */
       w.storno = begrenzt(q <= z ? 99 - 24 * q / z : 75 - (q - z) / (100 - z) * 74);
@@ -1140,14 +1157,18 @@
   }
 
   /* ---------- Kennzahlen ---------- */
-  function kennzahlKachel(titel, s) {
+  function kennzahlKachel(titel, s, crm) {
     return '<div class="ak-kz"><div class="ak-kz-titel">' + titel + '</div>' +
       '<div class="ak-kz-gross"><b>' + fmt(s.tueren) + '</b> Türen</div>' +
       '<dl><div><dt><i class="ak-farbe nicht"></i>Nicht angetroffen</dt><dd>' + fmt(s.nicht) + '</dd></div>' +
       '<div><dt><i class="ak-farbe ohne"></i>Angetroffen, kein Abschluss</dt><dd>' + fmt(s.ohne) + '</dd></div>' +
       '<div><dt><i class="ak-farbe abs"></i>Abschlüsse</dt><dd>' + fmt(s.abs) + '</dd></div></dl>' +
       '<div class="ak-kz-quoten"><span>Antreffquote <b>' + s.antreff + ' %</b></span><span>Abschlussquote <b>' + prozent(s.quote) + '</b></span>' +
-      (s.sto ? '<span>Stornos <b>' + fmt(s.sto) + ' (' + prozent(s.storno) + ')</b></span>' : '') + '</div></div>';
+      (s.sto ? '<span>Stornos <b>' + fmt(s.sto) + ' (' + prozent(s.storno) + ')</b></span>' : '') + '</div>' +
+      (crm && crm.length ? (function () {
+        var ld = crm.reduce(function (a, c) { return a + c.leads; }, 0), st = crm.reduce(function (a, c) { return a + c.stornos; }, 0);
+        return '<div class="ak-kz-crm"><span>Laut CRM</span><b>' + fmt(ld) + '</b> Leads · <b>' + fmt(st) + '</b> Stornos' + (ld ? ' (' + prozent(st / ld * 100) + ')' : '') + '</div>';
+      })() : '') + '</div>';
   }
 
   /* ---------- Tagesdiagramm (gestapelte Säulen, letzte 14 Tage) ---------- */
@@ -1272,9 +1293,10 @@
 
   function kennzahlenHtml(id) {
     var l = berichteVon(id);
-    return kennzahlKachel('Heute', summe(zeitraum(l, 'heute'))) +
-      kennzahlKachel('Diese Woche', summe(zeitraum(l, 'woche'))) +
-      kennzahlKachel('Dieser Monat', summe(zeitraum(l, 'monat')));
+    var c = S.crmZahlen.filter(function (x) { return x.nutzer_id === id; });
+    return kennzahlKachel('Heute', summe(zeitraum(l, 'heute')), zeitraum(c, 'heute')) +
+      kennzahlKachel('Diese Woche', summe(zeitraum(l, 'woche')), zeitraum(c, 'woche')) +
+      kennzahlKachel('Dieser Monat', summe(zeitraum(l, 'monat')), zeitraum(c, 'monat'));
   }
 
   function verlaufTabelle(id, bearbeitbar, mitStorno) {
@@ -1566,6 +1588,93 @@
     if (!document.hidden) { mitteilungenAbfragen(); meldungenAbfragen(); }
   });
 
+
+  /* =======================================================================
+     ADMIN – CRM-Abgleich (Horizon CRM)
+     ======================================================================= */
+  var CRM_FELDNAMEN = { status: 'Status', pv_status: 'PV-Status', wp_status: 'WP-Status', call_status: 'Kunden-Status', lead_type: 'Art' };
+  var crmLaeuft = false;
+
+  function vCrm() {
+    if (S.crmFehlt) {
+      setzen('<div class="ak-zustand"><div class="ico-tile ico-tile-lg">' + ico('sanduhr') + '</div><h1>CRM-Abgleich einrichten</h1>' +
+        '<p>Bitte in Supabase einmal <strong>supabase/erweiterung-crm.sql</strong> ausführen. Danach erscheint hier der Abgleich.</p></div>');
+      return;
+    }
+    var letzter = S.crmAbgleiche[0];
+    var P = S.crmPruefung;
+    var partner = S.profile.filter(function (p) { return p.rolle !== 'admin' && p.status !== 'gesperrt'; });
+    var html = '<div class="ak-kopf"><div><span class="eyebrow">Admin</span><h1>CRM-Abgleich</h1>' +
+      '<p>Jede Nacht holt die Akademie die Leads aus dem Horizon CRM und zählt pro Partner und Tag Leads und Stornos. Kundendaten werden nicht übernommen.</p></div>' +
+      '<div class="ak-knoepfe" style="margin:0"><button class="btn btn-primary btn-sm" type="button" data-aktion="crm-abgleich"' + (crmLaeuft ? ' disabled' : '') + '>' + ico('laden') + 'Jetzt abgleichen</button>' +
+      '<button class="btn btn-ghost btn-sm" type="button" data-aktion="crm-pruefen"' + (crmLaeuft ? ' disabled' : '') + '>CRM prüfen</button></div></div>';
+
+    html += '<section class="ak-karte"><h2>Letzter Abgleich</h2>' + (letzter
+      ? '<dl class="ak-info-liste mt-16"><div><dt>Zeitpunkt</dt><dd>' + datum(letzter.zeit, true) + ' (' + relativ(letzter.zeit) + ')</dd></div>' +
+        '<div><dt>Ergebnis</dt><dd>' + (letzter.ok ? '<span class="ak-tag ok">Erfolgreich</span>' : '<span class="ak-tag err">Fehlgeschlagen</span>') + '</dd></div>' +
+        (letzter.ok ? '<div><dt>Leads gelesen</dt><dd>' + fmt(letzter.leads) + '</dd></div><div><dt>Partnern zugeordnet</dt><dd>' + fmt(letzter.zugeordnet) + '</dd></div>' : '') + '</dl>' +
+        (letzter.meldung ? '<div class="ak-hinweis mt-16">' + esc(letzter.meldung) + '</div>' : '') +
+        (letzter.nicht_zugeordnet && Object.keys(letzter.nicht_zugeordnet).length
+          ? '<p class="small muted mt-16">Nicht zugeordnet: ' + Object.keys(letzter.nicht_zugeordnet).map(function (k) { return esc(k) + ' (' + letzter.nicht_zugeordnet[k] + ')'; }).join(', ') + ' – unten unter „Namen zuordnen“ verknüpfen.</p>' : '')
+      : '<p class="ak-leer mt-8">Noch kein Abgleich gelaufen. Tippe auf „CRM prüfen“, um die Verbindung zu testen.</p>') + '</section>';
+
+    /* Storno-Regeln */
+    html += '<section class="ak-karte mt-24"><h2>Was zählt als Storno?</h2>';
+    if (P) {
+      html += '<p class="small muted mt-8">Häkchen bei allen Werten setzen, die einen stornierten Lead bedeuten. Zahlen = Anzahl Leads im Zeitraum.</p>' +
+        '<form data-form="crm-regeln" class="mt-16">' + Object.keys(P.werte || {}).filter(function (f) { return Object.keys(P.werte[f]).length; }).map(function (f) {
+          return '<fieldset class="ak-crm-feld"><legend>' + esc(CRM_FELDNAMEN[f] || f) + '</legend>' + Object.keys(P.werte[f]).sort().map(function (v) {
+            var regel = f + '=' + v;
+            return '<label class="ak-schalter"><input type="checkbox" name="regel" value="' + esc(regel) + '"' + (S.crmRegeln.indexOf(regel) !== -1 ? ' checked' : '') + '> ' +
+              esc(v) + ' <span class="muted small">(' + fmt(P.werte[f][v]) + ')</span></label>';
+          }).join('') + '</fieldset>';
+        }).join('') + '<div class="form-msg err" role="alert"></div><button class="btn btn-primary btn-sm mt-16" type="submit">Speichern</button></form>';
+    } else {
+      html += '<p class="mt-8">' + (S.crmRegeln.length ? 'Derzeit: ' + S.crmRegeln.map(function (r) { var t = r.split('='); return '<span class="ak-tag">' + esc(CRM_FELDNAMEN[t[0]] || t[0]) + ': ' + esc(t.slice(1).join('=')) + '</span>'; }).join(' ')
+        : 'Noch nichts festgelegt.') + '</p><p class="small muted mt-8">Tippe oben auf „CRM prüfen“, um alle Status-Werte aus dem CRM zur Auswahl zu bekommen.</p>';
+    }
+    html += '</section>';
+
+    /* Namen zuordnen */
+    if (P) {
+      html += '<section class="ak-karte mt-24"><h2>Namen zuordnen</h2><p class="small muted mt-8">„Erstellt von“ im CRM → Partner in der Akademie. Gleiche Namen werden automatisch erkannt.</p>' +
+        '<div class="ak-tabelle-rahmen mt-16"><table class="ak-tabelle"><thead><tr><th>Im CRM</th><th>Leads</th><th>Partner in der Akademie</th></tr></thead><tbody>' +
+        Object.keys(P.ersteller || {}).sort(function (a, b) { return P.ersteller[b] - P.ersteller[a]; }).map(function (n) {
+          var treffer = partner.filter(function (p) { return (p.crm_name && p.crm_name.toLowerCase() === n.toLowerCase()) || name(p).toLowerCase() === n.toLowerCase(); })[0];
+          return '<tr><td>' + esc(n) + '</td><td class="zahlen">' + fmt(P.ersteller[n]) + '</td><td><select class="select" data-crm-name="' + esc(n) + '" aria-label="Partner für ' + esc(n) + '">' +
+            '<option value="">– nicht zuordnen –</option>' + partner.map(function (p) {
+              return '<option value="' + esc(p.id) + '"' + (treffer && treffer.id === p.id ? ' selected' : '') + '>' + esc(name(p)) + '</option>';
+            }).join('') + '</select></td></tr>';
+        }).join('') + '</tbody></table></div></section>';
+      html += '<section class="ak-karte mt-24"><h2>Gefundene Felder</h2><p class="small muted mt-8">' + fmt(P.anzahl) + ' Leads im Zeitraum, Datum erkannt bei ' + fmt(P.datumErkannt) + '.</p>' +
+        '<p class="tiny mt-8">' + (P.felder || []).map(esc).join(', ') + '</p></section>';
+    }
+
+    html += '<section class="ak-karte mt-24"><h2>Einrichtung</h2><ol class="ak-schritte">' +
+      '<li>In Supabase <strong>supabase/erweiterung-crm.sql</strong> ausführen.</li>' +
+      '<li>Edge Function <strong>crm-abgleich</strong> anlegen (Code aus <code>supabase/functions/crm-abgleich/index.ts</code>).</li>' +
+      '<li>Unter Edge Functions → Secrets <strong>CRM_EMAIL</strong> und <strong>CRM_PASSWORT</strong> mit deinen Horizon-Zugangsdaten eintragen.</li>' +
+      '<li>Hier „CRM prüfen“, dann Storno-Status wählen und Namen zuordnen, dann „Jetzt abgleichen“.</li></ol></section>';
+    setzen(html);
+  }
+
+  async function crmStarten(modus) {
+    crmLaeuft = true; vCrm();
+    toast(modus === 'pruefen' ? 'Verbinde mit dem CRM …' : 'Abgleich läuft …');
+    try {
+      var r = await D.crmAufrufen(modus);
+      if (!r || !r.ok) throw Object.assign(new Error((r && r.meldung) || 'Unbekannter Fehler'), { anzeigen: true });
+      if (modus === 'pruefen') { S.crmPruefung = r; toast(fmt(r.anzahl) + ' Leads gefunden.'); }
+      else {
+        var c = await Promise.all([D.crmZahlen(), D.crmAbgleiche()]);
+        S.crmZahlen = c[0] || []; S.crmAbgleiche = c[1] || [];
+        toast('Abgleich fertig: ' + fmt(r.zugeordnet) + ' von ' + fmt(r.leads) + ' Leads zugeordnet.');
+      }
+    } catch (e) {
+      try { S.crmAbgleiche = await D.crmAbgleiche() || S.crmAbgleiche; } catch (x) { /* egal */ }
+      fehlerZeigen(e);
+    } finally { crmLaeuft = false; if (pfad()[1] === 'crm') vCrm(); }
+  }
   /* =======================================================================
      Router
      ======================================================================= */
@@ -1610,6 +1719,7 @@
         else if (p[1] === 'leistung') vDashboard(p[2]);
         else if (p[1] === 'bewertung') vBewertung(p[2]);
         else if (p[1] === 'mitteilungen') vMitteilungenAdmin();
+        else if (p[1] === 'crm') vCrm();
         else vNichtGefunden();
         break;
       default: vNichtGefunden();
@@ -1766,6 +1876,12 @@
     toast('Bewertung gespeichert.');
     geheZu('admin/leistung/' + b.nutzer_id);
   };
+  FORMULARE['crm-regeln'] = async function (form) {
+    var regeln = Array.prototype.map.call(form.querySelectorAll('input[name="regel"]:checked'), function (i) { return i.value; });
+    await D.einstellungSpeichern('crm_storno', { regeln: regeln });
+    S.crmRegeln = regeln;
+    toast(regeln.length ? 'Gespeichert. Beim nächsten Abgleich zählen diese Status als Storno.' : 'Gespeichert. Keine Stornos ausgewählt.');
+  };
   FORMULARE.mitteilung = async function (form, w) {
     if (!pflicht(form, ['titel'])) return formFehler(form, 'Bitte einen Titel eingeben.');
     var auswahl = Array.prototype.filter.call(form.querySelectorAll('input[name="empfaenger"]:checked'), function () { return true; }).map(function (i) { return i.value; });
@@ -1892,6 +2008,8 @@
     },
     csv: csvExport,
     zaehlen: zaehlen,
+    'crm-abgleich': function () { return crmStarten('abgleich'); },
+    'crm-pruefen': function () { return crmStarten('pruefen'); },
     'bericht-laden': function (el) {
       var form = main.querySelector('form[data-form="bericht"]');
       var b = S.berichte.filter(function (x) { return x.nutzer_id === form.getAttribute('data-id') && x.datum === el.getAttribute('data-datum'); })[0];
@@ -1974,6 +2092,14 @@
     if (e.target.getAttribute('data-aktion-change') === 'art') artFelder(e.target.value);
     if (e.target.id === 'video_datei') videoHochladen(e.target);
     if (e.target.hasAttribute('data-team-sort')) { team.sort = e.target.value; vTeam(); }
+    if (e.target.hasAttribute('data-crm-name')) {
+      var crmName = e.target.getAttribute('data-crm-name'), pid = e.target.value;
+      var vorher = S.profile.filter(function (p) { return p.crm_name && p.crm_name.toLowerCase() === crmName.toLowerCase(); });
+      Promise.all(vorher.filter(function (p) { return p.id !== pid; }).map(function (p) { p.crm_name = ''; return D.crmNameSpeichern(p.id, ''); }))
+        .then(function () { if (!pid) return; var p = S.profile.filter(function (x) { return x.id === pid; })[0]; p.crm_name = crmName; return D.crmNameSpeichern(pid, crmName); })
+        .then(function () { toast(pid ? 'Zugeordnet. Gilt ab dem nächsten Abgleich.' : 'Zuordnung entfernt.'); })
+        .catch(fehlerZeigen);
+    }
     if (e.target.getAttribute('data-aktion-change') === 'empfaenger') {
       document.getElementById('ak-auswahl').hidden = e.target.value !== 'auswahl';
     }

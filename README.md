@@ -136,6 +136,36 @@ ist – dafür bräuchte es Web-Push mit einer installierten App auf dem Startbi
 Bis dahin läuft die übrige Akademie normal weiter; Dashboard und Mitteilungen zeigen
 einen Hinweis.
 
+### CRM-Abgleich (Horizon CRM von Energie Plus)
+
+Jede Nacht meldet sich die Edge Function `crm-abgleich` mit hinterlegten Zugangsdaten
+im Horizon CRM an (`/api/login/`), liest die Leads der letzten 90 Tage
+(`/api/leads/`) und zählt je Partner („Erstellt von“) und Tag die **Leads** und
+**Stornos**. Gespeichert werden nur diese Zahlen (Tabelle `crm_zahlen`), keine
+Kundendaten. Die Stornoquote auf der Spielerkarte kommt dann aus dem CRM; die Türen
+zählen die Partner weiter selbst.
+
+**Admin → CRM:** „CRM prüfen“ zeigt alle Status-Werte und Namen aus dem CRM (ohne
+Kundendaten). Dort per Häkchen festlegen, welche Status als Storno zählen, und
+CRM-Namen den Partnern zuordnen. „Jetzt abgleichen“ startet den Abgleich sofort.
+
+Einrichtung:
+1. `supabase/erweiterung-crm.sql` im SQL Editor ausführen.
+2. Supabase → Edge Functions → *Deploy a new function* → *Via Editor*, Name
+   `crm-abgleich`, Code aus `supabase/functions/crm-abgleich/index.ts`. In den
+   Einstellungen der Funktion *Verify JWT* ausschalten.
+3. Edge Functions → Secrets: `CRM_EMAIL`, `CRM_PASSWORT` (Horizon-Zugang),
+   `ABGLEICH_GEHEIMNIS` (lange Zufallszeichenkette).
+4. In der Akademie: Admin → CRM → „CRM prüfen“, Storno-Status wählen, Namen zuordnen,
+   „Jetzt abgleichen“.
+5. Für den nächtlichen Lauf `supabase/crm-zeitplan.sql` (Projekt-Kennung und Geheimnis
+   eintragen) ausführen.
+
+Ändert der CRM-Anbieter seine Anmeldung oder Liste, schlägt der Abgleich fehl; der
+Fehler steht dann unter Admin → CRM. Das Passwort liegt nur als Secret bei Supabase,
+nie auf der Website. Mit Energie Plus abstimmen, dass der automatische Abruf in
+Ordnung ist.
+
 ### Demo-Modus
 
 Solange in `assets/js/config.js` unter `akademie` nichts eingetragen ist, läuft die
@@ -248,6 +278,8 @@ Links lassen sich aber weitergeben.
 | `assets/js/akademie-video.js` | Player, Wasserzeichen und Messung für hochgeladene Videos, YouTube, Vimeo |
 | `supabase/einrichtung.sql` | Datenbank, Rechte, Meldungen, Startlektionen |
 | `supabase/erweiterung-dashboard.sql` | Tagesberichte, Bewertungen, Mitteilungen |
+| `supabase/erweiterung-crm.sql`, `supabase/crm-zeitplan.sql` | CRM-Zahlen, Einstellungen, nächtlicher Lauf |
+| `supabase/functions/crm-abgleich/` | Abgleich mit dem Horizon CRM |
 | `supabase/functions/meldung-per-mail/` | E-Mail-Versand der Meldungen |
 
 ---

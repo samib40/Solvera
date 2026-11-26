@@ -44,7 +44,7 @@ body.ak { display: flex; flex-direction: column; min-height: 100vh; min-height: 
 }
 .ak-nav a:hover { color: var(--txt); background: rgba(var(--schleier), .055); }
 .ak-nav a.is-active { color: var(--txt); background: rgba(var(--schleier), .08); }
-.ak-nav a svg { width: 17px; height: 17px; }
+.ak-nav a svg { width: 17px; height: 17px; flex: none; }
 .ak-nav .ak-nav-admin { margin-left: auto; color: var(--brass-text); }
 .ak-zahl {
   min-width: 20px; height: 20px; padding: 0 6px;
@@ -639,3 +639,12 @@ a.ak-beitrag:hover { border-color: var(--brass-line); }
 .ak-formular .zeile5 { grid-template-columns: repeat(5, minmax(0, 1fr)); }
 @media (max-width: 760px) { .ak-formular .zeile5 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 .ak-regler input[type="range"] { margin-top: 0; }
+
+/* CRM-Abgleich */
+.ak-kz-crm { margin-top: 10px; padding: 8px 10px; border-radius: 8px; background: var(--surface-2); font-size: .82rem; color: var(--txt-2); }
+.ak-kz-crm span { font-size: .7rem; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: var(--brass-text); margin-right: 8px; }
+.ak-kz-crm b { color: var(--txt); font-variant-numeric: tabular-nums; }
+.ak-crm-feld { border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 12px 14px; margin: 0 0 12px; display: grid; gap: 6px; }
+.ak-crm-feld legend { font-weight: 800; font-size: .86rem; padding: 0 6px; }
+.ak-schritte { list-style: decimal; padding-left: 20px; display: grid; gap: 8px; margin-top: 12px; color: var(--txt-2); font-size: .94rem; }
+.ak-schritte code { font-size: .82rem; }
