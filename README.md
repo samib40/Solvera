@@ -92,6 +92,38 @@ hochgeladene Videos, YouTube, Vimeo und direkte `.mp4`-Links. Eine Lektion läss
 nur mit Video veröffentlichen; die zehn Startlektionen sind Entwürfe, bis ein Video
 drin ist.
 
+### Leistungs-Dashboard und Mitteilungen
+
+**Dashboard** (Menüpunkt „Dashboard“, für jeden Partner):
+
+* **Spielerkarte im FIFA-Stil** mit Gesamtwert und sechs Werten (1–99):
+  Gesprächseröffnung (ERÖ), Bedarfsanalyse (BED), Einwandbehandlung (EIN),
+  Abschluss (ABS), Produktwissen (WIS), Disziplin (DIS). Karte in Bronze (unter 65),
+  Silber (65–74) oder Gold (ab 75), dazu ein Netzdiagramm und die zwei stärksten und
+  schwächsten Werte mit Notizen. Die Werte vergibt der Admin.
+* **Tageszähler:** An jeder Tür einmal tippen – *Nicht angetroffen*, *Angetroffen,
+  kein Abschluss* oder *Abschluss*. Geklingelt ist die Summe. Speichert automatisch.
+* **Kennzahlen** für heute, diese Woche, diesen Monat mit Antreffquote
+  (angetroffen ÷ Türen) und Abschlussquote (Abschlüsse ÷ angetroffen).
+* **Diagramm** der letzten 14 Tage und Tabelle aller Tagesberichte; vergessene Tage
+  lassen sich nachtragen.
+
+**Admin → Team:** Rangliste aller aktiven Partner (heute, Woche, Monat), Klick führt
+zum Dashboard des Partners mit „Bewertung bearbeiten“ (Schieberegler, Live-Vorschau
+der Karte).
+
+**Admin → Mitteilungen:** Art (Info, Schulung, Powerwoche, Anfrage), Titel, Text, an
+alle oder ausgewählte Partner, optional „Antwort erbeten“. Bei den Partnern poppt die
+Mitteilung als Fenster auf, sobald sie die Akademie geöffnet haben (geprüft jede
+Minute und beim Zurückwechseln in den Browser), und muss bestätigt oder beantwortet
+werden. Der Admin sieht, wer gelesen hat, und bekommt Antworten als Meldung.
+Mitteilungen erscheinen nicht als Handy-Benachrichtigung, solange die Seite geschlossen
+ist – dafür bräuchte es Web-Push mit einer installierten App auf dem Startbildschirm.
+
+**Einrichtung:** `supabase/erweiterung-dashboard.sql` einmal im SQL Editor ausführen.
+Bis dahin läuft die übrige Akademie normal weiter; Dashboard und Mitteilungen zeigen
+einen Hinweis.
+
 ### Demo-Modus
 
 Solange in `assets/js/config.js` unter `akademie` nichts eingetragen ist, läuft die
@@ -203,6 +235,7 @@ Links lassen sich aber weitergeben.
 | `assets/js/akademie-daten.js` | Anbindung an Supabase bzw. Demo-Daten |
 | `assets/js/akademie-video.js` | Player, Wasserzeichen und Messung für hochgeladene Videos, YouTube, Vimeo |
 | `supabase/einrichtung.sql` | Datenbank, Rechte, Meldungen, Startlektionen |
+| `supabase/erweiterung-dashboard.sql` | Tagesberichte, Bewertungen, Mitteilungen |
 | `supabase/functions/meldung-per-mail/` | E-Mail-Versand der Meldungen |
 
 ---

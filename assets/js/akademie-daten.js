@@ -295,6 +295,31 @@
       },
       videoLoeschen: function (pfad) {
         return angemeldet('/storage/v1/object/videos/' + pfad, { methode: 'DELETE' });
+      },
+
+      /* ---- Leistung: Tagesberichte und Bewertungen ---- */
+      berichte: function (nutzerId) {
+        return db('tagesberichte?select=*&order=datum.desc&limit=5000' + (nutzerId ? '&nutzer_id=eq.' + nutzerId : ''));
+      },
+      berichtSpeichern: function (b) {
+        return db('tagesberichte?on_conflict=nutzer_id,datum', {
+          methode: 'POST', kopf: { Prefer: 'resolution=merge-duplicates,return=representation' }, daten: b });
+      },
+      bewertungen: function () { return db('bewertungen?select=*'); },
+      bewertungSpeichern: function (b) {
+        return db('bewertungen?on_conflict=nutzer_id', {
+          methode: 'POST', kopf: { Prefer: 'resolution=merge-duplicates,return=representation' }, daten: b });
+      },
+
+      /* ---- Mitteilungen ---- */
+      mitteilungen: function () { return db('mitteilungen?select=*&order=erstellt_am.desc&limit=300'); },
+      mitteilungSenden: function (m) { return db('mitteilungen', { methode: 'POST', daten: m, kopf: hinterlegen() }); },
+      mitteilungLoeschen: function (id) { return db('mitteilungen?id=eq.' + id, { methode: 'DELETE' }); },
+      gelesen: function () { return db('mitteilung_gelesen?select=*'); },
+      gelesenSetzen: function (nutzerId, mitteilungId, antwort) {
+        return db('mitteilung_gelesen?on_conflict=mitteilung_id,nutzer_id', {
+          methode: 'POST', kopf: { Prefer: 'resolution=merge-duplicates,return=representation' },
+          daten: { mitteilung_id: mitteilungId, nutzer_id: nutzerId, antwort: antwort || '' } });
       }
     };
   }
@@ -394,7 +419,46 @@
       M.push({ id: M.length + 1, art: 'stufe', nutzer_id: beispiele[0].id, inhalt_id: null, gelesen: false,
                text: 'Lena Beispiel hat die Stufe Profi vollständig abgeschlossen.', erstellt_am: vor(0) });
 
-      return { konten: [admin, partner].concat(beispiele), lektionen: L, beitraege: B,
+      /* Tagesberichte der letzten 4 Wochen (ohne Sonntage), reproduzierbar */
+      var zufall = (function (x) { return function () { x = (x * 16807) % 2147483647; return x / 2147483647; }; })(42);
+      var berichte = [];
+      [[partner, 0.9], [beispiele[0], 1.25], [beispiele[1], 1.05], [beispiele[2], 0.7]].forEach(function (pq) {
+        for (var t = 0; t < 28; t++) {
+          var d = new Date(Date.now() - t * 86400000);
+          if (d.getDay() === 0 || zufall() < 0.12) continue;
+          var tueren = Math.round((70 + zufall() * 60) * pq[1]);
+          var nicht = Math.round(tueren * (0.48 + zufall() * 0.14));
+          var abs = Math.round((tueren - nicht) * (0.04 + zufall() * 0.06) * pq[1]);
+          berichte.push({ nutzer_id: pq[0].id, datum: d.toISOString().slice(0, 10), nicht_angetroffen: nicht,
+                          angetroffen_ohne: tueren - nicht - abs, abschluesse: abs, notiz: '', aktualisiert_am: d.toISOString() });
+        }
+      });
+      var bewertungen = [
+        [partner, [68, 61, 55, 63, 72, 80], 'Freundliches Auftreten, sehr zuverlässig.', 'Wird bei Einwänden noch unsicher.'],
+        [beispiele[0], [88, 84, 86, 90, 82, 91], 'Starker Einstieg, holt fast jeden Termin.', 'Dokumentation manchmal knapp.'],
+        [beispiele[1], [74, 70, 66, 71, 77, 69], 'Gutes Produktwissen.', 'Disziplin bei schlechtem Wetter.'],
+        [beispiele[2], [58, 62, 49, 52, 66, 73], 'Lernt schnell.', 'Abschluss und Einwände üben.']
+      ].map(function (x) {
+        var k = ['eroeffnung', 'bedarf', 'einwand', 'abschluss', 'wissen', 'disziplin'], w = {};
+        k.forEach(function (n, i) { w[n] = x[1][i]; });
+        return { nutzer_id: x[0].id, werte: w, staerken: x[2], schwaechen: x[3], aktualisiert_am: vor(3) };
+      });
+      var mitteilungen = [
+        { id: uuid(), art: 'powerwoche', titel: 'Powerwoche ab Montag!', an_alle: true, empfaenger: [], antwort_erwuenscht: false,
+          text: 'Ab Montag startet die Powerwoche: Treffpunkt jeden Morgen 9:30 Uhr im Büro Karlsruhe, danach gemeinsam ins Gebiet. Ziel: 20 Abschlüsse als Team.',
+          erstellt_am: vor(0, 1) },
+        { id: uuid(), art: 'anfrage', titel: 'Bitte Steuernummer schicken', an_alle: false, empfaenger: [beispiele[0].id], antwort_erwuenscht: true,
+          text: 'Hi Lena, für die Abrechnung brauche ich noch deine Steuernummer.', erstellt_am: vor(1) }
+      ];
+      var gelesen = [
+        { mitteilung_id: mitteilungen[0].id, nutzer_id: beispiele[0].id, gelesen_am: vor(0, 1), antwort: '' },
+        { mitteilung_id: mitteilungen[1].id, nutzer_id: beispiele[0].id, gelesen_am: vor(0, 20), antwort: '12/345/67890 – liebe Grüße, Lena' }
+      ];
+      M.unshift({ id: M.length + 1, art: 'antwort', nutzer_id: beispiele[0].id, inhalt_id: mitteilungen[1].id, gelesen: false,
+                  text: 'Lena Beispiel hat auf „Bitte Steuernummer schicken“ geantwortet: 12/345/67890 – liebe Grüße, Lena', erstellt_am: vor(0, 20) });
+
+      return { berichte: berichte, bewertungen: bewertungen, mitteilungen: mitteilungen, gelesen: gelesen,
+               konten: [admin, partner].concat(beispiele), lektionen: L, beitraege: B,
                fortschritt: F, meldungen: M, zusagen: [{ nutzer_id: beispiele[0].id, beitrag_id: B[0].id, erstellt_am: vor(0) }],
                sitzung: null };
     }
@@ -416,7 +480,7 @@
     function laden() {
       if (speicher) return speicher;
       try { speicher = JSON.parse(localStorage.getItem(SCHLUESSEL)); } catch (e) { speicher = null; }
-      if (!speicher || !speicher.konten || speicher.version !== 2) { speicher = beispielDaten(); speicher.version = 2; sichern(); }
+      if (!speicher || !speicher.konten || speicher.version !== 3) { speicher = beispielDaten(); speicher.version = 3; sichern(); }
       return speicher;
     }
     function sichern() {
@@ -585,6 +649,68 @@
         sichern();
       },
 
+      /* ---- Leistung ---- */
+      berichte: async function (nutzerId) {
+        var k = ich();
+        return kopie(laden().berichte.filter(function (b) {
+          if (nutzerId) return b.nutzer_id === nutzerId && (k.rolle === 'admin' || k.id === nutzerId);
+          return k.rolle === 'admin' || b.nutzer_id === k.id;
+        })).sort(function (a, b) { return b.datum.localeCompare(a.datum); });
+      },
+      berichtSpeichern: async function (b) {
+        var k = ich(), s = laden();
+        if (!k || (k.rolle !== 'admin' && (k.id !== b.nutzer_id || k.status !== 'aktiv'))) throw Fehler('Keine Berechtigung.');
+        var alt = s.berichte.filter(function (x) { return x.nutzer_id === b.nutzer_id && x.datum === b.datum; })[0];
+        if (alt) Object.assign(alt, b, { aktualisiert_am: jetzt() });
+        else { alt = Object.assign({ notiz: '' }, b, { aktualisiert_am: jetzt() }); s.berichte.push(alt); }
+        sichern(); return [kopie(alt)];
+      },
+      bewertungen: async function () {
+        var k = ich();
+        return kopie(laden().bewertungen.filter(function (b) { return k.rolle === 'admin' || b.nutzer_id === k.id; }));
+      },
+      bewertungSpeichern: async function (b) {
+        mussAdmin(); var s = laden();
+        var alt = s.bewertungen.filter(function (x) { return x.nutzer_id === b.nutzer_id; })[0];
+        if (alt) Object.assign(alt, b, { aktualisiert_am: jetzt() });
+        else { alt = Object.assign({}, b, { aktualisiert_am: jetzt() }); s.bewertungen.push(alt); }
+        sichern(); return [kopie(alt)];
+      },
+
+      /* ---- Mitteilungen ---- */
+      mitteilungen: async function () {
+        var k = ich();
+        return kopie(laden().mitteilungen.filter(function (m) {
+          return k.rolle === 'admin' || (k.status === 'aktiv' && (m.an_alle || m.empfaenger.indexOf(k.id) !== -1));
+        })).sort(function (a, b) { return b.erstellt_am.localeCompare(a.erstellt_am); });
+      },
+      mitteilungSenden: async function (m) {
+        mussAdmin(); var neu = Object.assign({ id: uuid(), erstellt_am: jetzt() }, m);
+        laden().mitteilungen.push(neu); sichern(); return [kopie(neu)];
+      },
+      mitteilungLoeschen: async function (id) {
+        mussAdmin(); var s = laden();
+        s.mitteilungen = s.mitteilungen.filter(function (x) { return x.id !== id; });
+        s.gelesen = s.gelesen.filter(function (x) { return x.mitteilung_id !== id; });
+        sichern();
+      },
+      gelesen: async function () {
+        var k = ich();
+        return kopie(laden().gelesen.filter(function (g) { return k.rolle === 'admin' || g.nutzer_id === k.id; }));
+      },
+      gelesenSetzen: async function (nutzerId, mitteilungId, antwort) {
+        var s = laden(), k = ich();
+        if (!k || k.id !== nutzerId) throw Fehler('Keine Berechtigung.');
+        s.gelesen = s.gelesen.filter(function (g) { return !(g.nutzer_id === nutzerId && g.mitteilung_id === mitteilungId); });
+        var g = { mitteilung_id: mitteilungId, nutzer_id: nutzerId, gelesen_am: jetzt(), antwort: antwort || '' };
+        s.gelesen.push(g);
+        if (antwort) {
+          var m = s.mitteilungen.filter(function (x) { return x.id === mitteilungId; })[0];
+          melden('antwort', k.id, mitteilungId, name(k) + ' hat auf „' + (m ? m.titel : 'eine Mitteilung') + '“ geantwortet: ' + antwort.slice(0, 300));
+        }
+        sichern(); return [kopie(g)];
+      },
+
       /* Videos im Demo-Modus: im IndexedDB-Speicher dieses Browsers */
       videoHochladen: async function (datei, beiFortschritt) {
         mussAdmin();
@@ -604,7 +730,7 @@
 
       /* Nur im Demo-Modus: alles auf die Beispieldaten zuruecksetzen */
       version: 2,
-      zuruecksetzen: function () { speicher = beispielDaten(); speicher.version = 2; sichern(); }
+      zuruecksetzen: function () { speicher = beispielDaten(); speicher.version = 3; sichern(); }
     };
   }
 
