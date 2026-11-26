@@ -422,24 +422,26 @@
       /* Tagesberichte der letzten 4 Wochen (ohne Sonntage), reproduzierbar */
       var zufall = (function (x) { return function () { x = (x * 16807) % 2147483647; return x / 2147483647; }; })(42);
       var berichte = [];
-      [[partner, 0.9], [beispiele[0], 1.25], [beispiele[1], 1.05], [beispiele[2], 0.7]].forEach(function (pq) {
+      function isoTag(d) { return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+      [[partner, 0.9, 0.35], [beispiele[0], 1.25, 0.15], [beispiele[1], 1.05, 0.55], [beispiele[2], 0.7, 0.7]].forEach(function (pq) {
         for (var t = 0; t < 28; t++) {
           var d = new Date(Date.now() - t * 86400000);
           if (d.getDay() === 0 || zufall() < 0.12) continue;
-          var tueren = Math.round((70 + zufall() * 60) * pq[1]);
-          var nicht = Math.round(tueren * (0.48 + zufall() * 0.14));
-          var abs = Math.round((tueren - nicht) * (0.04 + zufall() * 0.06) * pq[1]);
-          berichte.push({ nutzer_id: pq[0].id, datum: d.toISOString().slice(0, 10), nicht_angetroffen: nicht,
+          var tueren = Math.round((190 + zufall() * 110) * pq[1]);
+          var nicht = Math.round(tueren * (0.5 + zufall() * 0.15));
+          var abs = Math.min(tueren - nicht, Math.round((tueren - nicht) * (0.22 + zufall() * 0.2) * pq[1]));
+          var sto = t > 6 ? Math.round(abs * (pq[2] + (zufall() - 0.5) * 0.2)) : 0;
+          berichte.push({ nutzer_id: pq[0].id, datum: isoTag(d), nicht_angetroffen: nicht, stornos: Math.max(0, Math.min(abs, sto)),
                           angetroffen_ohne: tueren - nicht - abs, abschluesse: abs, notiz: '', aktualisiert_am: d.toISOString() });
         }
       });
       var bewertungen = [
-        [partner, [68, 61, 55, 63, 72, 80], 'Freundliches Auftreten, sehr zuverlässig.', 'Wird bei Einwänden noch unsicher.'],
-        [beispiele[0], [88, 84, 86, 90, 82, 91], 'Starker Einstieg, holt fast jeden Termin.', 'Dokumentation manchmal knapp.'],
-        [beispiele[1], [74, 70, 66, 71, 77, 69], 'Gutes Produktwissen.', 'Disziplin bei schlechtem Wetter.'],
-        [beispiele[2], [58, 62, 49, 52, 66, 73], 'Lernt schnell.', 'Abschluss und Einwände üben.']
+        [partner, [68, 61, 72], 'Freundliches Auftreten, sehr zuverlässig.', 'Wird bei Einwänden noch unsicher.'],
+        [beispiele[0], [88, 84, 82], 'Starker Einstieg, holt fast jeden Termin.', 'Dokumentation manchmal knapp.'],
+        [beispiele[1], [74, 70, 77], 'Gutes Produktwissen.', 'Zu viele Stornos – Kunden besser aufklären.'],
+        [beispiele[2], [58, 62, 66], 'Lernt schnell.', 'Abschluss und Einwände üben.']
       ].map(function (x) {
-        var k = ['eroeffnung', 'bedarf', 'einwand', 'abschluss', 'wissen', 'disziplin'], w = {};
+        var k = ['eroeffnung', 'bedarf', 'wissen'], w = {};
         k.forEach(function (n, i) { w[n] = x[1][i]; });
         return { nutzer_id: x[0].id, werte: w, staerken: x[2], schwaechen: x[3], aktualisiert_am: vor(3) };
       });
@@ -480,7 +482,7 @@
     function laden() {
       if (speicher) return speicher;
       try { speicher = JSON.parse(localStorage.getItem(SCHLUESSEL)); } catch (e) { speicher = null; }
-      if (!speicher || !speicher.konten || speicher.version !== 3) { speicher = beispielDaten(); speicher.version = 3; sichern(); }
+      if (!speicher || !speicher.konten || speicher.version !== 4) { speicher = beispielDaten(); speicher.version = 4; sichern(); }
       return speicher;
     }
     function sichern() {
@@ -661,8 +663,9 @@
         var k = ich(), s = laden();
         if (!k || (k.rolle !== 'admin' && (k.id !== b.nutzer_id || k.status !== 'aktiv'))) throw Fehler('Keine Berechtigung.');
         var alt = s.berichte.filter(function (x) { return x.nutzer_id === b.nutzer_id && x.datum === b.datum; })[0];
+        if (k.rolle !== 'admin') b = Object.assign({}, b, { stornos: alt ? (alt.stornos || 0) : 0 });
         if (alt) Object.assign(alt, b, { aktualisiert_am: jetzt() });
-        else { alt = Object.assign({ notiz: '' }, b, { aktualisiert_am: jetzt() }); s.berichte.push(alt); }
+        else { alt = Object.assign({ notiz: '', stornos: 0 }, b, { aktualisiert_am: jetzt() }); s.berichte.push(alt); }
         sichern(); return [kopie(alt)];
       },
       bewertungen: async function () {
@@ -730,7 +733,7 @@
 
       /* Nur im Demo-Modus: alles auf die Beispieldaten zuruecksetzen */
       version: 2,
-      zuruecksetzen: function () { speicher = beispielDaten(); speicher.version = 3; sichern(); }
+      zuruecksetzen: function () { speicher = beispielDaten(); speicher.version = 4; sichern(); }
     };
   }
 

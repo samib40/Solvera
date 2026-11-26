@@ -622,3 +622,20 @@ a.ak-beitrag:hover { border-color: var(--brass-line); }
   .ak-zaehler-feld { grid-template-columns: 1fr auto; }
   .ak-zaehler-minus { padding-inline: 14px; }
 }
+
+/* Stärken/Schwächen mit Urteil */
+.ak-sw li { display: block; }
+.ak-sw li .zeile, .ak-auto-liste .zeile { display: flex; align-items: center; gap: 10px; }
+.ak-sw li .zeile span:first-child, .ak-auto-liste .zeile > span:first-child { flex: 1; color: var(--txt); font-weight: 600; }
+.ak-sw li small, .ak-auto-liste small { display: block; font-size: .78rem; color: var(--txt-3); margin-top: 2px; line-height: 1.45; }
+.ak-sw .notiz { border-left: 3px solid var(--brass-line); padding-left: 10px; }
+.ak-urteil { font-size: .7rem; font-weight: 800; letter-spacing: .04em; padding: 2px 8px; border-radius: 999px; border: 1px solid; white-space: nowrap; }
+.ak-urteil.gut { color: var(--ok); border-color: rgba(var(--ok-rgb), .4); background: var(--ok-soft); }
+.ak-urteil.mittel { color: var(--brass-text); border-color: var(--brass-line); background: var(--brass-soft); }
+.ak-urteil.schlecht { color: var(--err); border-color: rgba(var(--err-rgb), .4); background: var(--err-soft); }
+.ak-urteil.offen { color: var(--txt-3); border-color: var(--line-strong); }
+.ak-auto-liste { display: grid; gap: 10px; padding: 12px 14px; border-radius: var(--radius-sm); background: var(--surface-2); border: 1px solid var(--line); }
+.ak-auto-liste .kurz { color: var(--txt-3); font-weight: 800; letter-spacing: .08em; margin-left: 4px; font-size: .8rem; }
+.ak-formular .zeile5 { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+@media (max-width: 760px) { .ak-formular .zeile5 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.ak-regler input[type="range"] { margin-top: 0; }

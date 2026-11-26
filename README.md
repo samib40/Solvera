@@ -96,11 +96,23 @@ drin ist.
 
 **Dashboard** (Menüpunkt „Dashboard“, für jeden Partner):
 
-* **Spielerkarte im FIFA-Stil** mit Gesamtwert und sechs Werten (1–99):
-  Gesprächseröffnung (ERÖ), Bedarfsanalyse (BED), Einwandbehandlung (EIN),
-  Abschluss (ABS), Produktwissen (WIS), Disziplin (DIS). Karte in Bronze (unter 65),
-  Silber (65–74) oder Gold (ab 75), dazu ein Netzdiagramm und die zwei stärksten und
-  schwächsten Werte mit Notizen. Die Werte vergibt der Admin.
+* **Spielerkarte im FIFA-Stil** mit Gesamtwert (Durchschnitt) und sechs Werten
+  (1–99), Karte in Bronze (unter 65), Silber (65–74) oder Gold (ab 75), dazu ein
+  Netzdiagramm. **Drei Werte berechnen sich aus den Tagesberichten** (Ziele in
+  `config.js` unter `akademie.ziele`; Ziel erreicht = Wert 80):
+  * **Disziplin (DIS):** Ø Türen pro Arbeitstag der letzten 30 Tage, Ziel 300.
+  * **Einwandbehandlung (EIN):** Abschlüsse ÷ angetroffene Kunden, letzte 30 Tage,
+    Ziel über 50 %.
+  * **Stornoquote (STO):** Stornos ÷ Abschlüsse, letzte 90 Tage. Bis 50 % gut
+    (99 → 75), darüber mittelmäßig bis schlecht.
+
+  Gesprächseröffnung (ERÖ), Bedarfsanalyse (BED) und Produktwissen (WIS) schätzt der
+  Admin ein. **Stärken** sind alle Werte ab 75, **Daran arbeiten** alle darunter
+  (50–74 mittelmäßig, unter 50 schlecht) – jeweils mit der Zahl, aus der sich der
+  Wert ergibt, plus Notiz des Admins.
+* **Stornos** trägt nur der Admin ein (Dashboard des Partners → „Tag eintragen oder
+  ändern“ → „Davon storniert“), am Tag des ursprünglichen Abschlusses. Partner
+  können den Wert nicht ändern; die Datenbank verhindert das.
 * **Tageszähler:** An jeder Tür einmal tippen – *Nicht angetroffen*, *Angetroffen,
   kein Abschluss* oder *Abschluss*. Geklingelt ist die Summe. Speichert automatisch.
 * **Kennzahlen** für heute, diese Woche, diesen Monat mit Antreffquote

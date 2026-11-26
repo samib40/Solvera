@@ -6,7 +6,7 @@
 --
 --  Neu:
 --    tagesberichte       Türen je Tag: nicht angetroffen, angetroffen ohne
---                        Abschluss, Abschlüsse (geklingelt = Summe)
+--                        Abschluss, Abschlüsse (geklingelt = Summe), Stornos
 --    bewertungen         Stärken/Schwächen-Werte je Partner (FIFA-Karte)
 --    mitteilungen        Hinweise, die bei Partnern als Fenster aufpoppen
 --    mitteilung_gelesen  Wer hat gelesen, wer hat was geantwortet
@@ -25,9 +25,28 @@ create table if not exists public.tagesberichte (
 );
 create index if not exists tagesberichte_datum_idx on public.tagesberichte (datum);
 
+-- Stornos: nachträglich vom Admin eingetragen, dem Tag des Abschlusses zugeordnet
+alter table public.tagesberichte add column if not exists stornos int not null default 0;
+alter table public.tagesberichte drop constraint if exists tagesberichte_stornos_check;
+alter table public.tagesberichte add constraint tagesberichte_stornos_check check (stornos >= 0);
+
+-- Partner dürfen ihre Stornos nicht selbst ändern
+create or replace function public.stornos_schuetzen() returns trigger
+language plpgsql security definer set search_path = public as $$
+begin
+  if auth.uid() is not null and not public.ist_admin() then
+    new.stornos := case when tg_op = 'UPDATE' then old.stornos else 0 end;
+  end if;
+  return new;
+end $$;
+drop trigger if exists stornos_schutz on public.tagesberichte;
+create trigger stornos_schutz before insert or update on public.tagesberichte
+  for each row execute function public.stornos_schuetzen();
+
 -- ---------- Bewertungen (FIFA-Karte) -------------------------------------
--- werte: {"eroeffnung": 70, "bedarf": 65, "einwand": 60, "abschluss": 72,
---         "wissen": 80, "disziplin": 85}  (je 1–99)
+-- werte: {"eroeffnung": 70, "bedarf": 65, "wissen": 80}  (je 1–99, Einschätzung
+-- des Admins). Disziplin, Einwandbehandlung und Stornoquote berechnet die
+-- Akademie aus den Tagesberichten.
 create table if not exists public.bewertungen (
   nutzer_id        uuid primary key references public.profile (id) on delete cascade,
   werte            jsonb not null default '{}'::jsonb,

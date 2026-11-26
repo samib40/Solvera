@@ -977,14 +977,17 @@
   /* =======================================================================
      LEISTUNG – FIFA-Karte, Tageszähler, Kennzahlen, Team
      ======================================================================= */
+  /* Sechs Werte der Spielerkarte. auto = wird aus den Tagesberichten
+     berechnet, sonst vergibt der Admin den Wert (1–99). */
   var WERTE = [
     ['eroeffnung', 'ERÖ', 'Gesprächseröffnung'],
     ['bedarf', 'BED', 'Bedarfsanalyse'],
-    ['einwand', 'EIN', 'Einwandbehandlung'],
-    ['abschluss', 'ABS', 'Abschluss'],
+    ['einwand', 'EIN', 'Einwandbehandlung', true],
+    ['storno', 'STO', 'Stornoquote', true],
     ['wissen', 'WIS', 'Produktwissen'],
-    ['disziplin', 'DIS', 'Disziplin']
+    ['disziplin', 'DIS', 'Disziplin', true]
   ];
+  var ZIELE = Object.assign({ tuerenProTag: 300, abschlussquote: 50, stornoquote: 50 }, CFG.ziele || {});
   var KATEGORIEN = [
     ['abschluesse', 'Abschlüsse', 'abs'],
     ['angetroffen_ohne', 'Angetroffen, kein Abschluss', 'ohne'],
@@ -1004,13 +1007,14 @@
   }
   function berichteVon(id) { return S.berichte.filter(function (b) { return b.nutzer_id === id; }); }
   function summe(liste) {
-    var s = { nicht: 0, ohne: 0, abs: 0, tage: liste.length };
-    liste.forEach(function (b) { s.nicht += b.nicht_angetroffen; s.ohne += b.angetroffen_ohne; s.abs += b.abschluesse; });
+    var s = { nicht: 0, ohne: 0, abs: 0, sto: 0, tage: liste.length };
+    liste.forEach(function (b) { s.nicht += b.nicht_angetroffen; s.ohne += b.angetroffen_ohne; s.abs += b.abschluesse; s.sto += b.stornos || 0; });
     s.angetroffen = s.ohne + s.abs;
     s.tueren = s.angetroffen + s.nicht;
     s.antreff = s.tueren ? Math.round(s.angetroffen / s.tueren * 100) : 0;
     s.quote = s.angetroffen ? Math.round(s.abs / s.angetroffen * 1000) / 10 : 0;
     s.jeTag = s.tage ? Math.round(s.tueren / s.tage) : 0;
+    s.storno = s.abs ? Math.round(s.sto / s.abs * 1000) / 10 : 0;
     return s;
   }
   function zeitraum(liste, art) {
@@ -1021,25 +1025,60 @@
     return liste.filter(function (b) { return b.datum >= ab; });
   }
   function bewertungVon(id) { return S.bewertungen.filter(function (b) { return b.nutzer_id === id; })[0] || null; }
-  function gesamtWert(bw) {
-    if (!bw) return 0;
-    var w = WERTE.map(function (x) { return Number(bw.werte[x[0]]) || 0; });
-    return Math.round(w.reduce(function (a, b) { return a + b; }, 0) / w.length);
-  }
   function fmt(n) { return Number(n).toLocaleString('de-DE'); }
+  function prozent(n) { return String(Math.round(n * 10) / 10).replace('.', ',') + ' %'; }
+  function begrenzt(n) { return Math.max(1, Math.min(99, Math.round(n))); }
+  function letzteTage(liste, tage) {
+    var ab = isoVon(new Date(Date.now() - (tage - 1) * 86400000));
+    return liste.filter(function (b) { return b.datum >= ab; });
+  }
+
+  /* Alle sechs Werte eines Partners: drei aus den Zahlen, drei vom Admin.
+     Ziel erreicht = 80 (Gold-Bereich), darüber bis 99. */
+  function leistungswerte(id) {
+    var bw = bewertungVon(id);
+    var l = berichteVon(id);
+    var s30 = summe(letzteTage(l, 30)), s90 = summe(letzteTage(l, 90));
+    var w = {}, info = {};
+    WERTE.forEach(function (x) { if (!x[3]) w[x[0]] = bw && bw.werte[x[0]] ? begrenzt(Number(bw.werte[x[0]])) : null; });
+
+    if (s30.tage) {
+      w.disziplin = begrenzt(s30.jeTag / ZIELE.tuerenProTag * 80);
+      info.disziplin = 'Ø ' + fmt(s30.jeTag) + ' Türen pro Arbeitstag (letzte 30 Tage) · Ziel ' + fmt(ZIELE.tuerenProTag);
+    } else { w.disziplin = null; info.disziplin = 'Noch keine Tagesberichte'; }
+
+    if (s30.angetroffen) {
+      w.einwand = begrenzt(s30.quote / ZIELE.abschlussquote * 80);
+      info.einwand = prozent(s30.quote) + ' Abschlüsse bei angetroffenen Kunden (letzte 30 Tage) · Ziel über ' + ZIELE.abschlussquote + ' %';
+    } else { w.einwand = null; info.einwand = 'Noch keine angetroffenen Kunden erfasst'; }
+
+    if (s90.abs) {
+      var q = s90.storno, z = ZIELE.stornoquote;
+      /* bis zum Ziel gut (99 → 75), darüber mittelmäßig bis schlecht (75 → 1) */
+      w.storno = begrenzt(q <= z ? 99 - 24 * q / z : 75 - (q - z) / (100 - z) * 74);
+      info.storno = prozent(q) + ' Stornos (' + fmt(s90.sto) + ' von ' + fmt(s90.abs) + ' Abschlüssen, letzte 90 Tage) · Ziel unter ' + z + ' %';
+    } else { w.storno = null; info.storno = 'Noch keine Abschlüsse'; }
+
+    var vorhanden = WERTE.filter(function (x) { return w[x[0]] != null; });
+    var ovr = vorhanden.length ? Math.round(vorhanden.reduce(function (a, x) { return a + w[x[0]]; }, 0) / vorhanden.length) : 0;
+    return { w: w, info: info, bw: bw, ovr: ovr, leer: !vorhanden.length };
+  }
+  function urteil(wert) {
+    if (wert == null) return ['offen', 'Noch offen'];
+    return wert >= 75 ? ['gut', 'Gut'] : wert >= 50 ? ['mittel', 'Mittelmäßig'] : ['schlecht', 'Schlecht'];
+  }
+  function stufeKlasse(L) { return L.leer ? 'leer' : L.ovr >= 75 ? 'gold' : L.ovr >= 65 ? 'silber' : 'bronze'; }
 
   /* ---------- FIFA-Karte ---------- */
-  function fifaKarte(p, bw) {
-    var ovr = gesamtWert(bw);
+  function fifaKarte(p, L) {
     var stufe = istAdminProfil(p) ? 'ADMIN' : gesamtStand(p.id).aktuell.toUpperCase();
-    var stufeKlasse = !bw ? 'leer' : ovr >= 75 ? 'gold' : ovr >= 65 ? 'silber' : 'bronze';
-    return '<div class="ak-fifa ' + stufeKlasse + '" role="img" aria-label="Spielerkarte ' + esc(name(p)) + (bw ? ', Gesamtwert ' + ovr : ', noch nicht bewertet') + '">' +
-      '<div class="ak-fifa-oben"><div class="ak-fifa-ovr">' + (bw ? ovr : '–') + '<small>' + esc(stufe === 'ABGESCHLOSSEN' ? 'PROFI' : stufe) + '</small></div>' +
+    return '<div class="ak-fifa ' + stufeKlasse(L) + '" role="img" aria-label="Spielerkarte ' + esc(name(p)) + (L.leer ? ', noch keine Werte' : ', Gesamtwert ' + L.ovr) + '">' +
+      '<div class="ak-fifa-oben"><div class="ak-fifa-ovr">' + (L.leer ? '–' : L.ovr) + '<small>' + esc(stufe === 'ABGESCHLOSSEN' ? 'PROFI' : stufe) + '</small></div>' +
       '<div class="ak-fifa-logo"><img class="nur-hell" src="' + logoQuelle(true) + '" alt=""><img class="nur-dunkel" src="' + logoQuelle(false) + '" alt=""></div></div>' +
       '<div class="ak-fifa-bild">' + esc(initialen(p)) + '</div>' +
       '<div class="ak-fifa-name">' + esc((p.nachname || p.vorname || '').toUpperCase()) + '</div>' +
       '<div class="ak-fifa-werte">' + WERTE.map(function (x) {
-        return '<div><b>' + (bw ? (Number(bw.werte[x[0]]) || 0) : '–') + '</b> ' + x[1] + '</div>';
+        return '<div><b>' + (L.w[x[0]] == null ? '–' : L.w[x[0]]) + '</b> ' + x[1] + '</div>';
       }).join('') + '</div></div>';
   }
   function istAdminProfil(p) { return p.rolle === 'admin'; }
@@ -1049,7 +1088,7 @@
   }
 
   /* ---------- Netzdiagramm ---------- */
-  function radar(bw) {
+  function radar(L) {
     var g = 300, m = g / 2, r = 100;
     var punkt = function (i, wert) {
       var winkel = -Math.PI / 2 + i * 2 * Math.PI / WERTE.length;
@@ -1059,33 +1098,45 @@
       return '<polygon class="ring" points="' + WERTE.map(function (x, i) { return punkt(i, st).join(','); }).join(' ') + '"/>';
     }).join('');
     var achsen = WERTE.map(function (x, i) { var p = punkt(i, 100); return '<line class="achse" x1="' + m + '" y1="' + m + '" x2="' + p[0] + '" y2="' + p[1] + '"/>'; }).join('');
-    var werte = WERTE.map(function (x) { return bw ? Math.max(0, Math.min(99, Number(bw.werte[x[0]]) || 0)) : 0; });
-    var form = bw ? '<polygon class="form" points="' + werte.map(function (w, i) { return punkt(i, w).join(','); }).join(' ') + '"/>' +
+    var werte = WERTE.map(function (x) { return L.w[x[0]]; });
+    var form = L.leer ? '' : '<polygon class="form" points="' + werte.map(function (w, i) { return punkt(i, w || 0).join(','); }).join(' ') + '"/>' +
       werte.map(function (w, i) {
+        if (w == null) return '';
         var p = punkt(i, w);
         return '<g class="marke"><circle class="treffer" cx="' + p[0] + '" cy="' + p[1] + '" r="14"><title>' + WERTE[i][2] + ': ' + w + '</title></circle>' +
           '<circle class="punkt" cx="' + p[0] + '" cy="' + p[1] + '" r="4.5"/></g>';
-      }).join('') : '';
+      }).join('');
     var beschriftung = WERTE.map(function (x, i) {
       var p = punkt(i, 124);
       var anker = Math.abs(p[0] - m) < 4 ? 'middle' : p[0] > m ? 'start' : 'end';
       return '<text x="' + p[0] + '" y="' + (p[1] + 4) + '" text-anchor="' + anker + '"><tspan class="kurz">' + x[1] + '</tspan>' +
-        (bw ? '<tspan class="wert" dx="5">' + werte[i] + '</tspan>' : '') + '</text>';
+        '<tspan class="wert" dx="5">' + (werte[i] == null ? '–' : werte[i]) + '</tspan></text>';
     }).join('');
-    return '<svg class="ak-radar" viewBox="-40 -10 380 320" role="img" aria-label="Netzdiagramm Stärken und Schwächen' +
-      (bw ? ': ' + WERTE.map(function (x, i) { return x[2] + ' ' + werte[i]; }).join(', ') : ', noch keine Bewertung') + '">' +
+    return '<svg class="ak-radar" viewBox="-40 -10 380 320" role="img" aria-label="Netzdiagramm Stärken und Schwächen: ' +
+      WERTE.map(function (x, i) { return x[2] + ' ' + (werte[i] == null ? 'noch offen' : werte[i]); }).join(', ') + '">' +
       ringe + achsen + form + beschriftung + '</svg>';
   }
 
-  function staerkenBlock(bw) {
-    if (!bw) return '<p class="ak-leer">Noch keine Bewertung. Die Vertriebsleitung trägt deine Werte nach dem ersten gemeinsamen Gebietstag ein.</p>';
-    var sortiert = WERTE.map(function (x) { return [x[2], Number(bw.werte[x[0]]) || 0]; }).sort(function (a, b) { return b[1] - a[1]; });
-    return '<div class="ak-sw"><div><h3>' + ico('stern') + 'Stärken</h3><ul>' +
-      sortiert.slice(0, 2).map(function (x) { return '<li>' + esc(x[0]) + ' <b>' + x[1] + '</b></li>'; }).join('') + '</ul>' +
-      (bw.staerken ? '<p>' + esc(bw.staerken) + '</p>' : '') + '</div>' +
-      '<div><h3>' + ico('ziel') + 'Daran arbeiten</h3><ul>' +
-      sortiert.slice(-2).reverse().map(function (x) { return '<li>' + esc(x[0]) + ' <b>' + x[1] + '</b></li>'; }).join('') + '</ul>' +
-      (bw.schwaechen ? '<p>' + esc(bw.schwaechen) + '</p>' : '') + '</div></div>';
+  /* Stärken = Werte ab 75 (gut), Daran arbeiten = darunter (mittelmäßig/schlecht) */
+  function staerkenBlock(L) {
+    var punkte = WERTE.map(function (x) {
+      return { name: x[2], wert: L.w[x[0]], text: x[3] ? L.info[x[0]] : 'Einschätzung der Vertriebsleitung', auto: !!x[3] };
+    });
+    var eintrag = function (e) {
+      var u = urteil(e.wert);
+      return '<li><div class="zeile"><span>' + esc(e.name) + '</span><span class="ak-urteil ' + u[0] + '">' + u[1] + '</span><b>' + (e.wert == null ? '–' : e.wert) + '</b></div>' +
+        '<small>' + esc(e.text) + '</small></li>';
+    };
+    var gut = punkte.filter(function (e) { return e.wert != null && e.wert >= 75; }).sort(function (a, b) { return b.wert - a.wert; });
+    var arbeit = punkte.filter(function (e) { return e.wert != null && e.wert < 75; }).sort(function (a, b) { return a.wert - b.wert; });
+    var offen = punkte.filter(function (e) { return e.wert == null; });
+    return '<div class="ak-sw"><div><h3>' + ico('stern') + 'Stärken</h3>' +
+      (gut.length ? '<ul>' + gut.map(eintrag).join('') + '</ul>' : '<p>Noch kein Wert im grünen Bereich (ab 75).</p>') +
+      (L.bw && L.bw.staerken ? '<p class="notiz">' + esc(L.bw.staerken) + '</p>' : '') + '</div>' +
+      '<div><h3>' + ico('ziel') + 'Daran arbeiten</h3>' +
+      (arbeit.length ? '<ul>' + arbeit.map(eintrag).join('') + '</ul>' : '<p>Alles im grünen Bereich.</p>') +
+      (L.bw && L.bw.schwaechen ? '<p class="notiz">' + esc(L.bw.schwaechen) + '</p>' : '') + '</div>' +
+      (offen.length ? '<p class="tiny">Noch offen: ' + offen.map(function (e) { return esc(e.name); }).join(', ') + '</p>' : '') + '</div>';
   }
 
   /* ---------- Kennzahlen ---------- */
@@ -1095,7 +1146,8 @@
       '<dl><div><dt><i class="ak-farbe nicht"></i>Nicht angetroffen</dt><dd>' + fmt(s.nicht) + '</dd></div>' +
       '<div><dt><i class="ak-farbe ohne"></i>Angetroffen, kein Abschluss</dt><dd>' + fmt(s.ohne) + '</dd></div>' +
       '<div><dt><i class="ak-farbe abs"></i>Abschlüsse</dt><dd>' + fmt(s.abs) + '</dd></div></dl>' +
-      '<div class="ak-kz-quoten"><span>Antreffquote <b>' + s.antreff + ' %</b></span><span>Abschlussquote <b>' + String(s.quote).replace('.', ',') + ' %</b></span></div></div>';
+      '<div class="ak-kz-quoten"><span>Antreffquote <b>' + s.antreff + ' %</b></span><span>Abschlussquote <b>' + prozent(s.quote) + '</b></span>' +
+      (s.sto ? '<span>Stornos <b>' + fmt(s.sto) + ' (' + prozent(s.storno) + ')</b></span>' : '') + '</div></div>';
   }
 
   /* ---------- Tagesdiagramm (gestapelte Säulen, letzte 14 Tage) ---------- */
@@ -1208,6 +1260,7 @@
   function berichtSichern(b, still) {
     var daten = { nutzer_id: b.nutzer_id, datum: b.datum, nicht_angetroffen: b.nicht_angetroffen,
                   angetroffen_ohne: b.angetroffen_ohne, abschluesse: b.abschluesse, notiz: b.notiz || '' };
+    if (istAdmin()) daten.stornos = b.stornos || 0;   /* Partner können Stornos nicht ändern */
     return D.berichtSpeichern(daten).then(function () {
       var st = document.getElementById('ak-gespeichert');
       if (st) st.textContent = 'Gespeichert';
@@ -1224,27 +1277,33 @@
       kennzahlKachel('Dieser Monat', summe(zeitraum(l, 'monat')));
   }
 
-  function verlaufTabelle(id, bearbeitbar) {
+  function verlaufTabelle(id, bearbeitbar, mitStorno) {
     var l = berichteVon(id).slice().sort(function (a, b) { return b.datum.localeCompare(a.datum); }).slice(0, 30);
     if (!l.length) return '<p class="ak-leer">Noch keine Tagesberichte.</p>';
+    var zeigeStorno = mitStorno || l.some(function (b) { return b.stornos; });
     return '<div class="ak-tabelle-rahmen"><table class="ak-tabelle"><thead><tr><th>Tag</th><th>Türen</th><th>Nicht angetr.</th><th>Angetr., kein Abschl.</th><th>Abschlüsse</th><th>Abschlussquote</th>' +
-      (bearbeitbar ? '<th></th>' : '') + '</tr></thead><tbody>' +
+      (zeigeStorno ? '<th>Stornos</th>' : '') + (bearbeitbar ? '<th></th>' : '') + '</tr></thead><tbody>' +
       l.map(function (b) {
         var s = summe([b]);
         return '<tr><td class="nowrap">' + esc(tagText(b.datum)) + '</td><td class="zahlen">' + fmt(s.tueren) + '</td><td class="zahlen">' + fmt(b.nicht_angetroffen) +
-          '</td><td class="zahlen">' + fmt(b.angetroffen_ohne) + '</td><td class="zahlen"><b>' + fmt(b.abschluesse) + '</b></td><td class="zahlen">' + String(s.quote).replace('.', ',') + ' %</td>' +
+          '</td><td class="zahlen">' + fmt(b.angetroffen_ohne) + '</td><td class="zahlen"><b>' + fmt(b.abschluesse) + '</b></td><td class="zahlen">' + prozent(s.quote) + '</td>' +
+          (zeigeStorno ? '<td class="zahlen">' + fmt(b.stornos || 0) + '</td>' : '') +
           (bearbeitbar ? '<td><button class="btn btn-ghost btn-sm" type="button" data-aktion="bericht-laden" data-datum="' + b.datum + '">Ändern</button></td>' : '') + '</tr>';
       }).join('') + '</tbody></table></div>';
   }
 
-  function nachtragFormular(id) {
-    return '<form class="ak-formular" data-form="bericht" data-id="' + esc(id) + '" novalidate><div class="zeile4">' +
+
+  function nachtragFormular(id, mitStorno) {
+    return '<form class="ak-formular" data-form="bericht" data-id="' + esc(id) + '" novalidate><div class="zeile4' + (mitStorno ? ' zeile5' : '') + '">' +
       feld('datum', 'Tag', 'date', 'max="' + heuteIso() + '" value="' + heuteIso() + '" required') +
       feld('nicht_angetroffen', 'Nicht angetroffen', 'number', 'min="0" inputmode="numeric" value="0"') +
       feld('angetroffen_ohne', 'Angetroffen, kein Abschluss', 'number', 'min="0" inputmode="numeric" value="0"') +
       feld('abschluesse', 'Abschlüsse', 'number', 'min="0" inputmode="numeric" value="0"') +
-      '</div><div class="form-msg err" role="alert"></div><div><button class="btn btn-primary" type="submit">Tag speichern</button></div></form>';
+      (mitStorno ? feld('stornos', 'Davon storniert', 'number', 'min="0" inputmode="numeric" value="0"') : '') +
+      '</div>' + (mitStorno ? '<p class="hilfe">Stornos dem Tag des ursprünglichen Abschlusses zuordnen. Nur du als Admin kannst sie eintragen.</p>' : '') +
+      '<div class="form-msg err" role="alert"></div><div><button class="btn btn-primary" type="submit">Tag speichern</button></div></form>';
   }
+
 
   /* ---------- Dashboard (eigenes oder als Admin für einen Partner) ---------- */
   function vDashboard(id) {
@@ -1252,7 +1311,7 @@
     var p = adminSicht ? S.profile.filter(function (x) { return x.id === id; })[0] : S.profil;
     if (!p) return vNichtGefunden();
     if (S.erweiterungFehlt) return vErweiterungFehlt();
-    var bw = bewertungVon(p.id);
+    var L = leistungswerte(p.id);
     var gesamt = summe(berichteVon(p.id));
     setzen((adminSicht ? '<a class="ak-zurueck" href="#/admin/team">' + ico('links') + 'Team-Übersicht</a>' : '') +
       '<div class="ak-kopf"><div><span class="eyebrow">' + (adminSicht ? 'Leistung' : 'Dein Dashboard') + '</span><h1>' + (adminSicht ? esc(name(p)) : 'Deine Leistung') + '</h1>' +
@@ -1260,10 +1319,11 @@
       (adminSicht ? '<div class="ak-knoepfe" style="margin:0"><a class="btn btn-primary btn-sm" href="#/admin/bewertung/' + esc(p.id) + '">' + ico('stift') + 'Bewertung bearbeiten</a>' +
         '<a class="btn btn-ghost btn-sm" href="#/admin/partner/' + esc(p.id) + '">Ausbildung ansehen</a></div>' : '') + '</div>' +
 
-      '<section class="ak-karte ak-spieler"><div class="ak-spieler-karte">' + fifaKarte(p, bw) + '</div>' +
-      '<div class="ak-spieler-radar">' + radar(bw) + '</div>' +
-      '<div class="ak-spieler-text"><h2>Stärken und Schwächen</h2>' + staerkenBlock(bw) +
-      (bw ? '<p class="tiny mt-16">Bewertet am ' + datum(bw.aktualisiert_am) + ' · Skala 1–99</p>' : '') + '</div></section>' +
+      '<section class="ak-karte ak-spieler"><div class="ak-spieler-karte">' + fifaKarte(p, L) + '</div>' +
+      '<div class="ak-spieler-radar">' + radar(L) + '</div>' +
+      '<div class="ak-spieler-text"><h2>Stärken und Schwächen</h2>' + staerkenBlock(L) +
+      '<p class="tiny mt-16">Skala 1–99 · ab 75 gut, 50–74 mittelmäßig, unter 50 schlecht. Disziplin, Einwandbehandlung und Stornoquote berechnen sich aus den Tagesberichten' +
+      (L.bw ? ', die übrigen Werte sind die Einschätzung vom ' + datum(L.bw.aktualisiert_am) : '') + '.</p></div></section>' +
 
       (!adminSicht ? '<section class="ak-karte mt-24"><div class="ak-karte-kopf"><h2>Tageszähler · ' + esc(tagText(heuteIso(), true)) + '</h2></div>' +
         '<p class="small muted" style="margin:-8px 0 16px">An jeder Tür einmal tippen. Wird automatisch gespeichert.</p>' + zaehlerHtml(p.id) + '</section>' : '') +
@@ -1273,8 +1333,8 @@
       '<section class="ak-karte mt-24"><div class="ak-karte-kopf"><h2>Türen pro Tag · letzte 14 Tage</h2></div>' + tagesDiagramm(berichteVon(p.id)) + '</section>' +
 
       '<section class="ak-karte mt-24"><div class="ak-karte-kopf"><h2>Tagesberichte</h2></div>' +
-      '<details class="ak-nachtrag"' + (adminSicht ? '' : '') + '><summary>' + ico('plus') + (adminSicht ? 'Tag für ' + esc(p.vorname) + ' eintragen oder ändern' : 'Anderen Tag nachtragen oder ändern') + '</summary>' + nachtragFormular(p.id) + '</details>' +
-      '<div class="mt-16" id="ak-verlauf">' + verlaufTabelle(p.id, true) + '</div></section>');
+      '<details class="ak-nachtrag"' + (adminSicht ? '' : '') + '><summary>' + ico('plus') + (adminSicht ? 'Tag für ' + esc(p.vorname) + ' eintragen oder ändern' : 'Anderen Tag nachtragen oder ändern') + '</summary>' + nachtragFormular(p.id, adminSicht) + '</details>' +
+      '<div class="mt-16" id="ak-verlauf">' + verlaufTabelle(p.id, true, adminSicht) + '</div></section>');
   }
 
   function vErweiterungFehlt() {
@@ -1292,7 +1352,8 @@
       var l = berichteVon(p.id);
       var s = summe(zeitraum(l, team.zeit));
       var letzter = l.reduce(function (m, b) { return b.datum > m ? b.datum : m; }, '');
-      return { p: p, s: s, ovr: gesamtWert(bewertungVon(p.id)), letzter: letzter };
+      var Lw = leistungswerte(p.id);
+      return { p: p, s: s, ovr: Lw.leer ? 0 : Lw.ovr, letzter: letzter };
     });
     zeilen.sort({
       abs: function (a, b) { return b.s.abs - a.s.abs; },
@@ -1331,27 +1392,39 @@
     var p = S.profile.filter(function (x) { return x.id === id; })[0];
     if (!p) return vNichtGefunden();
     var bw = bewertungVon(id) || { werte: {}, staerken: '', schwaechen: '' };
+    var L = leistungswerte(id);
     setzen('<a class="ak-zurueck" href="#/admin/leistung/' + esc(id) + '">' + ico('links') + 'Zurück zu ' + esc(name(p)) + '</a>' +
-      '<div class="ak-kopf"><div><span class="eyebrow">Bewertung</span><h1>' + esc(name(p)) + '</h1><p>Werte von 1 bis 99, wie bei einer Spielerkarte. Der Gesamtwert ist der Durchschnitt.</p></div></div>' +
+      '<div class="ak-kopf"><div><span class="eyebrow">Bewertung</span><h1>' + esc(name(p)) + '</h1><p>Drei Werte schätzt du ein, drei berechnet die Akademie aus den Tagesberichten. Der Gesamtwert ist der Durchschnitt.</p></div></div>' +
       '<div class="ak-raster"><section class="ak-karte"><form class="ak-formular" data-form="bewertung" data-id="' + esc(id) + '" novalidate>' +
-      WERTE.map(function (x) {
+      '<h2>Deine Einschätzung</h2>' +
+      WERTE.filter(function (x) { return !x[3]; }).map(function (x) {
         var w = Number(bw.werte[x[0]]) || 60;
         return '<div class="field ak-regler"><label for="w-' + x[0] + '">' + x[2] + ' <span class="kurz">' + x[1] + '</span></label>' +
-          '<div class="row gap-12" style="flex-wrap:nowrap"><input type="range" id="w-' + x[0] + '" name="' + x[0] + '" min="1" max="99" value="' + w + '" data-regler>' +
+          '<div class="row gap-12" style="flex-wrap:nowrap"><input type="range" id="w-' + x[0] + '" name="' + x[0] + '" min="1" max="99" value="' + w + '" data-regler style="--fill:' + ((w - 1) / 98 * 100) + '%">' +
           '<output for="w-' + x[0] + '">' + w + '</output></div></div>';
       }).join('') +
+      '<h2 class="mt-16">Aus den Zahlen berechnet</h2><ul class="ak-auto-liste">' +
+      WERTE.filter(function (x) { return x[3]; }).map(function (x) {
+        var u = urteil(L.w[x[0]]);
+        return '<li><div class="zeile"><span>' + x[2] + ' <span class="kurz">' + x[1] + '</span></span><span class="ak-urteil ' + u[0] + '">' + u[1] + '</span><b>' + (L.w[x[0]] == null ? '–' : L.w[x[0]]) + '</b></div><small>' + esc(L.info[x[0]]) + '</small></li>';
+      }).join('') + '</ul>' +
       '<div class="field"><label for="staerken">Stärken (Notiz für den Partner)</label><textarea class="textarea" id="staerken" name="staerken" style="min-height:80px">' + esc(bw.staerken) + '</textarea></div>' +
       '<div class="field"><label for="schwaechen">Daran arbeiten (Notiz für den Partner)</label><textarea class="textarea" id="schwaechen" name="schwaechen" style="min-height:80px">' + esc(bw.schwaechen) + '</textarea></div>' +
       '<div class="form-msg err" role="alert"></div><div><button class="btn btn-primary" type="submit">Bewertung speichern</button></div></form></section>' +
-      '<section class="ak-karte" id="ak-vorschau"><h2>Vorschau</h2><div class="ak-vorschau-inhalt">' + fifaKarte(p, bewertungVon(id) ? bw : null) + radar(bewertungVon(id) ? bw : null) + '</div></section></div>');
+      '<section class="ak-karte" id="ak-vorschau"><h2>Vorschau</h2><div class="ak-vorschau-inhalt">' + fifaKarte(p, L) + radar(L) + '</div></section></div>');
   }
+
   function bewertungVorschau(form) {
     var p = S.profile.filter(function (x) { return x.id === form.getAttribute('data-id'); })[0];
-    var bw = { werte: {} };
-    WERTE.forEach(function (x) { bw.werte[x[0]] = Number(form.elements[x[0]].value); });
+    var L = leistungswerte(form.getAttribute('data-id'));
+    WERTE.forEach(function (x) { if (!x[3]) L.w[x[0]] = Number(form.elements[x[0]].value); });
+    var vorhanden = WERTE.filter(function (x) { return L.w[x[0]] != null; });
+    L.ovr = Math.round(vorhanden.reduce(function (a, x) { return a + L.w[x[0]]; }, 0) / vorhanden.length);
+    L.leer = false;
     var ziel = document.querySelector('#ak-vorschau .ak-vorschau-inhalt');
-    if (ziel && p) ziel.innerHTML = fifaKarte(p, bw) + radar(bw);
+    if (ziel && p) ziel.innerHTML = fifaKarte(p, L) + radar(L);
   }
+
 
   /* =======================================================================
      MITTEILUNGEN – poppen bei Partnern auf
@@ -1673,13 +1746,20 @@
     var b = { nutzer_id: form.getAttribute('data-id'), datum: w.datum, nicht_angetroffen: zahlen[0], angetroffen_ohne: zahlen[1], abschluesse: zahlen[2] };
     var alt = S.berichte.filter(function (x) { return x.nutzer_id === b.nutzer_id && x.datum === b.datum; })[0];
     b.notiz = alt ? alt.notiz : '';
+    b.stornos = alt ? (alt.stornos || 0) : 0;
+    if (form.elements.stornos) {
+      var st = parseInt(w.stornos, 10);
+      if (isNaN(st) || st < 0) return formFehler(form, 'Bitte bei Stornos eine ganze Zahl ab 0 eintragen.');
+      if (st > b.abschluesse) return formFehler(form, 'Es können nicht mehr Stornos als Abschlüsse sein.');
+      b.stornos = st;
+    }
     await berichtSichern(b);
     S.berichte = S.berichte.filter(function (x) { return !(x.nutzer_id === b.nutzer_id && x.datum === b.datum); }).concat([b]);
     var y = window.scrollY; zeigen(); window.scrollTo(0, y);
   };
   FORMULARE.bewertung = async function (form, w) {
     var werte = {};
-    WERTE.forEach(function (x) { werte[x[0]] = Math.max(1, Math.min(99, parseInt(w[x[0]], 10) || 1)); });
+    WERTE.forEach(function (x) { if (!x[3]) werte[x[0]] = begrenzt(parseInt(w[x[0]], 10) || 1); });
     var b = { nutzer_id: form.getAttribute('data-id'), werte: werte, staerken: w.staerken, schwaechen: w.schwaechen };
     var r = await D.bewertungSpeichern(b);
     S.bewertungen = S.bewertungen.filter(function (x) { return x.nutzer_id !== b.nutzer_id; }).concat([(r && r[0]) || b]);
@@ -1821,6 +1901,7 @@
       form.elements.nicht_angetroffen.value = b.nicht_angetroffen;
       form.elements.angetroffen_ohne.value = b.angetroffen_ohne;
       form.elements.abschluesse.value = b.abschluesse;
+      if (form.elements.stornos) form.elements.stornos.value = b.stornos || 0;
       form.scrollIntoView({ behavior: 'smooth', block: 'center' });
     },
     'team-zeit': function (el) { team.zeit = el.getAttribute('data-wert'); vTeam(); },
@@ -1881,6 +1962,7 @@
   main.addEventListener('input', function (e) {
     if (e.target.hasAttribute('data-regler')) {
       var o = e.target.parentNode.querySelector('output'); if (o) o.textContent = e.target.value;
+      e.target.style.setProperty('--fill', ((e.target.value - 1) / 98 * 100) + '%');
       bewertungVorschau(e.target.form);
     }
     var t = e.target.getAttribute('data-tabelle');
