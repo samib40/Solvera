@@ -10,7 +10,8 @@
 //  Aufruf (POST, JSON-Body):
 //    { "modus": "pruefen" }   zeigt Felder, Status-Werte und Namen aus dem CRM
 //                             (ohne Kundendaten), speichert nichts
-//    { "modus": "abgleich" }  zählt und speichert (Standard)
+//    { "modus": "abgleich" }  zählt und speichert (Standard), inkl. Türen aus
+//                             der Gebietsplanung (Zuwachs seit dem letzten Lauf)
 //    { "tage": 90 }           Zeitraum, Standard 90 Tage
 //
 //  Erlaubt für: angemeldete Admins der Akademie (Authorization: Bearer <Token>)
@@ -115,6 +116,80 @@ function datumVon(lead: any): string | null {
 const erstellerVon = (lead: any) => String(lead?.erstellt_von_name ?? lead?.erstellt_von ?? '').trim();
 const klein = (s: string) => s.toLowerCase().replace(/\s+/g, ' ').trim();
 
+// ---------- Gebietsplanung ----------
+function berlinHeute(): { datum: string; stunde: number } {
+  const t = new Date().toLocaleString('sv-SE', { timeZone: 'Europe/Berlin' });   // "2026-11-27 02:15:00"
+  return { datum: t.slice(0, 10), stunde: Number(t.slice(11, 13)) };
+}
+function tagDavor(iso: string): string {
+  const d = new Date(iso + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() - 1); return d.toISOString().slice(0, 10);
+}
+
+async function tuerenAbgleichen(token: string, zuordnung: Map<string, string>, profile: any[]) {
+  const r = await fetch(`${CRM}/api/territories/`, { headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' } });
+  if (!r.ok) return { gebiete: 0, tueren: 0, meldung: `Gebietsplanung nicht lesbar (Status ${r.status}).` };
+  const gebiete = listeAus(await r.json());
+  const alt = await db('gebiet_stand?select=gebiet_id,by_status');
+  const vorher = new Map<string, Record<string, number>>(alt.map((x: any) => [String(x.gebiet_id), x.by_status || {}]));
+
+  // Nachts (vor 12 Uhr) gehört der Zuwachs zum Vortag
+  const jetzt = berlinHeute();
+  const datum = jetzt.stunde < 12 ? tagDavor(jetzt.datum) : jetzt.datum;
+
+  const proNutzer = new Map<string, { tueren: number; werte: Record<string, number> }>();
+  const ohneZuordnung: Record<string, number> = {};
+  let summe = 0, ersterLauf = vorher.size === 0;
+  const neuerStand: any[] = [];
+  for (const g of gebiete) {
+    const jetztStatus: Record<string, number> = g?.progress?.by_status || {};
+    neuerStand.push({ gebiet_id: g.id, name: String(g.name || ''), by_status: jetztStatus, erfasst_am: new Date().toISOString() });
+    const alt2 = vorher.get(String(g.id));
+    if (!alt2) continue;   // neues Gebiet: erst ab dem nächsten Lauf zählen
+    const zuwachs: Record<string, number> = {};
+    let tueren = 0;
+    for (const [st, n] of Object.entries(jetztStatus)) {
+      if (st === 'nicht_besucht') continue;
+      const d = Number(n) - Number(alt2[st] || 0);
+      if (d > 0) { zuwachs[st] = d; tueren += d; }
+    }
+    if (!tueren) continue;
+    summe += tueren;
+    const namen: string[] = (g.assigned_users?.length ? g.assigned_users.map((u: any) => u.name) : (g.assigned_user_name ? [g.assigned_user_name] : []))
+      .filter(Boolean);
+    const ids = namen.map((n) => zuordnung.get(klein(n))).filter(Boolean) as string[];
+    if (!ids.length) { const k = namen.join(', ') || '(kein Mitarbeiter zugewiesen)'; ohneZuordnung[k] = (ohneZuordnung[k] || 0) + tueren; continue; }
+    for (const id of ids) {   // mehrere Mitarbeiter: gleichmäßig aufteilen
+      const z = proNutzer.get(id) || { tueren: 0, werte: {} };
+      z.tueren += tueren / ids.length;
+      for (const [st, n] of Object.entries(zuwachs)) z.werte[st] = (z.werte[st] || 0) + n / ids.length;
+      proNutzer.set(id, z);
+    }
+  }
+
+  // Zu bestehenden Werten des Tages addieren (falls mehrmals am Tag abgeglichen wird)
+  if (proNutzer.size) {
+    const ids = [...proNutzer.keys()];
+    const bestand = await db(`tueren?select=nutzer_id,tueren,werte&datum=eq.${datum}&nutzer_id=in.(${ids.join(',')})`);
+    const alt3 = new Map<string, any>(bestand.map((b: any) => [b.nutzer_id, b]));
+    const zeilen = ids.map((id) => {
+      const n = proNutzer.get(id)!, b = alt3.get(id);
+      const werte: Record<string, number> = { ...(b?.werte || {}) };
+      for (const [st, v] of Object.entries(n.werte)) werte[st] = Math.round((werte[st] || 0) + v);
+      return { nutzer_id: id, datum, tueren: Math.round((b?.tueren || 0) + n.tueren), werte, aktualisiert_am: new Date().toISOString() };
+    });
+    await db('tueren?on_conflict=nutzer_id,datum', { methode: 'POST', daten: zeilen, prefer: 'resolution=merge-duplicates' });
+  }
+  for (let i = 0; i < neuerStand.length; i += 500) {
+    await db('gebiet_stand?on_conflict=gebiet_id', { methode: 'POST', daten: neuerStand.slice(i, i + 500), prefer: 'resolution=merge-duplicates' });
+  }
+  const offen = Object.keys(ohneZuordnung);
+  return {
+    gebiete: gebiete.length, tueren: summe, datum, ersterLauf, ohne_zuordnung: ohneZuordnung,
+    meldung: ersterLauf ? 'Gebietsplanung: erster Stand gespeichert, Türen werden ab dem nächsten Abgleich gezählt.'
+      : offen.length ? `Türen ohne zugeordneten Partner: ${offen.map((k) => `${k} (${ohneZuordnung[k]})`).join(', ')}.` : '',
+  };
+}
+
 // ---------- Ablauf ----------
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS });
@@ -126,6 +201,7 @@ Deno.serve(async (req) => {
     const ab = new Date(Date.now() - (tage - 1) * 86400000).toISOString().slice(0, 10);
 
     const token = await crmAnmelden();
+
     const leads = await alleLeads(token, ab);
 
     if (modus === 'pruefen') {
@@ -191,10 +267,17 @@ Deno.serve(async (req) => {
       await db('crm_zahlen', { methode: 'POST', daten: zeilen.slice(i, i + 500) });
     }
 
+    // ---------- Türen aus der Gebietsplanung ----------
+    // Jede Nacht wird der Stand jedes Gebiets gemerkt. Neu angeklickte Häuser
+    // (Zuwachs je Status außer „nicht besucht“) zählen als geklingelte Türen
+    // des zugewiesenen Mitarbeiters.
+    const tuerenErgebnis = await tuerenAbgleichen(token, zuordnung, profile);
+
     const meldung = regeln.length ? '' : 'Noch keine Storno-Status gewählt – Stornos werden als 0 gezählt.';
     await db('crm_abgleiche', { methode: 'POST', daten: {
-      ok: true, leads: leads.length, zugeordnet, nicht_zugeordnet: fehlt, meldung } });
-    return antwort({ ok: true, modus, ab, leads: leads.length, zugeordnet, nicht_zugeordnet: fehlt, meldung });
+      ok: true, leads: leads.length, zugeordnet, nicht_zugeordnet: fehlt,
+      meldung: [meldung, tuerenErgebnis.meldung].filter(Boolean).join(' ') } });
+    return antwort({ ok: true, modus, ab, leads: leads.length, zugeordnet, nicht_zugeordnet: fehlt, meldung, tueren: tuerenErgebnis });
   } catch (e) {
     const meldung = e instanceof Error ? e.message : String(e);
     try { await db('crm_abgleiche', { methode: 'POST', daten: { ok: false, meldung } }); } catch { /* egal */ }

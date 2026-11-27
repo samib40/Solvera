@@ -656,3 +656,4 @@ a.ak-beitrag:hover { border-color: var(--brass-line); }
 .ak-gruende .ak-balken i { background: linear-gradient(90deg, rgba(var(--brass-rgb), .55), var(--brass)); }
 .ak-gruende b { font-variant-numeric: tabular-nums; }
 .ak-gruende small { color: var(--txt-3); font-variant-numeric: tabular-nums; min-width: 3.4em; text-align: right; }
+.ak-kz-tueren { display: block; font-size: .82rem; font-weight: 700; color: var(--txt-3); margin-top: 2px; }

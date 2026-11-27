@@ -167,7 +167,7 @@ window.SOLVERA = {
     /* Ziele für die aus dem CRM berechneten Werte der Spielerkarte.
        Ziel erreicht = Wert 80 (gut ab 75). */
     ziele: {
-      arbeitstage: 20,           // Disziplin: Tage mit mindestens einem Lead in den letzten 30 Tagen
+      tuerenProTag: 300,         // Disziplin: Ø geklingelte Türen pro Arbeitstag (Gebietsplanung, 30 Tage)
       qualifizierungsquote: 50,  // Einwandbehandlung: % qualifiziert von bearbeiteten Leads (30 Tage)
       stornoquote: 50            // Stornoquote: (nicht qualifiziert + neu) ÷ alle Leads, gut bis zu diesem % (90 Tage)
     }

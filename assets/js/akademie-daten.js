@@ -319,6 +319,7 @@
 
       /* ---- CRM-Abgleich ---- */
       crmZahlen: function () { return db('crm_zahlen?select=*&limit=10000'); },
+      tueren: function () { return db('tueren?select=*&limit=10000'); },
       crmAbgleiche: function () { return db('crm_abgleiche?select=*&order=zeit.desc&limit=10'); },
       einstellung: async function (schluessel) {
         var r = await db('einstellungen?select=wert&schluessel=eq.' + encodeURIComponent(schluessel));
@@ -498,11 +499,22 @@
             werte: { status: status, pv_status: pv, call_status: { 'Erreicht': erreicht, 'Nicht erreicht': leads - erreicht } } });
         }
       });
+      var tueren = [];
+      [[partner, 260], [beispiele[0], 330], [beispiele[1], 290], [beispiele[2], 180]].forEach(function (pq) {
+        for (var t = 1; t < 40; t++) {
+          var d = new Date(Date.now() - t * 86400000);
+          if (d.getDay() === 0 || zufall() < 0.15) continue;
+          var n = Math.round(pq[1] * (0.7 + zufall() * 0.6));
+          var ne = Math.round(n * 0.5), ki = Math.round(n * 0.2), ner = Math.round(n * 0.2);
+          tueren.push({ nutzer_id: pq[0].id, datum: isoTag(d), tueren: n, aktualisiert_am: vor(0, 6),
+            werte: { niemand_erreicht: ne, kein_interesse: ki, nicht_erneut: ner, besucht: n - ne - ki - ner } });
+        }
+      });
       var crmAbgleiche = [{ id: 1, zeit: vor(0, 6), ok: true, leads: 1402, zugeordnet: 1388,
                             nicht_zugeordnet: { 'Kai T.': 14 }, meldung: '' }];
 
       return { berichte: berichte, bewertungen: bewertungen, mitteilungen: mitteilungen, gelesen: gelesen,
-               crmZahlen: crmZahlen, crmAbgleiche: crmAbgleiche, einstellungen: { crm_storno: { regeln: ['status=Nicht qualifiziert', 'status=Neu'] } },
+               crmZahlen: crmZahlen, crmAbgleiche: crmAbgleiche, tueren: tueren, einstellungen: { crm_storno: { regeln: ['status=Nicht qualifiziert', 'status=Neu'] } },
                konten: [admin, partner].concat(beispiele), lektionen: L, beitraege: B,
                fortschritt: F, meldungen: M, zusagen: [{ nutzer_id: beispiele[0].id, beitrag_id: B[0].id, erstellt_am: vor(0) }],
                sitzung: null };
@@ -525,7 +537,7 @@
     function laden() {
       if (speicher) return speicher;
       try { speicher = JSON.parse(localStorage.getItem(SCHLUESSEL)); } catch (e) { speicher = null; }
-      if (!speicher || !speicher.konten || speicher.version !== 6) { speicher = beispielDaten(); speicher.version = 6; sichern(); }
+      if (!speicher || !speicher.konten || speicher.version !== 7) { speicher = beispielDaten(); speicher.version = 7; sichern(); }
       return speicher;
     }
     function sichern() {
@@ -763,6 +775,10 @@
         return kopie(laden().crmZahlen.filter(function (z) { return k.rolle === 'admin' || z.nutzer_id === k.id; }));
       },
       crmAbgleiche: async function () { mussAdmin(); return kopie(laden().crmAbgleiche); },
+      tueren: async function () {
+        var k = ich();
+        return kopie(laden().tueren.filter(function (z) { return k.rolle === 'admin' || z.nutzer_id === k.id; }));
+      },
       einstellung: async function (schluessel) { return kopie(laden().einstellungen[schluessel] || null); },
       einstellungSpeichern: async function (schluessel, wert) { mussAdmin(); laden().einstellungen[schluessel] = wert; sichern(); },
       crmNameSpeichern: async function (id, crmName) {
@@ -803,7 +819,7 @@
 
       /* Nur im Demo-Modus: alles auf die Beispieldaten zuruecksetzen */
       version: 2,
-      zuruecksetzen: function () { speicher = beispielDaten(); speicher.version = 6; sichern(); }
+      zuruecksetzen: function () { speicher = beispielDaten(); speicher.version = 7; sichern(); }
     };
   }
 

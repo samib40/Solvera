@@ -100,8 +100,13 @@ den Daten aus dem Horizon CRM** (siehe „CRM-Abgleich“):
 * **Spielerkarte im FIFA-Stil** mit Gesamtwert (Durchschnitt) und sechs Werten
   (1–99), Bronze unter 65, Silber 65–74, Gold ab 75, dazu ein Netzdiagramm. Drei Werte
   kommen aus dem CRM (Ziele in `config.js` unter `akademie.ziele`, Ziel erreicht = 80):
-  * **Disziplin (DIS):** Arbeitstage mit mindestens einem Lead in den letzten 30 Tagen,
-    Ziel 20.
+  * **Disziplin (DIS):** Ø geklingelte Türen pro Arbeitstag der letzten 30 Tage aus der
+    **Gebietsplanung** des CRM, Ziel 300. Gezählt wird jede Nacht der Zuwachs je Gebiet
+    (neu angeklickte Häuser: besucht, niemand erreicht, kein Interesse, Termin,
+    qualifiziert, nicht erneut besuchen) und dem Mitarbeiter zugerechnet, dem das Gebiet
+    zugewiesen ist (bei mehreren gleichmäßig verteilt). Ein erneuter Besuch, der den
+    Status nicht ändert, wird nicht erfasst; Türen in fremden Gebieten zählen beim
+    zugewiesenen Mitarbeiter. Erfasst wird ab dem ersten Abgleich (27.11.2026).
   * **Einwandbehandlung (EIN):** Qualifiziert ÷ bearbeitete Leads (qualifiziert +
     nicht qualifiziert), letzte 30 Tage, Ziel über 50 %.
   * **Stornoquote (STO):** (Nicht qualifiziert + Neu) ÷ alle Leads, letzte 90 Tage.

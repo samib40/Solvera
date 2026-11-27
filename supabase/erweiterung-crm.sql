@@ -55,3 +55,27 @@ create policy einstellungen_admin on public.einstellungen for all using (public.
 grant select on public.crm_zahlen, public.crm_abgleiche to authenticated;
 grant select, insert, update, delete on public.einstellungen to authenticated;
 revoke all on public.crm_zahlen, public.crm_abgleiche, public.einstellungen from anon;
+
+-- ---------- Türen aus der Gebietsplanung ----------
+-- Stand je Gebiet beim letzten Abgleich (Anzahl Häuser je Status)
+create table if not exists public.gebiet_stand (
+  gebiet_id   bigint primary key,
+  name        text not null default '',
+  by_status   jsonb not null default '{}'::jsonb,
+  erfasst_am  timestamptz not null default now()
+);
+-- Geklingelte Türen je Partner und Tag (Zuwachs seit dem Vortag, nach Status)
+create table if not exists public.tueren (
+  nutzer_id        uuid not null references public.profile (id) on delete cascade,
+  datum            date not null,
+  tueren           int  not null default 0,
+  werte            jsonb not null default '{}'::jsonb,
+  aktualisiert_am  timestamptz not null default now(),
+  primary key (nutzer_id, datum)
+);
+alter table public.gebiet_stand enable row level security;
+alter table public.tueren       enable row level security;
+drop policy if exists tueren_lesen on public.tueren;
+create policy tueren_lesen on public.tueren for select using (nutzer_id = auth.uid() or public.ist_admin());
+grant select on public.tueren to authenticated;
+revoke all on public.gebiet_stand, public.tueren from anon;
