@@ -991,14 +991,12 @@
   /* Sechs Werte der Spielerkarte. auto = wird aus den CRM-Daten
      berechnet, sonst vergibt der Admin den Wert (1–99). */
   var WERTE = [
-    ['eroeffnung', 'ERÖ', 'Gesprächseröffnung'],
-    ['bedarf', 'BED', 'Bedarfsanalyse'],
+    ['disziplin', 'DIS', 'Disziplin', true],
+    ['leads', 'LEA', 'Leads', true],
     ['einwand', 'EIN', 'Einwandbehandlung', true],
-    ['storno', 'STO', 'Stornoquote', true],
-    ['wissen', 'WIS', 'Produktwissen'],
-    ['disziplin', 'DIS', 'Disziplin', true]
+    ['storno', 'STO', 'Stornoquote', true]
   ];
-  var ZIELE = Object.assign({ tuerenProTag: 300, qualifizierungsquote: 50, stornoquote: 50 }, CFG.ziele || {});
+  var ZIELE = Object.assign({ tuerenProTag: 300, leadsProTag: 8, qualifizierungsquote: 50, stornoquote: 50 }, CFG.ziele || {});
   /* Status im CRM */
   var ST = { quali: 'Qualifiziert', nicht: 'Nicht qualifiziert', neu: 'Neu', bearb: 'In Bearbeitung' };
   var CRM_KATS = [['quali', 'Qualifiziert', 'abs'], ['offen', 'Neu / in Bearbeitung', 'ohne'], ['nicht', 'Nicht qualifiziert', 'nicht']];
@@ -1031,7 +1029,7 @@
     return liste.filter(function (b) { return b.datum >= ab; });
   }
 
-  /* Alle sechs Werte eines Partners: drei aus dem CRM, drei vom Admin.
+  /* Alle Werte eines Partners, berechnet aus dem CRM.
      Ziel erreicht = 80 (Gold-Bereich), darüber bis 99. */
   function leistungswerte(id) {
     var bw = bewertungVon(id);
@@ -1045,6 +1043,11 @@
       w.disziplin = begrenzt(t30.jeTag / ZIELE.tuerenProTag * 80);
       info.disziplin = 'Ø ' + fmt(t30.jeTag) + ' Türen pro Arbeitstag (' + fmt(t30.tueren) + ' an ' + t30.tage + ' Tagen, letzte 30 Tage) · Ziel ' + fmt(ZIELE.tuerenProTag);
     } else { w.disziplin = null; info.disziplin = 'Noch keine Türen aus der Gebietsplanung'; }
+
+    if (c30.tage) {
+      w.leads = begrenzt(c30.jeTag / ZIELE.leadsProTag * 80);
+      info.leads = 'Ø ' + String(c30.jeTag).replace('.', ',') + ' Leads pro Arbeitstag (' + fmt(c30.leads) + ' an ' + c30.tage + ' Tagen, letzte 30 Tage) · Ziel ' + ZIELE.leadsProTag;
+    } else { w.leads = null; info.leads = 'Keine Leads in den letzten 30 Tagen'; }
 
     if (c30.bearbeitet) {
       w.einwand = begrenzt(c30.qualiquote / ZIELE.qualifizierungsquote * 80);
@@ -1307,7 +1310,7 @@
       '<p>' + (c90.leads ? fmt(c90.leads) + ' Leads in den letzten 90 Tagen an ' + fmt(c90.tage) + ' Arbeitstagen · Stornoquote ' + prozent(c90.quote) : 'Noch keine Leads zugeordnet.') +
       (function () { var t = summeTueren(letzteTage(tuerenVon(p.id), 30)); return t.tage ? ' · Ø ' + fmt(t.jeTag) + ' Türen pro Tag' : ''; })() +
       (stand ? ' · Stand ' + datum(stand, true) : '') + '</p></div>' +
-      (adminSicht ? '<div class="ak-knoepfe" style="margin:0"><a class="btn btn-primary btn-sm" href="#/admin/bewertung/' + esc(p.id) + '">' + ico('stift') + 'Bewertung bearbeiten</a>' +
+      (adminSicht ? '<div class="ak-knoepfe" style="margin:0"><a class="btn btn-primary btn-sm" href="#/admin/bewertung/' + esc(p.id) + '">' + ico('stift') + 'Notizen bearbeiten</a>' +
         '<a class="btn btn-ghost btn-sm" href="#/admin/partner/' + esc(p.id) + '">Ausbildung ansehen</a></div>' : '') + '</div>' +
 
       (!l.length ? '<div class="ak-hinweis" style="margin-bottom:22px">' + (adminSicht
@@ -1317,8 +1320,7 @@
       '<section class="ak-karte ak-spieler"><div class="ak-spieler-karte">' + fifaKarte(p, L) + '</div>' +
       '<div class="ak-spieler-radar">' + radar(L) + '</div>' +
       '<div class="ak-spieler-text"><h2>Stärken und Schwächen</h2>' + staerkenBlock(L) +
-      '<p class="tiny mt-16">Skala 1–99 · ab 75 gut, 50–74 mittelmäßig, unter 50 schlecht. Disziplin (Türen aus der Gebietsplanung), Einwandbehandlung und Stornoquote kommen aus dem CRM' +
-      (L.bw ? ', die übrigen Werte sind die Einschätzung vom ' + datum(L.bw.aktualisiert_am) : '') + '.</p></div></section>' +
+      '<p class="tiny mt-16">Skala 1–99 · Ziel erreicht = 80 · ab 75 gut, 50–74 mittelmäßig, unter 50 schlecht. Alle Werte kommen aus dem CRM.</p></div></section>' +
 
       '<section class="mt-24"><div class="ak-kennzahlen-3">' +
       kennzahlKachel('Heute', summeCrm(zeitraum(l, 'heute')), summeTueren(zeitraum(tuerenVon(p.id), 'heute'))) +
@@ -1390,23 +1392,22 @@
     var bw = bewertungVon(id) || { werte: {}, staerken: '', schwaechen: '' };
     var L = leistungswerte(id);
     setzen('<a class="ak-zurueck" href="#/admin/leistung/' + esc(id) + '">' + ico('links') + 'Zurück zu ' + esc(name(p)) + '</a>' +
-      '<div class="ak-kopf"><div><span class="eyebrow">Bewertung</span><h1>' + esc(name(p)) + '</h1><p>Drei Werte schätzt du ein, drei berechnet die Akademie aus dem CRM. Der Gesamtwert ist der Durchschnitt.</p></div></div>' +
+      '<div class="ak-kopf"><div><span class="eyebrow">Bewertung</span><h1>' + esc(name(p)) + '</h1><p>Alle Werte berechnet die Akademie aus dem CRM. Hier schreibst du die Notizen zu Stärken und Schwächen, die der Partner sieht.</p></div></div>' +
       '<div class="ak-raster"><section class="ak-karte"><form class="ak-formular" data-form="bewertung" data-id="' + esc(id) + '" novalidate>' +
-      '<h2>Deine Einschätzung</h2>' +
       WERTE.filter(function (x) { return !x[3]; }).map(function (x) {
         var w = Number(bw.werte[x[0]]) || 60;
         return '<div class="field ak-regler"><label for="w-' + x[0] + '">' + x[2] + ' <span class="kurz">' + x[1] + '</span></label>' +
           '<div class="row gap-12" style="flex-wrap:nowrap"><input type="range" id="w-' + x[0] + '" name="' + x[0] + '" min="1" max="99" value="' + w + '" data-regler style="--fill:' + ((w - 1) / 98 * 100) + '%">' +
           '<output for="w-' + x[0] + '">' + w + '</output></div></div>';
       }).join('') +
-      '<h2 class="mt-16">Aus dem CRM berechnet</h2><ul class="ak-auto-liste">' +
+      '<h2>Werte aus dem CRM</h2><ul class="ak-auto-liste">' +
       WERTE.filter(function (x) { return x[3]; }).map(function (x) {
         var u = urteil(L.w[x[0]]);
         return '<li><div class="zeile"><span>' + x[2] + ' <span class="kurz">' + x[1] + '</span></span><span class="ak-urteil ' + u[0] + '">' + u[1] + '</span><b>' + (L.w[x[0]] == null ? '–' : L.w[x[0]]) + '</b></div><small>' + esc(L.info[x[0]]) + '</small></li>';
       }).join('') + '</ul>' +
       '<div class="field"><label for="staerken">Stärken (Notiz für den Partner)</label><textarea class="textarea" id="staerken" name="staerken" style="min-height:80px">' + esc(bw.staerken) + '</textarea></div>' +
       '<div class="field"><label for="schwaechen">Daran arbeiten (Notiz für den Partner)</label><textarea class="textarea" id="schwaechen" name="schwaechen" style="min-height:80px">' + esc(bw.schwaechen) + '</textarea></div>' +
-      '<div class="form-msg err" role="alert"></div><div><button class="btn btn-primary" type="submit">Bewertung speichern</button></div></form></section>' +
+      '<div class="form-msg err" role="alert"></div><div><button class="btn btn-primary" type="submit">Notizen speichern</button></div></form></section>' +
       '<section class="ak-karte" id="ak-vorschau"><h2>Vorschau</h2><div class="ak-vorschau-inhalt">' + fifaKarte(p, L) + radar(L) + '</div></section></div>');
   }
 
@@ -1415,8 +1416,8 @@
     var L = leistungswerte(form.getAttribute('data-id'));
     WERTE.forEach(function (x) { if (!x[3]) L.w[x[0]] = Number(form.elements[x[0]].value); });
     var vorhanden = WERTE.filter(function (x) { return L.w[x[0]] != null; });
-    L.ovr = Math.round(vorhanden.reduce(function (a, x) { return a + L.w[x[0]]; }, 0) / vorhanden.length);
-    L.leer = false;
+    L.ovr = vorhanden.length ? Math.round(vorhanden.reduce(function (a, x) { return a + L.w[x[0]]; }, 0) / vorhanden.length) : 0;
+    L.leer = !vorhanden.length;
     var ziel = document.querySelector('#ak-vorschau .ak-vorschau-inhalt');
     if (ziel && p) ziel.innerHTML = fifaKarte(p, L) + radar(L);
   }
@@ -1828,7 +1829,7 @@
     var b = { nutzer_id: form.getAttribute('data-id'), werte: werte, staerken: w.staerken, schwaechen: w.schwaechen };
     var r = await D.bewertungSpeichern(b);
     S.bewertungen = S.bewertungen.filter(function (x) { return x.nutzer_id !== b.nutzer_id; }).concat([(r && r[0]) || b]);
-    toast('Bewertung gespeichert.');
+    toast('Notizen gespeichert.');
     geheZu('admin/leistung/' + b.nutzer_id);
   };
   FORMULARE['crm-regeln'] = async function (form) {

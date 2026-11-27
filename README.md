@@ -97,24 +97,20 @@ drin ist.
 **Dashboard** (Menüpunkt „Dashboard“, für jeden Partner) – **läuft ausschließlich mit
 den Daten aus dem Horizon CRM** (siehe „CRM-Abgleich“):
 
-* **Spielerkarte im FIFA-Stil** mit Gesamtwert (Durchschnitt) und sechs Werten
-  (1–99), Bronze unter 65, Silber 65–74, Gold ab 75, dazu ein Netzdiagramm. Drei Werte
-  kommen aus dem CRM (Ziele in `config.js` unter `akademie.ziele`, Ziel erreicht = 80):
-  * **Disziplin (DIS):** Ø geklingelte Türen pro Arbeitstag der letzten 30 Tage aus der
-    **Gebietsplanung** des CRM, Ziel 300. Gezählt wird jede Nacht der Zuwachs je Gebiet
-    (neu angeklickte Häuser: besucht, niemand erreicht, kein Interesse, Termin,
-    qualifiziert, nicht erneut besuchen) und dem Mitarbeiter zugerechnet, dem das Gebiet
-    zugewiesen ist (bei mehreren gleichmäßig verteilt). Ein erneuter Besuch, der den
-    Status nicht ändert, wird nicht erfasst; Türen in fremden Gebieten zählen beim
-    zugewiesenen Mitarbeiter. Erfasst wird ab dem ersten Abgleich (27.11.2026).
-  * **Einwandbehandlung (EIN):** Qualifiziert ÷ bearbeitete Leads (qualifiziert +
-    nicht qualifiziert), letzte 30 Tage, Ziel über 50 %.
-  * **Stornoquote (STO):** (Nicht qualifiziert + Neu) ÷ alle Leads, letzte 90 Tage.
-    Bis 50 % gut (99 → 75), darüber mittelmäßig bis schlecht.
+* **Spielerkarte im FIFA-Stil** mit Gesamtwert (Durchschnitt) und vier Werten (1–99),
+  alle aus dem CRM, Bronze unter 65, Silber 65–74, Gold ab 75, dazu ein Netzdiagramm.
+  Ziele in `config.js` unter `akademie.ziele`; Ziel erreicht = 80:
+  * **Disziplin (DIS):** Ø geklingelte Türen pro Arbeitstag (Gebietsplanung, 30 Tage),
+    Ziel 300. Gezählt wird jede Nacht der Zuwachs je Gebiet und dem zugewiesenen
+    Mitarbeiter zugerechnet; erneute Besuche ohne Statuswechsel zählen nicht.
+  * **Leads (LEA):** Ø geschriebene Leads pro Arbeitstag (30 Tage), Ziel 8.
+  * **Einwandbehandlung (EIN):** Qualifiziert ÷ bearbeitete Leads (30 Tage), Ziel über
+    50 %.
+  * **Stornoquote (STO):** (Nicht qualifiziert + Neu) ÷ alle Leads (90 Tage). Bis 50 %
+    gut, darüber mittelmäßig bis schlecht.
 
-  Gesprächseröffnung, Bedarfsanalyse und Produktwissen schätzt der Admin ein.
   **Stärken** = alle Werte ab 75, **Daran arbeiten** = alle darunter, jeweils mit der
-  Zahl dahinter und der Notiz des Admins.
+  Zahl dahinter; dazu Notizen des Admins („Notizen bearbeiten“).
 * **Kennzahlen** für heute, diese Woche, diesen Monat: Leads, qualifiziert,
   neu/in Bearbeitung, nicht qualifiziert, Stornoquote, Qualifizierungsquote, Anteil
   erreichter Kunden.
@@ -604,3 +600,6 @@ diese Adresse überall ersetzen.
 ---
 
 © Solvera Sales
+
+> **Nach jedem Update der Akademie** in `akademie.html` die Versionsnummer `?v=…` an CSS
+> und JS erhöhen, damit Browser die neue Fassung sofort laden.
