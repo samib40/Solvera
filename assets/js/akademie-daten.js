@@ -319,6 +319,7 @@
 
       /* ---- CRM-Abgleich ---- */
       crmZahlen: function () { return db('crm_zahlen?select=*&limit=10000'); },
+      tueren: function () { return db('tueren?select=*&limit=10000'); },
       crmAbgleiche: function () { return db('crm_abgleiche?select=*&order=zeit.desc&limit=10'); },
       einstellung: async function (schluessel) {
         var r = await db('einstellungen?select=wert&schluessel=eq.' + encodeURIComponent(schluessel));
@@ -477,14 +478,43 @@
       M.unshift({ id: M.length + 1, art: 'antwort', nutzer_id: beispiele[0].id, inhalt_id: mitteilungen[1].id, gelesen: false,
                   text: 'Lena Beispiel hat auf „Bitte Steuernummer schicken“ geantwortet: 12/345/67890 – liebe Grüße, Lena', erstellt_am: vor(0, 20) });
 
-      var crmZahlen = berichte.filter(function (b) { return b.abschluesse; }).map(function (b) {
-        return { nutzer_id: b.nutzer_id, datum: b.datum, leads: b.abschluesse, stornos: b.stornos || 0, aktualisiert_am: vor(0, 6) };
+      /* CRM-Zahlen: Leads je Partner und Tag mit Verteilung auf Status, Gründe, Erreichbarkeit */
+      var gruende = ['Kein Interesse mehr', 'Will nicht innerhalb 1 Jahres umsetzen', 'Telefonnummer ungültig', 'Dach muss saniert werden', 'Technisch nicht möglich', 'Kwh zu niedrig'];
+      var crmZahlen = [];
+      [[partner, 5, 0.42], [beispiele[0], 9, 0.62], [beispiele[1], 7, 0.48], [beispiele[2], 4, 0.3]].forEach(function (pq) {
+        for (var t = 0; t < 90; t++) {
+          var d = new Date(Date.now() - t * 86400000);
+          if (d.getDay() === 0 || zufall() < 0.18) continue;
+          var leads = Math.max(1, Math.round(pq[1] * (0.6 + zufall() * 0.8)));
+          var neu = t < 4 ? Math.round(leads * (0.7 - t * 0.15)) : (zufall() < 0.1 ? 1 : 0);
+          neu = Math.min(leads, Math.max(0, neu));
+          var quali = Math.round((leads - neu) * (pq[2] + (zufall() - 0.5) * 0.2));
+          quali = Math.max(0, Math.min(leads - neu, quali));
+          var nicht = leads - neu - quali;
+          var pv = { 'Qualifiziert': quali }; if (neu) pv['Offen'] = neu;
+          for (var g = 0; g < nicht; g++) { var k = gruende[Math.floor(Math.pow(zufall(), 1.6) * gruende.length)]; pv[k] = (pv[k] || 0) + 1; }
+          var erreicht = Math.round(leads * (0.75 + zufall() * 0.2));
+          var status = { 'Qualifiziert': quali }; if (nicht) status['Nicht qualifiziert'] = nicht; if (neu) status['Neu'] = neu;
+          crmZahlen.push({ nutzer_id: pq[0].id, datum: isoTag(d), leads: leads, stornos: nicht + neu, aktualisiert_am: vor(0, 6),
+            werte: { status: status, pv_status: pv, call_status: { 'Erreicht': erreicht, 'Nicht erreicht': leads - erreicht } } });
+        }
+      });
+      var tueren = [];
+      [[partner, 260], [beispiele[0], 330], [beispiele[1], 290], [beispiele[2], 180]].forEach(function (pq) {
+        for (var t = 1; t < 40; t++) {
+          var d = new Date(Date.now() - t * 86400000);
+          if (d.getDay() === 0 || zufall() < 0.15) continue;
+          var n = Math.round(pq[1] * (0.7 + zufall() * 0.6));
+          var ne = Math.round(n * 0.5), ki = Math.round(n * 0.2), ner = Math.round(n * 0.2);
+          tueren.push({ nutzer_id: pq[0].id, datum: isoTag(d), tueren: n, aktualisiert_am: vor(0, 6),
+            werte: { niemand_erreicht: ne, kein_interesse: ki, nicht_erneut: ner, besucht: n - ne - ki - ner } });
+        }
       });
       var crmAbgleiche = [{ id: 1, zeit: vor(0, 6), ok: true, leads: 1402, zugeordnet: 1388,
                             nicht_zugeordnet: { 'Kai T.': 14 }, meldung: '' }];
 
       return { berichte: berichte, bewertungen: bewertungen, mitteilungen: mitteilungen, gelesen: gelesen,
-               crmZahlen: crmZahlen, crmAbgleiche: crmAbgleiche, einstellungen: { crm_storno: { regeln: ['status=Storniert'] } },
+               crmZahlen: crmZahlen, crmAbgleiche: crmAbgleiche, tueren: tueren, einstellungen: { crm_storno: { regeln: ['status=Nicht qualifiziert', 'status=Neu'] } },
                konten: [admin, partner].concat(beispiele), lektionen: L, beitraege: B,
                fortschritt: F, meldungen: M, zusagen: [{ nutzer_id: beispiele[0].id, beitrag_id: B[0].id, erstellt_am: vor(0) }],
                sitzung: null };
@@ -507,7 +537,7 @@
     function laden() {
       if (speicher) return speicher;
       try { speicher = JSON.parse(localStorage.getItem(SCHLUESSEL)); } catch (e) { speicher = null; }
-      if (!speicher || !speicher.konten || speicher.version !== 5) { speicher = beispielDaten(); speicher.version = 5; sichern(); }
+      if (!speicher || !speicher.konten || speicher.version !== 7) { speicher = beispielDaten(); speicher.version = 7; sichern(); }
       return speicher;
     }
     function sichern() {
@@ -745,6 +775,10 @@
         return kopie(laden().crmZahlen.filter(function (z) { return k.rolle === 'admin' || z.nutzer_id === k.id; }));
       },
       crmAbgleiche: async function () { mussAdmin(); return kopie(laden().crmAbgleiche); },
+      tueren: async function () {
+        var k = ich();
+        return kopie(laden().tueren.filter(function (z) { return k.rolle === 'admin' || z.nutzer_id === k.id; }));
+      },
       einstellung: async function (schluessel) { return kopie(laden().einstellungen[schluessel] || null); },
       einstellungSpeichern: async function (schluessel, wert) { mussAdmin(); laden().einstellungen[schluessel] = wert; sichern(); },
       crmNameSpeichern: async function (id, crmName) {
@@ -757,7 +791,7 @@
         if (modus === 'pruefen') {
           return { ok: true, modus: 'pruefen', anzahl: 1402, datumErkannt: 1402,
             felder: ['agency_name', 'assigned_to_name', 'billed_at', 'call_status', 'erstellt', 'erstellt_von_name', 'id', 'lead_type', 'projekt', 'pv_status', 'status', 'wp_status'],
-            werte: { status: { 'Offen': 512, 'Qualifiziert': 431, 'Termin gelegt': 288, 'Storniert': 171 }, pv_status: { 'Neu': 640, 'Angebot': 410, 'Verkauft': 352 },
+            werte: { status: { 'Nicht qualifiziert': 565, 'Qualifiziert': 435, 'Neu': 280, 'In Bearbeitung': 4 }, pv_status: { 'Qualifiziert': 435, 'Kein Interesse mehr': 369, 'Offen': 285, 'Telefonnummer ungültig': 39 },
                      wp_status: {}, call_status: { 'Erreicht': 980, 'Nicht erreicht': 422 }, lead_type: { 'pv': 1210, 'pv_wp': 192 } },
             ersteller: { 'Lena Beispiel': 520, 'Tom Probe': 401, 'Max Muster': 318, 'Jana Muster': 149, 'Kai T.': 14 } };
         }
@@ -785,7 +819,7 @@
 
       /* Nur im Demo-Modus: alles auf die Beispieldaten zuruecksetzen */
       version: 2,
-      zuruecksetzen: function () { speicher = beispielDaten(); speicher.version = 5; sichern(); }
+      zuruecksetzen: function () { speicher = beispielDaten(); speicher.version = 7; sichern(); }
     };
   }
 
