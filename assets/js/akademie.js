@@ -38,7 +38,9 @@
   /* ---------- Zustand ---------- */
   var S = {
     profil: null, lektionen: [], beitraege: [], meinF: {}, alleF: [], zusagen: [],
-    profile: [], meldungen: [], geladen: false
+    profile: [], meldungen: [], geladen: false,
+    berichte: [], bewertungen: [], mitteilungen: [], gelesen: [], erweiterungFehlt: false,
+    crmZahlen: [], crmAbgleiche: [], crmRegeln: [], crmPruefung: null, crmFehlt: false
   };
   var player = null;
   var abfrage = null;
@@ -108,7 +110,13 @@
     pin: '<path d="M12 17v5M9 3h6l-1 7 4 3H6l4-3Z"/>',
     text: '<path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9ZM14 3v6h6M8 13h8M8 17h5"/>',
     plus: '<path d="M12 5v14M5 12h14"/>',
-    sanduhr: '<path d="M6 2h12M6 22h12M7 2v4a5 5 0 0 0 10 0V2M7 22v-4a5 5 0 0 1 10 0v4"/>'
+    sanduhr: '<path d="M6 2h12M6 22h12M7 2v4a5 5 0 0 0 10 0V2M7 22v-4a5 5 0 0 1 10 0v4"/>',
+    ziel: '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.5"/>',
+    blitz: '<path d="M13 2 4 14h7l-1 8 9-12h-7Z"/>',
+    frage: '<circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6V14M12 17.5v.01"/>',
+    tacho: '<path d="M4 18a8 8 0 1 1 16 0"/><path d="m12 18 4-6"/>',
+    pokal: '<path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0ZM7 6H4a3 3 0 0 0 3 4M17 6h3a3 3 0 0 1-3 4"/>',
+    brief: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/>'
   };
   function ico(n) {
     return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + ICO[n] + '</svg>';
@@ -205,6 +213,24 @@
       var a = await Promise.all([D.alleProfile(), D.meldungen()]);
       S.profile = a[0] || []; S.meldungen = a[1] || [];
     }
+    /* Dashboard und Mitteilungen: fehlen die Tabellen noch (Erweiterung nicht
+       eingespielt), läuft der Rest der Akademie trotzdem weiter. */
+    try {
+      var e = await Promise.all([D.berichte(), D.bewertungen(), D.mitteilungen(), D.gelesen()]);
+      S.berichte = e[0] || []; S.bewertungen = e[1] || []; S.mitteilungen = e[2] || []; S.gelesen = e[3] || [];
+      S.erweiterungFehlt = false;
+    } catch (err) {
+      console.warn('Dashboard/Mitteilungen nicht verfügbar:', err);
+      S.erweiterungFehlt = true;
+    }
+    try {
+      S.crmZahlen = await D.crmZahlen() || [];
+      if (istAdmin()) {
+        var c = await Promise.all([D.crmAbgleiche(), D.einstellung('crm_storno')]);
+        S.crmAbgleiche = c[0] || []; S.crmRegeln = (c[1] && c[1].regeln) || [];
+      }
+      S.crmFehlt = false;
+    } catch (err) { S.crmZahlen = []; S.crmFehlt = true; }
     S.geladen = true;
   }
 
@@ -238,15 +264,21 @@
     if (!S.profil || S.profil.status !== 'aktiv') { nav.hidden = true; nav.innerHTML = ''; return; }
     var p = pfad(); var h = p[0] || '';
     var neu = anzahlNeu(), meld = ungeleseneMeldungen();
+    var mOffen = S.mitteilungen && !istAdmin() ? S.mitteilungen.filter(function (m) { return fuerMich(m) && !meineGelesen(m.id); }).length : 0;
     var punkte = [
       ['', 'home', 'Übersicht', h === ''],
+      ['dashboard', 'tacho', 'Dashboard', h === 'dashboard'],
       ['lektionen', 'buch', 'Lektionen', h === 'lektionen' || h === 'lektion'],
-      ['neuigkeiten', 'megafon', 'Neuigkeiten' + (neu ? ' <span class="ak-zahl">' + neu + '</span>' : ''), h === 'neuigkeiten' || h === 'beitrag'],
-      ['profil', 'nutzer', 'Profil', h === 'profil']
+      ['neuigkeiten', 'megafon', 'Neuigkeiten' + (neu ? ' <span class="ak-zahl">' + neu + '</span>' : ''), h === 'neuigkeiten' || h === 'beitrag']
     ];
+    if (!istAdmin()) punkte.push(['mitteilungen', 'brief', 'Mitteilungen' + (mOffen ? ' <span class="ak-zahl">' + mOffen + '</span>' : ''), h === 'mitteilungen']);
+    punkte.push(['profil', 'nutzer', 'Profil', h === 'profil']);
     if (istAdmin()) {
       punkte.push(['admin', 'gruppe', 'Partner', h === 'admin' && (!p[1] || p[1] === 'partner'), 'ak-nav-admin']);
+      punkte.push(['admin/team', 'pokal', 'Team', h === 'admin' && /team|leistung|bewertung/.test(p[1] || '')]);
+      punkte.push(['admin/crm', 'laden', 'CRM', h === 'admin' && p[1] === 'crm']);
       punkte.push(['admin/inhalte', 'stift', 'Inhalte', h === 'admin' && /inhalte|lektion|beitrag/.test(p[1] || '')]);
+      punkte.push(['admin/mitteilungen', 'brief', 'Mitteilungen', h === 'admin' && p[1] === 'mitteilungen']);
       punkte.push(['admin/meldungen', 'glocke', 'Meldungen' + (meld ? ' <span class="ak-zahl">' + meld + '</span>' : ''), h === 'admin' && p[1] === 'meldungen']);
     }
     nav.innerHTML = punkte.map(function (x) {
@@ -458,7 +490,12 @@
       (neueste.length ? '<div class="ak-liste">' + neueste.map(beitragKarte).join('') + '</div>' : '<p class="ak-leer">Noch keine Beiträge.</p>') +
       '</section></div>' +
 
-      '<div class="ak-spalte"><section class="ak-karte"><div class="ak-karte-kopf"><h2>Nächste Termine</h2></div>' +
+      '<div class="ak-spalte">' + (S.erweiterungFehlt || istAdmin() ? '' : (function () {
+        var hs = summe(zeitraum(berichteVon(S.profil.id), 'heute'));
+        return '<section class="ak-karte"><div class="ak-karte-kopf"><h2>Heute an der Tür</h2><a href="#/dashboard">Dashboard</a></div>' +
+          '<div class="ak-heute"><div><b>' + fmt(hs.tueren) + '</b><span>Türen</span></div><div><b>' + fmt(hs.angetroffen) + '</b><span>angetroffen</span></div><div><b>' + fmt(hs.abs) + '</b><span>Abschlüsse</span></div></div>' +
+          '<a class="btn btn-primary btn-full mt-16" href="#/dashboard">' + ico('tacho') + 'Zum Tageszähler</a></section>';
+      })()) + '<section class="ak-karte"><div class="ak-karte-kopf"><h2>Nächste Termine</h2></div>' +
       (termine.length ? termine.map(function (b) { return terminBlock(b, true); }).join('') : '<p class="ak-leer">Aktuell sind keine Termine geplant.</p>') +
       '</section></div></div>');
   }
@@ -742,6 +779,7 @@
       '<div class="ak-kopf"><div class="row gap-16" style="flex-wrap:nowrap"><span class="ak-avatar" style="width:54px;height:54px;font-size:1.1rem">' + esc(initialen(p)) + '</span>' +
       '<div><h1 style="margin:0">' + esc(name(p)) + '</h1><p style="margin-top:2px">' + esc(g.aktuell === 'Abgeschlossen' ? 'Alle Stufen abgeschlossen' : 'Aktuelle Stufe: ' + g.aktuell) + ' · ' + g.prozent + ' % gesamt</p></div></div>' +
       '<div class="ak-knoepfe" style="margin:0">' +
+      '<a class="btn btn-ghost btn-sm" href="#/admin/leistung/' + esc(p.id) + '">' + ico('tacho') + 'Leistung</a>' +
       (p.status !== 'aktiv' ? '<button class="btn btn-primary btn-sm" type="button" data-aktion="status" data-id="' + esc(p.id) + '" data-wert="aktiv">Freischalten</button>' : '') +
       (p.status !== 'gesperrt' ? '<button class="btn btn-ghost btn-sm ak-gefahr" type="button" data-aktion="status" data-id="' + esc(p.id) + '" data-wert="gesperrt">Sperren</button>' : '') +
       '</div></div>' +
@@ -928,7 +966,7 @@
   }
 
   function vMeldungen() {
-    var sym = { registrierung: 'nutzer', abgeschlossen: 'haken', stufe: 'stern' };
+    var sym = { registrierung: 'nutzer', abgeschlossen: 'haken', stufe: 'stern', antwort: 'brief' };
     var kannDesktop = window.Notification && Notification.permission === 'default';
     setzen('<div class="ak-kopf"><div><span class="eyebrow">Admin</span><h1>Meldungen</h1>' +
       '<p>Neue Registrierungen und abgeschlossene Videos. Per E-Mail kommen sie, sobald der Mail-Versand eingerichtet ist (siehe Anleitung).</p></div>' +
@@ -946,6 +984,697 @@
     }
   }
 
+  /* =======================================================================
+     LEISTUNG – FIFA-Karte, Tageszähler, Kennzahlen, Team
+     ======================================================================= */
+  /* Sechs Werte der Spielerkarte. auto = wird aus den Tagesberichten
+     berechnet, sonst vergibt der Admin den Wert (1–99). */
+  var WERTE = [
+    ['eroeffnung', 'ERÖ', 'Gesprächseröffnung'],
+    ['bedarf', 'BED', 'Bedarfsanalyse'],
+    ['einwand', 'EIN', 'Einwandbehandlung', true],
+    ['storno', 'STO', 'Stornoquote', true],
+    ['wissen', 'WIS', 'Produktwissen'],
+    ['disziplin', 'DIS', 'Disziplin', true]
+  ];
+  var ZIELE = Object.assign({ tuerenProTag: 300, abschlussquote: 50, stornoquote: 50 }, CFG.ziele || {});
+  var KATEGORIEN = [
+    ['abschluesse', 'Abschlüsse', 'abs'],
+    ['angetroffen_ohne', 'Angetroffen, kein Abschluss', 'ohne'],
+    ['nicht_angetroffen', 'Nicht angetroffen', 'nicht']
+  ];
+
+  function heuteIso() {
+    var d = new Date();
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  }
+  function isoVon(d) {
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  }
+  function tagText(iso, lang) {
+    var d = new Date(iso + 'T12:00:00');
+    return d.toLocaleDateString('de-DE', lang ? { weekday: 'long', day: 'numeric', month: 'long' } : { weekday: 'short', day: '2-digit', month: '2-digit' });
+  }
+  function berichteVon(id) { return S.berichte.filter(function (b) { return b.nutzer_id === id; }); }
+  function summe(liste) {
+    var s = { nicht: 0, ohne: 0, abs: 0, sto: 0, tage: liste.length };
+    liste.forEach(function (b) { s.nicht += b.nicht_angetroffen; s.ohne += b.angetroffen_ohne; s.abs += b.abschluesse; s.sto += b.stornos || 0; });
+    s.angetroffen = s.ohne + s.abs;
+    s.tueren = s.angetroffen + s.nicht;
+    s.antreff = s.tueren ? Math.round(s.angetroffen / s.tueren * 100) : 0;
+    s.quote = s.angetroffen ? Math.round(s.abs / s.angetroffen * 1000) / 10 : 0;
+    s.jeTag = s.tage ? Math.round(s.tueren / s.tage) : 0;
+    s.storno = s.abs ? Math.round(s.sto / s.abs * 1000) / 10 : 0;
+    return s;
+  }
+  function zeitraum(liste, art) {
+    var jetzt = new Date(), ab;
+    if (art === 'heute') ab = heuteIso();
+    else if (art === 'woche') { var d = new Date(jetzt); d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); ab = isoVon(d); }
+    else ab = isoVon(new Date(jetzt.getFullYear(), jetzt.getMonth(), 1));
+    return liste.filter(function (b) { return b.datum >= ab; });
+  }
+  function bewertungVon(id) { return S.bewertungen.filter(function (b) { return b.nutzer_id === id; })[0] || null; }
+  function fmt(n) { return Number(n).toLocaleString('de-DE'); }
+  function prozent(n) { return String(Math.round(n * 10) / 10).replace('.', ',') + ' %'; }
+  function begrenzt(n) { return Math.max(1, Math.min(99, Math.round(n))); }
+  function letzteTage(liste, tage) {
+    var ab = isoVon(new Date(Date.now() - (tage - 1) * 86400000));
+    return liste.filter(function (b) { return b.datum >= ab; });
+  }
+
+  /* Alle sechs Werte eines Partners: drei aus den Zahlen, drei vom Admin.
+     Ziel erreicht = 80 (Gold-Bereich), darüber bis 99. */
+  function leistungswerte(id) {
+    var bw = bewertungVon(id);
+    var l = berichteVon(id);
+    var s30 = summe(letzteTage(l, 30)), s90 = summe(letzteTage(l, 90));
+    var w = {}, info = {};
+    WERTE.forEach(function (x) { if (!x[3]) w[x[0]] = bw && bw.werte[x[0]] ? begrenzt(Number(bw.werte[x[0]])) : null; });
+
+    if (s30.tage) {
+      w.disziplin = begrenzt(s30.jeTag / ZIELE.tuerenProTag * 80);
+      info.disziplin = 'Ø ' + fmt(s30.jeTag) + ' Türen pro Arbeitstag (letzte 30 Tage) · Ziel ' + fmt(ZIELE.tuerenProTag);
+    } else { w.disziplin = null; info.disziplin = 'Noch keine Tagesberichte'; }
+
+    if (s30.angetroffen) {
+      w.einwand = begrenzt(s30.quote / ZIELE.abschlussquote * 80);
+      info.einwand = prozent(s30.quote) + ' Abschlüsse bei angetroffenen Kunden (letzte 30 Tage) · Ziel über ' + ZIELE.abschlussquote + ' %';
+    } else { w.einwand = null; info.einwand = 'Noch keine angetroffenen Kunden erfasst'; }
+
+    var crm90 = letzteTage(S.crmZahlen.filter(function (c) { return c.nutzer_id === id; }), 90);
+    var crmLeads = crm90.reduce(function (a, c) { return a + c.leads; }, 0);
+    if (crmLeads) {
+      var crmSto = crm90.reduce(function (a, c) { return a + c.stornos; }, 0);
+      var cq = crmSto / crmLeads * 100, cz = ZIELE.stornoquote;
+      w.storno = begrenzt(cq <= cz ? 99 - 24 * cq / cz : 75 - (cq - cz) / (100 - cz) * 74);
+      info.storno = prozent(cq) + ' Stornos laut CRM (' + fmt(crmSto) + ' von ' + fmt(crmLeads) + ' Leads, letzte 90 Tage) · Ziel unter ' + cz + ' %';
+    } else if (s90.abs) {
+      var q = s90.storno, z = ZIELE.stornoquote;
+      /* bis zum Ziel gut (99 → 75), darüber mittelmäßig bis schlecht (75 → 1) */
+      w.storno = begrenzt(q <= z ? 99 - 24 * q / z : 75 - (q - z) / (100 - z) * 74);
+      info.storno = prozent(q) + ' Stornos (' + fmt(s90.sto) + ' von ' + fmt(s90.abs) + ' Abschlüssen, letzte 90 Tage) · Ziel unter ' + z + ' %';
+    } else { w.storno = null; info.storno = 'Noch keine Abschlüsse'; }
+
+    var vorhanden = WERTE.filter(function (x) { return w[x[0]] != null; });
+    var ovr = vorhanden.length ? Math.round(vorhanden.reduce(function (a, x) { return a + w[x[0]]; }, 0) / vorhanden.length) : 0;
+    return { w: w, info: info, bw: bw, ovr: ovr, leer: !vorhanden.length };
+  }
+  function urteil(wert) {
+    if (wert == null) return ['offen', 'Noch offen'];
+    return wert >= 75 ? ['gut', 'Gut'] : wert >= 50 ? ['mittel', 'Mittelmäßig'] : ['schlecht', 'Schlecht'];
+  }
+  function stufeKlasse(L) { return L.leer ? 'leer' : L.ovr >= 75 ? 'gold' : L.ovr >= 65 ? 'silber' : 'bronze'; }
+
+  /* ---------- FIFA-Karte ---------- */
+  function fifaKarte(p, L) {
+    var stufe = istAdminProfil(p) ? 'ADMIN' : gesamtStand(p.id).aktuell.toUpperCase();
+    return '<div class="ak-fifa ' + stufeKlasse(L) + '" role="img" aria-label="Spielerkarte ' + esc(name(p)) + (L.leer ? ', noch keine Werte' : ', Gesamtwert ' + L.ovr) + '">' +
+      '<div class="ak-fifa-oben"><div class="ak-fifa-ovr">' + (L.leer ? '–' : L.ovr) + '<small>' + esc(stufe === 'ABGESCHLOSSEN' ? 'PROFI' : stufe) + '</small></div>' +
+      '<div class="ak-fifa-logo"><img class="nur-hell" src="' + logoQuelle(true) + '" alt=""><img class="nur-dunkel" src="' + logoQuelle(false) + '" alt=""></div></div>' +
+      '<div class="ak-fifa-bild">' + esc(initialen(p)) + '</div>' +
+      '<div class="ak-fifa-name">' + esc((p.nachname || p.vorname || '').toUpperCase()) + '</div>' +
+      '<div class="ak-fifa-werte">' + WERTE.map(function (x) {
+        return '<div><b>' + (L.w[x[0]] == null ? '–' : L.w[x[0]]) + '</b> ' + x[1] + '</div>';
+      }).join('') + '</div></div>';
+  }
+  function istAdminProfil(p) { return p.rolle === 'admin'; }
+  function logoQuelle(hell) {
+    var img = document.querySelector('.brand-mark.' + (hell ? 'nur-hell' : 'nur-dunkel'));
+    return img ? img.getAttribute('src') : '';
+  }
+
+  /* ---------- Netzdiagramm ---------- */
+  function radar(L) {
+    var g = 300, m = g / 2, r = 100;
+    var punkt = function (i, wert) {
+      var winkel = -Math.PI / 2 + i * 2 * Math.PI / WERTE.length;
+      return [m + Math.cos(winkel) * r * wert / 100, m + Math.sin(winkel) * r * wert / 100];
+    };
+    var ringe = [20, 40, 60, 80, 100].map(function (st) {
+      return '<polygon class="ring" points="' + WERTE.map(function (x, i) { return punkt(i, st).join(','); }).join(' ') + '"/>';
+    }).join('');
+    var achsen = WERTE.map(function (x, i) { var p = punkt(i, 100); return '<line class="achse" x1="' + m + '" y1="' + m + '" x2="' + p[0] + '" y2="' + p[1] + '"/>'; }).join('');
+    var werte = WERTE.map(function (x) { return L.w[x[0]]; });
+    var form = L.leer ? '' : '<polygon class="form" points="' + werte.map(function (w, i) { return punkt(i, w || 0).join(','); }).join(' ') + '"/>' +
+      werte.map(function (w, i) {
+        if (w == null) return '';
+        var p = punkt(i, w);
+        return '<g class="marke"><circle class="treffer" cx="' + p[0] + '" cy="' + p[1] + '" r="14"><title>' + WERTE[i][2] + ': ' + w + '</title></circle>' +
+          '<circle class="punkt" cx="' + p[0] + '" cy="' + p[1] + '" r="4.5"/></g>';
+      }).join('');
+    var beschriftung = WERTE.map(function (x, i) {
+      var p = punkt(i, 124);
+      var anker = Math.abs(p[0] - m) < 4 ? 'middle' : p[0] > m ? 'start' : 'end';
+      return '<text x="' + p[0] + '" y="' + (p[1] + 4) + '" text-anchor="' + anker + '"><tspan class="kurz">' + x[1] + '</tspan>' +
+        '<tspan class="wert" dx="5">' + (werte[i] == null ? '–' : werte[i]) + '</tspan></text>';
+    }).join('');
+    return '<svg class="ak-radar" viewBox="-40 -10 380 320" role="img" aria-label="Netzdiagramm Stärken und Schwächen: ' +
+      WERTE.map(function (x, i) { return x[2] + ' ' + (werte[i] == null ? 'noch offen' : werte[i]); }).join(', ') + '">' +
+      ringe + achsen + form + beschriftung + '</svg>';
+  }
+
+  /* Stärken = Werte ab 75 (gut), Daran arbeiten = darunter (mittelmäßig/schlecht) */
+  function staerkenBlock(L) {
+    var punkte = WERTE.map(function (x) {
+      return { name: x[2], wert: L.w[x[0]], text: x[3] ? L.info[x[0]] : 'Einschätzung der Vertriebsleitung', auto: !!x[3] };
+    });
+    var eintrag = function (e) {
+      var u = urteil(e.wert);
+      return '<li><div class="zeile"><span>' + esc(e.name) + '</span><span class="ak-urteil ' + u[0] + '">' + u[1] + '</span><b>' + (e.wert == null ? '–' : e.wert) + '</b></div>' +
+        '<small>' + esc(e.text) + '</small></li>';
+    };
+    var gut = punkte.filter(function (e) { return e.wert != null && e.wert >= 75; }).sort(function (a, b) { return b.wert - a.wert; });
+    var arbeit = punkte.filter(function (e) { return e.wert != null && e.wert < 75; }).sort(function (a, b) { return a.wert - b.wert; });
+    var offen = punkte.filter(function (e) { return e.wert == null; });
+    return '<div class="ak-sw"><div><h3>' + ico('stern') + 'Stärken</h3>' +
+      (gut.length ? '<ul>' + gut.map(eintrag).join('') + '</ul>' : '<p>Noch kein Wert im grünen Bereich (ab 75).</p>') +
+      (L.bw && L.bw.staerken ? '<p class="notiz">' + esc(L.bw.staerken) + '</p>' : '') + '</div>' +
+      '<div><h3>' + ico('ziel') + 'Daran arbeiten</h3>' +
+      (arbeit.length ? '<ul>' + arbeit.map(eintrag).join('') + '</ul>' : '<p>Alles im grünen Bereich.</p>') +
+      (L.bw && L.bw.schwaechen ? '<p class="notiz">' + esc(L.bw.schwaechen) + '</p>' : '') + '</div>' +
+      (offen.length ? '<p class="tiny">Noch offen: ' + offen.map(function (e) { return esc(e.name); }).join(', ') + '</p>' : '') + '</div>';
+  }
+
+  /* ---------- Kennzahlen ---------- */
+  function kennzahlKachel(titel, s, crm) {
+    return '<div class="ak-kz"><div class="ak-kz-titel">' + titel + '</div>' +
+      '<div class="ak-kz-gross"><b>' + fmt(s.tueren) + '</b> Türen</div>' +
+      '<dl><div><dt><i class="ak-farbe nicht"></i>Nicht angetroffen</dt><dd>' + fmt(s.nicht) + '</dd></div>' +
+      '<div><dt><i class="ak-farbe ohne"></i>Angetroffen, kein Abschluss</dt><dd>' + fmt(s.ohne) + '</dd></div>' +
+      '<div><dt><i class="ak-farbe abs"></i>Abschlüsse</dt><dd>' + fmt(s.abs) + '</dd></div></dl>' +
+      '<div class="ak-kz-quoten"><span>Antreffquote <b>' + s.antreff + ' %</b></span><span>Abschlussquote <b>' + prozent(s.quote) + '</b></span>' +
+      (s.sto ? '<span>Stornos <b>' + fmt(s.sto) + ' (' + prozent(s.storno) + ')</b></span>' : '') + '</div>' +
+      (crm && crm.length ? (function () {
+        var ld = crm.reduce(function (a, c) { return a + c.leads; }, 0), st = crm.reduce(function (a, c) { return a + c.stornos; }, 0);
+        return '<div class="ak-kz-crm"><span>Laut CRM</span><b>' + fmt(ld) + '</b> Leads · <b>' + fmt(st) + '</b> Stornos' + (ld ? ' (' + prozent(st / ld * 100) + ')' : '') + '</div>';
+      })() : '') + '</div>';
+  }
+
+  /* ---------- Tagesdiagramm (gestapelte Säulen, letzte 14 Tage) ---------- */
+  function tagesDiagramm(liste) {
+    var tage = [];
+    for (var i = 13; i >= 0; i--) { var d = new Date(); d.setDate(d.getDate() - i); tage.push(isoVon(d)); }
+    var nachTag = {};
+    liste.forEach(function (b) { nachTag[b.datum] = b; });
+    var reihen = tage.map(function (t) {
+      var b = nachTag[t] || { nicht_angetroffen: 0, angetroffen_ohne: 0, abschluesse: 0, leer: true };
+      return { datum: t, b: b, summe: b.nicht_angetroffen + b.angetroffen_ohne + b.abschluesse };
+    });
+    var max = Math.max.apply(null, reihen.map(function (r) { return r.summe; }).concat([10]));
+    var schritt = Math.pow(10, Math.floor(Math.log10(max)));
+    [1, 2, 2.5, 5, 10].some(function (f) { if (max / (schritt * f) <= 4) { schritt *= f; return true; } return false; });
+    var oben = Math.ceil(max / schritt) * schritt;
+    /* In echter Breite zeichnen, damit die Schrift nicht mitwächst */
+    var B = Math.max(300, Math.min(1100, (main.querySelector('.wrap') || main).clientWidth - 60));
+    var H = 240, L = 34, U = 26, O = 8, breite = (B - L) / tage.length, balken = Math.max(10, Math.min(28, breite - 8));
+    var y = function (v) { return O + (H - O - U) * (1 - v / oben); };
+    var raster = '';
+    for (var v = 0; v <= oben; v += schritt) {
+      raster += '<line class="raster' + (v === 0 ? ' basis' : '') + '" x1="' + L + '" x2="' + B + '" y1="' + y(v) + '" y2="' + y(v) + '"/>' +
+        '<text class="achse-y" x="' + (L - 6) + '" y="' + (y(v) + 4) + '" text-anchor="end">' + fmt(v) + '</text>';
+    }
+    var saeulen = reihen.map(function (r, i) {
+      var x = L + i * breite + (breite - balken) / 2, basis = y(0), teile = '';
+      var gesamtH = basis - y(r.summe);
+      if (r.summe) {
+        var unten = basis;
+        teile += '<clipPath id="ak-clip-' + i + '"><rect x="' + x + '" y="' + y(r.summe) + '" width="' + balken + '" height="' + gesamtH + '" rx="4"/><rect x="' + x + '" y="' + (basis - Math.min(4, gesamtH)) + '" width="' + balken + '" height="' + Math.min(4, gesamtH) + '"/></clipPath><g clip-path="url(#ak-clip-' + i + ')">';
+        KATEGORIEN.forEach(function (k, j) {
+          var wert = r.b[k[0]]; if (!wert) return;
+          var h = basis - y(wert);
+          var luecke = j > 0 && unten < basis ? 2 : 0;
+          teile += '<rect class="seg ' + k[2] + '" x="' + x + '" y="' + (unten - h) + '" width="' + balken + '" height="' + Math.max(0, h - luecke) + '"/>';
+          unten -= h;
+        });
+        teile += '</g>';
+      }
+      var d = new Date(r.datum + 'T12:00:00');
+      var label = (i % 2 === (tage.length - 1) % 2) ? '<text class="achse-x" x="' + (x + balken / 2) + '" y="' + (H - 8) + '" text-anchor="middle">' + d.getDate() + '.' + (d.getMonth() + 1) + '.</text>' : '';
+      return teile + label + '<rect class="treffer" data-tag="' + i + '" x="' + (L + i * breite) + '" y="' + O + '" width="' + breite + '" height="' + (H - O - U) + '"/>';
+    }).join('');
+    var daten = JSON.stringify(reihen.map(function (r) {
+      return [tagText(r.datum), r.summe, r.b.nicht_angetroffen, r.b.angetroffen_ohne, r.b.abschluesse, !!r.b.leer];
+    }));
+    return '<div class="ak-diagramm" data-reihen="' + esc(daten) + '">' +
+      '<div class="ak-legende">' + KATEGORIEN.slice().reverse().map(function (k) { return '<span><i class="ak-farbe ' + k[2] + '"></i>' + k[1] + '</span>'; }).join('') + '</div>' +
+      '<div class="ak-diagramm-flaeche"><svg viewBox="0 0 ' + B + ' ' + H + '" role="img" aria-label="Türen pro Tag in den letzten 14 Tagen, gestapelt nach Ergebnis. Die Zahlen stehen auch in der Tabelle darunter.">' +
+      raster + saeulen + '</svg><div class="ak-tooltip" hidden></div></div></div>';
+  }
+
+  function diagrammHover(e) {
+    var t = e.target.closest && e.target.closest('.ak-diagramm .treffer');
+    var box = e.target.closest && e.target.closest('.ak-diagramm');
+    if (!box) return;
+    var tip = box.querySelector('.ak-tooltip');
+    if (!t) { tip.hidden = true; return; }
+    var r = JSON.parse(box.getAttribute('data-reihen'))[Number(t.getAttribute('data-tag'))];
+    tip.innerHTML = '<strong>' + esc(r[0]) + '</strong>' + (r[5] ? '<span>Kein Bericht</span>' :
+      '<span>' + fmt(r[1]) + ' Türen</span>' +
+      '<span><i class="ak-farbe nicht"></i>Nicht angetroffen <b>' + fmt(r[2]) + '</b></span>' +
+      '<span><i class="ak-farbe ohne"></i>Angetroffen, kein Abschluss <b>' + fmt(r[3]) + '</b></span>' +
+      '<span><i class="ak-farbe abs"></i>Abschlüsse <b>' + fmt(r[4]) + '</b></span>');
+    tip.hidden = false;
+    var fl = box.querySelector('.ak-diagramm-flaeche').getBoundingClientRect();
+    var tr = t.getBoundingClientRect();
+    var links = tr.left - fl.left + tr.width / 2;
+    tip.style.left = Math.max(8, Math.min(fl.width - tip.offsetWidth - 8, links - tip.offsetWidth / 2)) + 'px';
+  }
+  document.addEventListener('mousemove', diagrammHover);
+  document.addEventListener('click', diagrammHover);
+  window.addEventListener('resize', function () {
+    Array.prototype.forEach.call(document.querySelectorAll('.ak-tooltip'), function (t) { t.hidden = true; });
+  });
+
+  /* ---------- Tageszähler ---------- */
+  var zaehlerZeit = null;
+  function heuteBericht(id) {
+    return berichteVon(id).filter(function (b) { return b.datum === heuteIso(); })[0] ||
+      { nutzer_id: id, datum: heuteIso(), nicht_angetroffen: 0, angetroffen_ohne: 0, abschluesse: 0, notiz: '' };
+  }
+  function zaehlerHtml(id) {
+    var b = heuteBericht(id);
+    var s = summe([b]);
+    return '<div class="ak-zaehler" id="ak-zaehler" data-id="' + esc(id) + '">' +
+      KATEGORIEN.slice().reverse().map(function (k) {
+        return '<div class="ak-zaehler-feld ' + k[2] + '"><button type="button" class="ak-zaehler-plus" data-aktion="zaehlen" data-feld="' + k[0] + '" data-schritt="1" aria-label="' + k[1] + ' plus eins">' +
+          '<span class="zahl">' + b[k[0]] + '</span><span class="name">' + k[1] + '</span><span class="plus">+1</span></button>' +
+          '<button type="button" class="ak-zaehler-minus" data-aktion="zaehlen" data-feld="' + k[0] + '" data-schritt="-1" aria-label="' + k[1] + ' minus eins"' + (b[k[0]] ? '' : ' disabled') + '>−1</button></div>';
+      }).join('') +
+      '<div class="ak-zaehler-summe"><span>Heute geklingelt</span><b>' + s.tueren + '</b><span class="ak-gespeichert" id="ak-gespeichert"></span></div></div>';
+  }
+  function zaehlen(el) {
+    var box = document.getElementById('ak-zaehler');
+    var id = box.getAttribute('data-id');
+    var b = heuteBericht(id);
+    var feld = el.getAttribute('data-feld');
+    b[feld] = Math.max(0, (b[feld] || 0) + Number(el.getAttribute('data-schritt')));
+    var i = S.berichte.findIndex(function (x) { return x.nutzer_id === id && x.datum === b.datum; });
+    if (i >= 0) S.berichte[i] = b; else S.berichte.push(b);
+    if (navigator.vibrate) { try { navigator.vibrate(15); } catch (e) { /* egal */ } }
+    box.outerHTML = zaehlerHtml(id);
+    var st = document.getElementById('ak-gespeichert');
+    if (st) st.textContent = 'Wird gespeichert …';
+    clearTimeout(zaehlerZeit);
+    zaehlerZeit = setTimeout(function () { berichtSichern(b, true); }, 700);
+  }
+  function berichtSichern(b, still) {
+    var daten = { nutzer_id: b.nutzer_id, datum: b.datum, nicht_angetroffen: b.nicht_angetroffen,
+                  angetroffen_ohne: b.angetroffen_ohne, abschluesse: b.abschluesse, notiz: b.notiz || '' };
+    if (istAdmin()) daten.stornos = b.stornos || 0;   /* Partner können Stornos nicht ändern */
+    return D.berichtSpeichern(daten).then(function () {
+      var st = document.getElementById('ak-gespeichert');
+      if (st) st.textContent = 'Gespeichert';
+      if (!still) toast('Bericht gespeichert.');
+      var ks = document.getElementById('ak-kennzahlen');
+      if (ks) ks.innerHTML = kennzahlenHtml(b.nutzer_id);
+    }).catch(fehlerZeigen);
+  }
+
+  function kennzahlenHtml(id) {
+    var l = berichteVon(id);
+    var c = S.crmZahlen.filter(function (x) { return x.nutzer_id === id; });
+    return kennzahlKachel('Heute', summe(zeitraum(l, 'heute')), zeitraum(c, 'heute')) +
+      kennzahlKachel('Diese Woche', summe(zeitraum(l, 'woche')), zeitraum(c, 'woche')) +
+      kennzahlKachel('Dieser Monat', summe(zeitraum(l, 'monat')), zeitraum(c, 'monat'));
+  }
+
+  function verlaufTabelle(id, bearbeitbar, mitStorno) {
+    var l = berichteVon(id).slice().sort(function (a, b) { return b.datum.localeCompare(a.datum); }).slice(0, 30);
+    if (!l.length) return '<p class="ak-leer">Noch keine Tagesberichte.</p>';
+    var zeigeStorno = mitStorno || l.some(function (b) { return b.stornos; });
+    return '<div class="ak-tabelle-rahmen"><table class="ak-tabelle"><thead><tr><th>Tag</th><th>Türen</th><th>Nicht angetr.</th><th>Angetr., kein Abschl.</th><th>Abschlüsse</th><th>Abschlussquote</th>' +
+      (zeigeStorno ? '<th>Stornos</th>' : '') + (bearbeitbar ? '<th></th>' : '') + '</tr></thead><tbody>' +
+      l.map(function (b) {
+        var s = summe([b]);
+        return '<tr><td class="nowrap">' + esc(tagText(b.datum)) + '</td><td class="zahlen">' + fmt(s.tueren) + '</td><td class="zahlen">' + fmt(b.nicht_angetroffen) +
+          '</td><td class="zahlen">' + fmt(b.angetroffen_ohne) + '</td><td class="zahlen"><b>' + fmt(b.abschluesse) + '</b></td><td class="zahlen">' + prozent(s.quote) + '</td>' +
+          (zeigeStorno ? '<td class="zahlen">' + fmt(b.stornos || 0) + '</td>' : '') +
+          (bearbeitbar ? '<td><button class="btn btn-ghost btn-sm" type="button" data-aktion="bericht-laden" data-datum="' + b.datum + '">Ändern</button></td>' : '') + '</tr>';
+      }).join('') + '</tbody></table></div>';
+  }
+
+
+  function nachtragFormular(id, mitStorno) {
+    return '<form class="ak-formular" data-form="bericht" data-id="' + esc(id) + '" novalidate><div class="zeile4' + (mitStorno ? ' zeile5' : '') + '">' +
+      feld('datum', 'Tag', 'date', 'max="' + heuteIso() + '" value="' + heuteIso() + '" required') +
+      feld('nicht_angetroffen', 'Nicht angetroffen', 'number', 'min="0" inputmode="numeric" value="0"') +
+      feld('angetroffen_ohne', 'Angetroffen, kein Abschluss', 'number', 'min="0" inputmode="numeric" value="0"') +
+      feld('abschluesse', 'Abschlüsse', 'number', 'min="0" inputmode="numeric" value="0"') +
+      (mitStorno ? feld('stornos', 'Davon storniert', 'number', 'min="0" inputmode="numeric" value="0"') : '') +
+      '</div>' + (mitStorno ? '<p class="hilfe">Stornos dem Tag des ursprünglichen Abschlusses zuordnen. Nur du als Admin kannst sie eintragen.</p>' : '') +
+      '<div class="form-msg err" role="alert"></div><div><button class="btn btn-primary" type="submit">Tag speichern</button></div></form>';
+  }
+
+
+  /* ---------- Dashboard (eigenes oder als Admin für einen Partner) ---------- */
+  function vDashboard(id) {
+    var adminSicht = istAdmin() && id && id !== S.profil.id;
+    var p = adminSicht ? S.profile.filter(function (x) { return x.id === id; })[0] : S.profil;
+    if (!p) return vNichtGefunden();
+    if (S.erweiterungFehlt) return vErweiterungFehlt();
+    var L = leistungswerte(p.id);
+    var gesamt = summe(berichteVon(p.id));
+    setzen((adminSicht ? '<a class="ak-zurueck" href="#/admin/team">' + ico('links') + 'Team-Übersicht</a>' : '') +
+      '<div class="ak-kopf"><div><span class="eyebrow">' + (adminSicht ? 'Leistung' : 'Dein Dashboard') + '</span><h1>' + (adminSicht ? esc(name(p)) : 'Deine Leistung') + '</h1>' +
+      '<p>' + (gesamt.tage ? fmt(gesamt.tueren) + ' Türen an ' + gesamt.tage + ' Tagen · im Schnitt ' + fmt(gesamt.jeTag) + ' pro Tag' : 'Zähle heute deine erste Tür – unten mit einem Tipp pro Haustür.') + '</p></div>' +
+      (adminSicht ? '<div class="ak-knoepfe" style="margin:0"><a class="btn btn-primary btn-sm" href="#/admin/bewertung/' + esc(p.id) + '">' + ico('stift') + 'Bewertung bearbeiten</a>' +
+        '<a class="btn btn-ghost btn-sm" href="#/admin/partner/' + esc(p.id) + '">Ausbildung ansehen</a></div>' : '') + '</div>' +
+
+      '<section class="ak-karte ak-spieler"><div class="ak-spieler-karte">' + fifaKarte(p, L) + '</div>' +
+      '<div class="ak-spieler-radar">' + radar(L) + '</div>' +
+      '<div class="ak-spieler-text"><h2>Stärken und Schwächen</h2>' + staerkenBlock(L) +
+      '<p class="tiny mt-16">Skala 1–99 · ab 75 gut, 50–74 mittelmäßig, unter 50 schlecht. Disziplin, Einwandbehandlung und Stornoquote berechnen sich aus den Tagesberichten' +
+      (L.bw ? ', die übrigen Werte sind die Einschätzung vom ' + datum(L.bw.aktualisiert_am) : '') + '.</p></div></section>' +
+
+      (!adminSicht ? '<section class="ak-karte mt-24"><div class="ak-karte-kopf"><h2>Tageszähler · ' + esc(tagText(heuteIso(), true)) + '</h2></div>' +
+        '<p class="small muted" style="margin:-8px 0 16px">An jeder Tür einmal tippen. Wird automatisch gespeichert.</p>' + zaehlerHtml(p.id) + '</section>' : '') +
+
+      '<section class="mt-24"><div class="ak-kennzahlen-3" id="ak-kennzahlen">' + kennzahlenHtml(p.id) + '</div></section>' +
+
+      '<section class="ak-karte mt-24"><div class="ak-karte-kopf"><h2>Türen pro Tag · letzte 14 Tage</h2></div>' + tagesDiagramm(berichteVon(p.id)) + '</section>' +
+
+      '<section class="ak-karte mt-24"><div class="ak-karte-kopf"><h2>Tagesberichte</h2></div>' +
+      '<details class="ak-nachtrag"' + (adminSicht ? '' : '') + '><summary>' + ico('plus') + (adminSicht ? 'Tag für ' + esc(p.vorname) + ' eintragen oder ändern' : 'Anderen Tag nachtragen oder ändern') + '</summary>' + nachtragFormular(p.id, adminSicht) + '</details>' +
+      '<div class="mt-16" id="ak-verlauf">' + verlaufTabelle(p.id, true, adminSicht) + '</div></section>');
+  }
+
+  function vErweiterungFehlt() {
+    setzen('<div class="ak-zustand"><div class="ico-tile ico-tile-lg">' + ico('sanduhr') + '</div><h1>Gleich verfügbar</h1>' +
+      '<p>' + (istAdmin() ? 'Für Dashboard und Mitteilungen muss in Supabase einmal die Datei <strong>supabase/erweiterung-dashboard.sql</strong> ausgeführt werden (SQL Editor → Run).'
+        : 'Dieser Bereich wird gerade eingerichtet. Schau bald wieder vorbei.') + '</p></div>');
+  }
+
+  /* ---------- Admin: Team-Übersicht ---------- */
+  var team = { zeit: 'woche', sort: 'abs' };
+  function vTeam() {
+    if (S.erweiterungFehlt) return vErweiterungFehlt();
+    var partner = S.profile.filter(function (p) { return p.rolle !== 'admin' && p.status === 'aktiv'; });
+    var zeilen = partner.map(function (p) {
+      var l = berichteVon(p.id);
+      var s = summe(zeitraum(l, team.zeit));
+      var letzter = l.reduce(function (m, b) { return b.datum > m ? b.datum : m; }, '');
+      var Lw = leistungswerte(p.id);
+      return { p: p, s: s, ovr: Lw.leer ? 0 : Lw.ovr, letzter: letzter };
+    });
+    zeilen.sort({
+      abs: function (a, b) { return b.s.abs - a.s.abs; },
+      tueren: function (a, b) { return b.s.tueren - a.s.tueren; },
+      quote: function (a, b) { return b.s.quote - a.s.quote; },
+      ovr: function (a, b) { return b.ovr - a.ovr; }
+    }[team.sort]);
+    var t = summe(zeitraum(S.berichte.filter(function (b) { return partner.some(function (p) { return p.id === b.nutzer_id; }); }), team.zeit));
+    var zeitName = { heute: 'heute', woche: 'diese Woche', monat: 'diesen Monat' }[team.zeit];
+    setzen('<div class="ak-kopf"><div><span class="eyebrow">Admin</span><h1>Team-Leistung</h1><p>Türen, Antreffquote und Abschlüsse aller aktiven Partner – ' + zeitName + '.</p></div></div>' +
+      '<div class="ak-filter" role="group" aria-label="Zeitraum">' + [['heute', 'Heute'], ['woche', 'Diese Woche'], ['monat', 'Dieser Monat']].map(function (x) {
+        return '<button type="button" data-aktion="team-zeit" data-wert="' + x[0] + '" aria-pressed="' + (team.zeit === x[0]) + '">' + x[1] + '</button>';
+      }).join('') + '</div>' +
+      '<div class="ak-kennzahlen">' +
+      '<div class="ak-kennzahl"><div class="v">' + fmt(t.tueren) + '</div><div class="k">Türen geklingelt</div></div>' +
+      '<div class="ak-kennzahl"><div class="v">' + t.antreff + ' %</div><div class="k">Antreffquote</div></div>' +
+      '<div class="ak-kennzahl"><div class="v">' + fmt(t.abs) + '</div><div class="k">Abschlüsse</div></div>' +
+      '<div class="ak-kennzahl"><div class="v">' + String(t.quote).replace('.', ',') + ' %</div><div class="k">Abschlussquote</div></div></div>' +
+      '<div class="ak-werkzeug"><label class="small muted" for="team-sort">Sortieren nach</label><select class="select" id="team-sort" data-team-sort>' +
+      [['abs', 'Abschlüsse'], ['tueren', 'Türen'], ['quote', 'Abschlussquote'], ['ovr', 'Gesamtwert']].map(function (x) {
+        return '<option value="' + x[0] + '"' + (team.sort === x[0] ? ' selected' : '') + '>' + x[1] + '</option>';
+      }).join('') + '</select></div>' +
+      (zeilen.length ? '<div class="ak-tabelle-rahmen"><table class="ak-tabelle"><thead><tr><th>#</th><th>Partner</th><th>Wert</th><th>Türen</th><th>Nicht angetr.</th><th>Angetr., kein Abschl.</th><th>Abschlüsse</th><th>Antreffquote</th><th>Abschlussquote</th><th>Letzter Bericht</th></tr></thead><tbody>' +
+        zeilen.map(function (z, i) {
+          return '<tr class="klickbar" data-aktion="leistung" data-id="' + esc(z.p.id) + '" tabindex="0"><td class="zahlen">' + (i + 1) + '</td>' +
+            '<td class="name"><strong>' + esc(name(z.p)) + '</strong><small>' + esc(z.p.region || '') + '</small></td>' +
+            '<td>' + (z.ovr ? '<span class="ak-ovr ' + (z.ovr >= 75 ? 'gold' : z.ovr >= 65 ? 'silber' : 'bronze') + '">' + z.ovr + '</span>' : '<span class="muted">–</span>') + '</td>' +
+            '<td class="zahlen">' + fmt(z.s.tueren) + '</td><td class="zahlen">' + fmt(z.s.nicht) + '</td><td class="zahlen">' + fmt(z.s.ohne) + '</td>' +
+            '<td class="zahlen"><b>' + fmt(z.s.abs) + '</b></td><td class="zahlen">' + z.s.antreff + ' %</td><td class="zahlen">' + String(z.s.quote).replace('.', ',') + ' %</td>' +
+            '<td class="zahlen">' + (z.letzter ? esc(tagText(z.letzter)) : 'noch keiner') + '</td></tr>';
+        }).join('') + '</tbody></table></div>' : '<p class="ak-leer">Noch keine aktiven Partner.</p>'));
+  }
+
+  /* ---------- Admin: Bewertung bearbeiten ---------- */
+  function vBewertung(id) {
+    var p = S.profile.filter(function (x) { return x.id === id; })[0];
+    if (!p) return vNichtGefunden();
+    var bw = bewertungVon(id) || { werte: {}, staerken: '', schwaechen: '' };
+    var L = leistungswerte(id);
+    setzen('<a class="ak-zurueck" href="#/admin/leistung/' + esc(id) + '">' + ico('links') + 'Zurück zu ' + esc(name(p)) + '</a>' +
+      '<div class="ak-kopf"><div><span class="eyebrow">Bewertung</span><h1>' + esc(name(p)) + '</h1><p>Drei Werte schätzt du ein, drei berechnet die Akademie aus den Tagesberichten. Der Gesamtwert ist der Durchschnitt.</p></div></div>' +
+      '<div class="ak-raster"><section class="ak-karte"><form class="ak-formular" data-form="bewertung" data-id="' + esc(id) + '" novalidate>' +
+      '<h2>Deine Einschätzung</h2>' +
+      WERTE.filter(function (x) { return !x[3]; }).map(function (x) {
+        var w = Number(bw.werte[x[0]]) || 60;
+        return '<div class="field ak-regler"><label for="w-' + x[0] + '">' + x[2] + ' <span class="kurz">' + x[1] + '</span></label>' +
+          '<div class="row gap-12" style="flex-wrap:nowrap"><input type="range" id="w-' + x[0] + '" name="' + x[0] + '" min="1" max="99" value="' + w + '" data-regler style="--fill:' + ((w - 1) / 98 * 100) + '%">' +
+          '<output for="w-' + x[0] + '">' + w + '</output></div></div>';
+      }).join('') +
+      '<h2 class="mt-16">Aus den Zahlen berechnet</h2><ul class="ak-auto-liste">' +
+      WERTE.filter(function (x) { return x[3]; }).map(function (x) {
+        var u = urteil(L.w[x[0]]);
+        return '<li><div class="zeile"><span>' + x[2] + ' <span class="kurz">' + x[1] + '</span></span><span class="ak-urteil ' + u[0] + '">' + u[1] + '</span><b>' + (L.w[x[0]] == null ? '–' : L.w[x[0]]) + '</b></div><small>' + esc(L.info[x[0]]) + '</small></li>';
+      }).join('') + '</ul>' +
+      '<div class="field"><label for="staerken">Stärken (Notiz für den Partner)</label><textarea class="textarea" id="staerken" name="staerken" style="min-height:80px">' + esc(bw.staerken) + '</textarea></div>' +
+      '<div class="field"><label for="schwaechen">Daran arbeiten (Notiz für den Partner)</label><textarea class="textarea" id="schwaechen" name="schwaechen" style="min-height:80px">' + esc(bw.schwaechen) + '</textarea></div>' +
+      '<div class="form-msg err" role="alert"></div><div><button class="btn btn-primary" type="submit">Bewertung speichern</button></div></form></section>' +
+      '<section class="ak-karte" id="ak-vorschau"><h2>Vorschau</h2><div class="ak-vorschau-inhalt">' + fifaKarte(p, L) + radar(L) + '</div></section></div>');
+  }
+
+  function bewertungVorschau(form) {
+    var p = S.profile.filter(function (x) { return x.id === form.getAttribute('data-id'); })[0];
+    var L = leistungswerte(form.getAttribute('data-id'));
+    WERTE.forEach(function (x) { if (!x[3]) L.w[x[0]] = Number(form.elements[x[0]].value); });
+    var vorhanden = WERTE.filter(function (x) { return L.w[x[0]] != null; });
+    L.ovr = Math.round(vorhanden.reduce(function (a, x) { return a + L.w[x[0]]; }, 0) / vorhanden.length);
+    L.leer = false;
+    var ziel = document.querySelector('#ak-vorschau .ak-vorschau-inhalt');
+    if (ziel && p) ziel.innerHTML = fifaKarte(p, L) + radar(L);
+  }
+
+
+  /* =======================================================================
+     MITTEILUNGEN – poppen bei Partnern auf
+     ======================================================================= */
+  var MARTEN = { info: 'Info', schulung: 'Schulung', powerwoche: 'Powerwoche', anfrage: 'Anfrage' };
+  var MSYMBOL = { info: 'megafon', schulung: 'buch', powerwoche: 'blitz', anfrage: 'frage' };
+
+  function meineGelesen(id) { return S.gelesen.filter(function (g) { return g.mitteilung_id === id && g.nutzer_id === S.profil.id; })[0]; }
+  function fuerMich(m) { return m.an_alle || (m.empfaenger || []).indexOf(S.profil.id) !== -1; }
+  function offeneMitteilungen() {
+    if (!S.profil || istAdmin() || S.profil.status !== 'aktiv') return [];
+    var grenze = new Date(Date.now() - 14 * 86400000).toISOString();
+    return S.mitteilungen.filter(function (m) { return fuerMich(m) && !meineGelesen(m.id) && m.erstellt_am > grenze; })
+      .sort(function (a, b) { return a.erstellt_am.localeCompare(b.erstellt_am); });
+  }
+
+  var popupOffen = false;
+  function popupZeigen() {
+    if (popupOffen) return;
+    var m = offeneMitteilungen()[0];
+    if (!m) return;
+    popupOffen = true;
+    var rest = offeneMitteilungen().length - 1;
+    var d = document.createElement('div');
+    d.className = 'ak-popup-hintergrund';
+    d.innerHTML = '<div class="ak-popup ' + m.art + '" role="dialog" aria-modal="true" aria-labelledby="ak-popup-titel">' +
+      '<div class="ak-popup-kopf"><span class="ak-symbol gold">' + ico(MSYMBOL[m.art] || 'megafon') + '</span><div><span class="ak-tag ' + (m.art === 'anfrage' ? 'warn' : 'woche') + '">' + MARTEN[m.art] + '</span>' +
+      '<small>' + relativ(m.erstellt_am) + (rest > 0 ? ' · noch ' + rest + ' weitere' : '') + '</small></div></div>' +
+      '<h2 id="ak-popup-titel">' + esc(m.titel) + '</h2>' +
+      (m.text ? '<div class="ak-textblock">' + esc(m.text) + '</div>' : '') +
+      (m.antwort_erwuenscht
+        ? '<form data-form="antwort" data-id="' + esc(m.id) + '" class="ak-formular mt-16" novalidate><div class="field"><label for="antwort">Deine Antwort</label>' +
+          '<textarea class="textarea" id="antwort" name="antwort" required style="min-height:90px"></textarea></div><div class="form-msg err" role="alert"></div>' +
+          '<button class="btn btn-primary btn-full" type="submit">Antwort senden</button></form>'
+        : '<button class="btn btn-primary btn-full mt-24" type="button" data-aktion="verstanden" data-id="' + esc(m.id) + '">' + ico('haken') + 'Verstanden</button>') +
+      '</div>';
+    document.body.appendChild(d);
+    var fokusZiel = d.querySelector('textarea, [data-aktion="verstanden"]');
+    if (fokusZiel) fokusZiel.focus();
+    d.addEventListener('submit', function (e) {
+      var form = e.target.closest('form[data-form="antwort"]');
+      if (!form) return;
+      e.preventDefault();
+      var text = form.elements.antwort.value.trim();
+      if (!text) { formFehler(form, 'Bitte schreib eine kurze Antwort.'); return; }
+      form.querySelector('[type=submit]').disabled = true;
+      mitteilungErledigt(form.getAttribute('data-id'), text).catch(function (err) {
+        form.querySelector('[type=submit]').disabled = false; formFehler(form, err && err.anzeigen ? err.message : 'Senden hat nicht geklappt.');
+      });
+    });
+  }
+  async function mitteilungErledigt(id, antwort) {
+    var r = await D.gelesenSetzen(S.profil.id, id, antwort || '');
+    S.gelesen = S.gelesen.filter(function (g) { return !(g.mitteilung_id === id && g.nutzer_id === S.profil.id); });
+    S.gelesen.push((r && r[0]) || { mitteilung_id: id, nutzer_id: S.profil.id, gelesen_am: new Date().toISOString(), antwort: antwort || '' });
+    var h = document.querySelector('.ak-popup-hintergrund');
+    if (h) h.remove();
+    popupOffen = false;
+    if (antwort) toast('Antwort gesendet.');
+    navZeichnen();
+    if (pfad()[0] === 'mitteilungen') vPartnerMitteilungen();
+    setTimeout(popupZeigen, 250);
+  }
+
+  function vPartnerMitteilungen() {
+    if (S.erweiterungFehlt) return vErweiterungFehlt();
+    var liste = S.mitteilungen.filter(fuerMich);
+    var kannHinweise = window.Notification && Notification.permission === 'default';
+    setzen('<div class="ak-kopf"><div><span class="eyebrow">Von der Vertriebsleitung</span><h1>Mitteilungen</h1>' +
+      '<p>Schulungen, Powerwochen und Anfragen an dich. Neue Mitteilungen erscheinen automatisch als Fenster.</p></div>' +
+      (kannHinweise ? '<button class="btn btn-ghost btn-sm" type="button" data-aktion="desktop">' + ico('glocke') + 'Hinweise am Gerät erlauben</button>' : '') + '</div>' +
+      (liste.length ? '<div class="ak-liste">' + liste.map(function (m) {
+        var g = meineGelesen(m.id);
+        return '<div class="ak-beitrag"><div class="ak-beitrag-kopf"><span class="ak-tag ' + (m.art === 'anfrage' ? 'warn' : 'woche') + '">' + MARTEN[m.art] + '</span>' +
+          (g ? '<span class="ak-tag ok">' + (g.antwort ? 'Beantwortet' : 'Gelesen') + '</span>' : '<span class="ak-tag neu">Neu</span>') +
+          '<span>' + relativ(m.erstellt_am) + '</span></div><h3>' + esc(m.titel) + '</h3>' +
+          (m.text ? '<p class="ak-textblock">' + esc(m.text) + '</p>' : '') +
+          (g && g.antwort ? '<p class="ak-antwort"><b>Deine Antwort:</b> ' + esc(g.antwort) + '</p>' : '') +
+          (!g ? '<button class="btn btn-primary btn-sm mt-16" type="button" data-aktion="mitteilung-oeffnen">Öffnen</button>' : '') + '</div>';
+      }).join('') + '</div>' : '<p class="ak-leer">Noch keine Mitteilungen.</p>'));
+  }
+
+  function vMitteilungenAdmin() {
+    if (S.erweiterungFehlt) return vErweiterungFehlt();
+    var aktive = S.profile.filter(function (p) { return p.rolle !== 'admin' && p.status === 'aktiv'; });
+    setzen('<div class="ak-kopf"><div><span class="eyebrow">Admin</span><h1>Mitteilungen</h1>' +
+      '<p>Erscheinen bei den Partnern sofort als Fenster, sobald sie die Akademie geöffnet haben (spätestens nach einer Minute).</p></div></div>' +
+      '<div class="ak-raster"><section class="ak-karte"><h2>Neue Mitteilung</h2><form class="ak-formular mt-16" data-form="mitteilung" novalidate>' +
+      '<div class="field"><label for="m-art">Art</label><select class="select" id="m-art" name="art">' +
+      Object.keys(MARTEN).map(function (k) { return '<option value="' + k + '">' + MARTEN[k] + '</option>'; }).join('') + '</select></div>' +
+      feld('titel', 'Titel', 'text', 'required placeholder="z. B. Powerwoche ab Montag"') +
+      '<div class="field"><label for="m-text">Text</label><textarea class="textarea" id="m-text" name="text" placeholder="Was, wann, wo?"></textarea></div>' +
+      '<fieldset class="ak-empfaenger"><legend>An wen?</legend>' +
+      '<label class="ak-schalter"><input type="radio" name="an" value="alle" checked data-aktion-change="empfaenger"> Alle Partner (' + aktive.length + ')</label>' +
+      '<label class="ak-schalter"><input type="radio" name="an" value="auswahl" data-aktion-change="empfaenger"> Ausgewählte Partner</label>' +
+      '<div class="ak-auswahl" id="ak-auswahl" hidden>' + (aktive.length ? aktive.map(function (p) {
+        return '<label class="ak-schalter"><input type="checkbox" name="empfaenger" value="' + esc(p.id) + '"> ' + esc(name(p)) + (p.region ? ' <span class="muted small">' + esc(p.region) + '</span>' : '') + '</label>';
+      }).join('') : '<p class="ak-leer">Noch keine aktiven Partner.</p>') + '</div></fieldset>' +
+      '<label class="ak-schalter"><input type="checkbox" name="antwort_erwuenscht"> Antwort erbeten (der Partner muss etwas zurückschreiben)</label>' +
+      '<div class="form-msg err" role="alert"></div><div><button class="btn btn-primary" type="submit">' + ico('megafon') + 'Mitteilung senden</button></div></form></section>' +
+      '<section class="ak-karte"><h2>Gesendet</h2><div class="mt-16">' + gesendetListe(aktive) + '</div></section></div>');
+  }
+
+  function gesendetListe(aktive) {
+    if (!S.mitteilungen.length) return '<p class="ak-leer">Noch nichts gesendet.</p>';
+    return S.mitteilungen.map(function (m) {
+      var ziel = m.an_alle ? aktive : aktive.filter(function (p) { return (m.empfaenger || []).indexOf(p.id) !== -1; });
+      var gel = S.gelesen.filter(function (g) { return g.mitteilung_id === m.id; });
+      var antworten = gel.filter(function (g) { return g.antwort; });
+      return '<details class="ak-gesendet"><summary><span class="ak-tag ' + (m.art === 'anfrage' ? 'warn' : 'woche') + '">' + MARTEN[m.art] + '</span>' +
+        '<strong>' + esc(m.titel) + '</strong><span class="meta">' + relativ(m.erstellt_am) + ' · ' + gel.length + ' / ' + ziel.length + ' gelesen' +
+        (m.antwort_erwuenscht ? ' · ' + antworten.length + ' Antworten' : '') + '</span></summary>' +
+        (m.text ? '<p class="ak-textblock">' + esc(m.text) + '</p>' : '') +
+        '<ul class="ak-gelesen-liste">' + ziel.map(function (p) {
+          var g = gel.filter(function (x) { return x.nutzer_id === p.id; })[0];
+          return '<li><span>' + esc(name(p)) + '</span>' + (g ? '<span class="ak-tag ok">gelesen ' + relativ(g.gelesen_am) + '</span>' : '<span class="ak-tag">offen</span>') +
+            (g && g.antwort ? '<p class="ak-antwort">' + esc(g.antwort) + '</p>' : '') + '</li>';
+        }).join('') + '</ul>' +
+        '<button class="btn btn-ghost btn-sm ak-gefahr" type="button" data-aktion="mitteilung-loeschen" data-id="' + esc(m.id) + '">Löschen</button></details>';
+    }).join('');
+  }
+
+  /* Neue Mitteilungen und Meldungen regelmäßig abholen */
+  async function mitteilungenAbfragen() {
+    if (!S.profil || S.profil.status !== 'aktiv' || S.erweiterungFehlt) return;
+    try {
+      var vorher = offeneMitteilungen().length;
+      var r = await Promise.all([D.mitteilungen(), D.gelesen()]);
+      S.mitteilungen = r[0] || []; S.gelesen = r[1] || [];
+      var offen = offeneMitteilungen();
+      if (offen.length > vorher && document.hidden && window.Notification && Notification.permission === 'granted') {
+        try { new Notification('Solvera Akademie: ' + offen[offen.length - 1].titel, { body: offen[offen.length - 1].text.slice(0, 140), icon: 'assets/img/favicon-192.png' }); } catch (e) { /* egal */ }
+      }
+      navZeichnen();
+      popupZeigen();
+    } catch (e) { /* beim nächsten Mal */ }
+  }
+  document.addEventListener('visibilitychange', function () {
+    if (!document.hidden) { mitteilungenAbfragen(); meldungenAbfragen(); }
+  });
+
+
+  /* =======================================================================
+     ADMIN – CRM-Abgleich (Horizon CRM)
+     ======================================================================= */
+  var CRM_FELDNAMEN = { status: 'Status', pv_status: 'PV-Status', wp_status: 'WP-Status', call_status: 'Kunden-Status', lead_type: 'Art' };
+  var crmLaeuft = false;
+
+  function vCrm() {
+    if (S.crmFehlt) {
+      setzen('<div class="ak-zustand"><div class="ico-tile ico-tile-lg">' + ico('sanduhr') + '</div><h1>CRM-Abgleich einrichten</h1>' +
+        '<p>Bitte in Supabase einmal <strong>supabase/erweiterung-crm.sql</strong> ausführen. Danach erscheint hier der Abgleich.</p></div>');
+      return;
+    }
+    var letzter = S.crmAbgleiche[0];
+    var P = S.crmPruefung;
+    var partner = S.profile.filter(function (p) { return p.rolle !== 'admin' && p.status !== 'gesperrt'; });
+    var html = '<div class="ak-kopf"><div><span class="eyebrow">Admin</span><h1>CRM-Abgleich</h1>' +
+      '<p>Jede Nacht holt die Akademie die Leads aus dem Horizon CRM und zählt pro Partner und Tag Leads und Stornos. Kundendaten werden nicht übernommen.</p></div>' +
+      '<div class="ak-knoepfe" style="margin:0"><button class="btn btn-primary btn-sm" type="button" data-aktion="crm-abgleich"' + (crmLaeuft ? ' disabled' : '') + '>' + ico('laden') + 'Jetzt abgleichen</button>' +
+      '<button class="btn btn-ghost btn-sm" type="button" data-aktion="crm-pruefen"' + (crmLaeuft ? ' disabled' : '') + '>CRM prüfen</button></div></div>';
+
+    html += '<section class="ak-karte"><h2>Letzter Abgleich</h2>' + (letzter
+      ? '<dl class="ak-info-liste mt-16"><div><dt>Zeitpunkt</dt><dd>' + datum(letzter.zeit, true) + ' (' + relativ(letzter.zeit) + ')</dd></div>' +
+        '<div><dt>Ergebnis</dt><dd>' + (letzter.ok ? '<span class="ak-tag ok">Erfolgreich</span>' : '<span class="ak-tag err">Fehlgeschlagen</span>') + '</dd></div>' +
+        (letzter.ok ? '<div><dt>Leads gelesen</dt><dd>' + fmt(letzter.leads) + '</dd></div><div><dt>Partnern zugeordnet</dt><dd>' + fmt(letzter.zugeordnet) + '</dd></div>' : '') + '</dl>' +
+        (letzter.meldung ? '<div class="ak-hinweis mt-16">' + esc(letzter.meldung) + '</div>' : '') +
+        (letzter.nicht_zugeordnet && Object.keys(letzter.nicht_zugeordnet).length
+          ? '<p class="small muted mt-16">Nicht zugeordnet: ' + Object.keys(letzter.nicht_zugeordnet).map(function (k) { return esc(k) + ' (' + letzter.nicht_zugeordnet[k] + ')'; }).join(', ') + ' – unten unter „Namen zuordnen“ verknüpfen.</p>' : '')
+      : '<p class="ak-leer mt-8">Noch kein Abgleich gelaufen. Tippe auf „CRM prüfen“, um die Verbindung zu testen.</p>') + '</section>';
+
+    /* Storno-Regeln */
+    html += '<section class="ak-karte mt-24"><h2>Was zählt als Storno?</h2>';
+    if (P) {
+      html += '<p class="small muted mt-8">Häkchen bei allen Werten setzen, die einen stornierten Lead bedeuten. Zahlen = Anzahl Leads im Zeitraum.</p>' +
+        '<form data-form="crm-regeln" class="mt-16">' + Object.keys(P.werte || {}).filter(function (f) { return Object.keys(P.werte[f]).length; }).map(function (f) {
+          return '<fieldset class="ak-crm-feld"><legend>' + esc(CRM_FELDNAMEN[f] || f) + '</legend>' + Object.keys(P.werte[f]).sort().map(function (v) {
+            var regel = f + '=' + v;
+            return '<label class="ak-schalter"><input type="checkbox" name="regel" value="' + esc(regel) + '"' + (S.crmRegeln.indexOf(regel) !== -1 ? ' checked' : '') + '> ' +
+              esc(v) + ' <span class="muted small">(' + fmt(P.werte[f][v]) + ')</span></label>';
+          }).join('') + '</fieldset>';
+        }).join('') + '<div class="form-msg err" role="alert"></div><button class="btn btn-primary btn-sm mt-16" type="submit">Speichern</button></form>';
+    } else {
+      html += '<p class="mt-8">' + (S.crmRegeln.length ? 'Derzeit: ' + S.crmRegeln.map(function (r) { var t = r.split('='); return '<span class="ak-tag">' + esc(CRM_FELDNAMEN[t[0]] || t[0]) + ': ' + esc(t.slice(1).join('=')) + '</span>'; }).join(' ')
+        : 'Noch nichts festgelegt.') + '</p><p class="small muted mt-8">Tippe oben auf „CRM prüfen“, um alle Status-Werte aus dem CRM zur Auswahl zu bekommen.</p>';
+    }
+    html += '</section>';
+
+    /* Namen zuordnen */
+    if (P) {
+      html += '<section class="ak-karte mt-24"><h2>Namen zuordnen</h2><p class="small muted mt-8">„Erstellt von“ im CRM → Partner in der Akademie. Gleiche Namen werden automatisch erkannt.</p>' +
+        '<div class="ak-tabelle-rahmen mt-16"><table class="ak-tabelle"><thead><tr><th>Im CRM</th><th>Leads</th><th>Partner in der Akademie</th></tr></thead><tbody>' +
+        Object.keys(P.ersteller || {}).sort(function (a, b) { return P.ersteller[b] - P.ersteller[a]; }).map(function (n) {
+          var treffer = partner.filter(function (p) { return (p.crm_name && p.crm_name.toLowerCase() === n.toLowerCase()) || name(p).toLowerCase() === n.toLowerCase(); })[0];
+          return '<tr><td>' + esc(n) + '</td><td class="zahlen">' + fmt(P.ersteller[n]) + '</td><td><select class="select" data-crm-name="' + esc(n) + '" aria-label="Partner für ' + esc(n) + '">' +
+            '<option value="">– nicht zuordnen –</option>' + partner.map(function (p) {
+              return '<option value="' + esc(p.id) + '"' + (treffer && treffer.id === p.id ? ' selected' : '') + '>' + esc(name(p)) + '</option>';
+            }).join('') + '</select></td></tr>';
+        }).join('') + '</tbody></table></div></section>';
+      html += '<section class="ak-karte mt-24"><h2>Gefundene Felder</h2><p class="small muted mt-8">' + fmt(P.anzahl) + ' Leads im Zeitraum, Datum erkannt bei ' + fmt(P.datumErkannt) + '.</p>' +
+        '<p class="tiny mt-8">' + (P.felder || []).map(esc).join(', ') + '</p></section>';
+    }
+
+    html += '<section class="ak-karte mt-24"><h2>Einrichtung</h2><ol class="ak-schritte">' +
+      '<li>In Supabase <strong>supabase/erweiterung-crm.sql</strong> ausführen.</li>' +
+      '<li>Edge Function <strong>crm-abgleich</strong> anlegen (Code aus <code>supabase/functions/crm-abgleich/index.ts</code>).</li>' +
+      '<li>Unter Edge Functions → Secrets <strong>CRM_EMAIL</strong> und <strong>CRM_PASSWORT</strong> mit deinen Horizon-Zugangsdaten eintragen.</li>' +
+      '<li>Hier „CRM prüfen“, dann Storno-Status wählen und Namen zuordnen, dann „Jetzt abgleichen“.</li></ol></section>';
+    setzen(html);
+  }
+
+  async function crmStarten(modus) {
+    crmLaeuft = true; vCrm();
+    toast(modus === 'pruefen' ? 'Verbinde mit dem CRM …' : 'Abgleich läuft …');
+    try {
+      var r = await D.crmAufrufen(modus);
+      if (!r || !r.ok) throw Object.assign(new Error((r && r.meldung) || 'Unbekannter Fehler'), { anzeigen: true });
+      if (modus === 'pruefen') { S.crmPruefung = r; toast(fmt(r.anzahl) + ' Leads gefunden.'); }
+      else {
+        var c = await Promise.all([D.crmZahlen(), D.crmAbgleiche()]);
+        S.crmZahlen = c[0] || []; S.crmAbgleiche = c[1] || [];
+        toast('Abgleich fertig: ' + fmt(r.zugeordnet) + ' von ' + fmt(r.leads) + ' Leads zugeordnet.');
+      }
+    } catch (e) {
+      try { S.crmAbgleiche = await D.crmAbgleiche() || S.crmAbgleiche; } catch (x) { /* egal */ }
+      fehlerZeigen(e);
+    } finally { crmLaeuft = false; if (pfad()[1] === 'crm') vCrm(); }
+  }
   /* =======================================================================
      Router
      ======================================================================= */
@@ -977,6 +1706,8 @@
       case 'neuigkeiten': vNeuigkeiten(); navZeichnen(); break;
       case 'beitrag': vBeitrag(p[1]); break;
       case 'profil': vProfil(); break;
+      case 'dashboard': vDashboard(); break;
+      case 'mitteilungen': vPartnerMitteilungen(); break;
       case 'admin':
         if (!p[1]) vAdmin();
         else if (p[1] === 'partner') vPartner(p[2]);
@@ -984,11 +1715,17 @@
         else if (p[1] === 'lektion') vLektionBearbeiten(p[2]);
         else if (p[1] === 'beitrag') vBeitragBearbeiten(p[2]);
         else if (p[1] === 'meldungen') vMeldungen();
+        else if (p[1] === 'team') vTeam();
+        else if (p[1] === 'leistung') vDashboard(p[2]);
+        else if (p[1] === 'bewertung') vBewertung(p[2]);
+        else if (p[1] === 'mitteilungen') vMitteilungenAdmin();
+        else if (p[1] === 'crm') vCrm();
         else vNichtGefunden();
         break;
       default: vNichtGefunden();
     }
     fokus();
+    setTimeout(popupZeigen, 400);
   }
 
   var ersterAufruf = true;
@@ -1003,7 +1740,7 @@
     if (!S.profil) throw Object.assign(new Error('Dein Profil wurde nicht gefunden. Bitte wende dich an die Vertriebsleitung.'), { anzeigen: true });
     if (S.profil.status === 'aktiv') await ladeAlles();
     clearInterval(abfrage);
-    if (istAdmin()) abfrage = setInterval(meldungenAbfragen, 60000);
+    abfrage = setInterval(function () { meldungenAbfragen(); mitteilungenAbfragen(); }, 60000);
   }
 
   /* =======================================================================
@@ -1111,6 +1848,51 @@
     }
   };
 
+  FORMULARE.bericht = async function (form, w) {
+    if (!w.datum) return formFehler(form, 'Bitte einen Tag wählen.');
+    if (w.datum > heuteIso()) return formFehler(form, 'Ein Tag in der Zukunft geht nicht.');
+    var zahlen = ['nicht_angetroffen', 'angetroffen_ohne', 'abschluesse'].map(function (k) { return parseInt(w[k], 10); });
+    if (zahlen.some(function (n) { return isNaN(n) || n < 0; })) return formFehler(form, 'Bitte nur ganze Zahlen ab 0 eintragen.');
+    var b = { nutzer_id: form.getAttribute('data-id'), datum: w.datum, nicht_angetroffen: zahlen[0], angetroffen_ohne: zahlen[1], abschluesse: zahlen[2] };
+    var alt = S.berichte.filter(function (x) { return x.nutzer_id === b.nutzer_id && x.datum === b.datum; })[0];
+    b.notiz = alt ? alt.notiz : '';
+    b.stornos = alt ? (alt.stornos || 0) : 0;
+    if (form.elements.stornos) {
+      var st = parseInt(w.stornos, 10);
+      if (isNaN(st) || st < 0) return formFehler(form, 'Bitte bei Stornos eine ganze Zahl ab 0 eintragen.');
+      if (st > b.abschluesse) return formFehler(form, 'Es können nicht mehr Stornos als Abschlüsse sein.');
+      b.stornos = st;
+    }
+    await berichtSichern(b);
+    S.berichte = S.berichte.filter(function (x) { return !(x.nutzer_id === b.nutzer_id && x.datum === b.datum); }).concat([b]);
+    var y = window.scrollY; zeigen(); window.scrollTo(0, y);
+  };
+  FORMULARE.bewertung = async function (form, w) {
+    var werte = {};
+    WERTE.forEach(function (x) { if (!x[3]) werte[x[0]] = begrenzt(parseInt(w[x[0]], 10) || 1); });
+    var b = { nutzer_id: form.getAttribute('data-id'), werte: werte, staerken: w.staerken, schwaechen: w.schwaechen };
+    var r = await D.bewertungSpeichern(b);
+    S.bewertungen = S.bewertungen.filter(function (x) { return x.nutzer_id !== b.nutzer_id; }).concat([(r && r[0]) || b]);
+    toast('Bewertung gespeichert.');
+    geheZu('admin/leistung/' + b.nutzer_id);
+  };
+  FORMULARE['crm-regeln'] = async function (form) {
+    var regeln = Array.prototype.map.call(form.querySelectorAll('input[name="regel"]:checked'), function (i) { return i.value; });
+    await D.einstellungSpeichern('crm_storno', { regeln: regeln });
+    S.crmRegeln = regeln;
+    toast(regeln.length ? 'Gespeichert. Beim nächsten Abgleich zählen diese Status als Storno.' : 'Gespeichert. Keine Stornos ausgewählt.');
+  };
+  FORMULARE.mitteilung = async function (form, w) {
+    if (!pflicht(form, ['titel'])) return formFehler(form, 'Bitte einen Titel eingeben.');
+    var auswahl = Array.prototype.filter.call(form.querySelectorAll('input[name="empfaenger"]:checked'), function () { return true; }).map(function (i) { return i.value; });
+    var anAlle = form.querySelector('input[name="an"]:checked').value === 'alle';
+    if (!anAlle && !auswahl.length) return formFehler(form, 'Bitte mindestens einen Partner auswählen.');
+    var r = await D.mitteilungSenden({ art: w.art, titel: w.titel, text: w.text, an_alle: anAlle, empfaenger: anAlle ? [] : auswahl, antwort_erwuenscht: !!w.antwort_erwuenscht });
+    S.mitteilungen = await D.mitteilungen() || (r || []).concat(S.mitteilungen);
+    toast('Mitteilung gesendet.');
+    vMitteilungenAdmin();
+  };
+
   main.addEventListener('submit', async function (e) {
     var form = e.target.closest('form[data-form]');
     if (!form) return;
@@ -1186,6 +1968,7 @@
     abmelden: async function () {
       await D.abmelden();
       clearInterval(abfrage);
+      var pop = document.querySelector('.ak-popup-hintergrund'); if (pop) pop.remove(); popupOffen = false;
       S.profil = null; S.geladen = false;
       location.hash = '#/anmelden';
       zeigen();
@@ -1224,6 +2007,32 @@
       zeigen();
     },
     csv: csvExport,
+    zaehlen: zaehlen,
+    'crm-abgleich': function () { return crmStarten('abgleich'); },
+    'crm-pruefen': function () { return crmStarten('pruefen'); },
+    'bericht-laden': function (el) {
+      var form = main.querySelector('form[data-form="bericht"]');
+      var b = S.berichte.filter(function (x) { return x.nutzer_id === form.getAttribute('data-id') && x.datum === el.getAttribute('data-datum'); })[0];
+      if (!b) return;
+      form.closest('details').open = true;
+      form.elements.datum.value = b.datum;
+      form.elements.nicht_angetroffen.value = b.nicht_angetroffen;
+      form.elements.angetroffen_ohne.value = b.angetroffen_ohne;
+      form.elements.abschluesse.value = b.abschluesse;
+      if (form.elements.stornos) form.elements.stornos.value = b.stornos || 0;
+      form.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    },
+    'team-zeit': function (el) { team.zeit = el.getAttribute('data-wert'); vTeam(); },
+    leistung: function (el) { geheZu('admin/leistung/' + el.getAttribute('data-id')); },
+    verstanden: function (el) { el.disabled = true; return mitteilungErledigt(el.getAttribute('data-id'), ''); },
+    'mitteilung-oeffnen': function () { popupZeigen(); },
+    'mitteilung-loeschen': async function (el) {
+      if (!confirm('Mitteilung löschen? Sie verschwindet auch bei den Partnern.')) return;
+      await D.mitteilungLoeschen(el.getAttribute('data-id'));
+      S.mitteilungen = S.mitteilungen.filter(function (m) { return m.id !== el.getAttribute('data-id'); });
+      toast('Mitteilung gelöscht.');
+      vMitteilungenAdmin();
+    },
     'video-waehlen': function () { document.getElementById('video_datei').click(); },
     'video-entfernen': function (el) {
       document.getElementById('video_pfad').value = '';
@@ -1266,8 +2075,14 @@
   });
   main.addEventListener('keydown', function (e) {
     if (e.key === 'Enter' && e.target.matches('tr[data-aktion="partner"]')) AKTIONEN.partner(e.target);
+    if (e.key === 'Enter' && e.target.matches('tr[data-aktion="leistung"]')) AKTIONEN.leistung(e.target);
   });
   main.addEventListener('input', function (e) {
+    if (e.target.hasAttribute('data-regler')) {
+      var o = e.target.parentNode.querySelector('output'); if (o) o.textContent = e.target.value;
+      e.target.style.setProperty('--fill', ((e.target.value - 1) / 98 * 100) + '%');
+      bewertungVorschau(e.target.form);
+    }
     var t = e.target.getAttribute('data-tabelle');
     if (t) { tabelle[t] = e.target.value; tabelleZeichnen(); }
   });
@@ -1276,6 +2091,18 @@
     if (t) { tabelle[t] = e.target.value; tabelleZeichnen(); }
     if (e.target.getAttribute('data-aktion-change') === 'art') artFelder(e.target.value);
     if (e.target.id === 'video_datei') videoHochladen(e.target);
+    if (e.target.hasAttribute('data-team-sort')) { team.sort = e.target.value; vTeam(); }
+    if (e.target.hasAttribute('data-crm-name')) {
+      var crmName = e.target.getAttribute('data-crm-name'), pid = e.target.value;
+      var vorher = S.profile.filter(function (p) { return p.crm_name && p.crm_name.toLowerCase() === crmName.toLowerCase(); });
+      Promise.all(vorher.filter(function (p) { return p.id !== pid; }).map(function (p) { p.crm_name = ''; return D.crmNameSpeichern(p.id, ''); }))
+        .then(function () { if (!pid) return; var p = S.profile.filter(function (x) { return x.id === pid; })[0]; p.crm_name = crmName; return D.crmNameSpeichern(pid, crmName); })
+        .then(function () { toast(pid ? 'Zugeordnet. Gilt ab dem nächsten Abgleich.' : 'Zuordnung entfernt.'); })
+        .catch(fehlerZeigen);
+    }
+    if (e.target.getAttribute('data-aktion-change') === 'empfaenger') {
+      document.getElementById('ak-auswahl').hidden = e.target.value !== 'auswahl';
+    }
   });
 
   window.addEventListener('hashchange', zeigen);
