@@ -648,3 +648,11 @@ a.ak-beitrag:hover { border-color: var(--brass-line); }
 .ak-crm-feld legend { font-weight: 800; font-size: .86rem; padding: 0 6px; }
 .ak-schritte { list-style: decimal; padding-left: 20px; display: grid; gap: 8px; margin-top: 12px; color: var(--txt-2); font-size: .94rem; }
 .ak-schritte code { font-size: .82rem; }
+
+/* Absagegründe */
+.ak-gruende { display: grid; gap: 10px; }
+.ak-gruende li { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(60px, 1fr) auto auto; align-items: center; gap: 10px; font-size: .9rem; }
+.ak-gruende .name { color: var(--txt); overflow-wrap: anywhere; }
+.ak-gruende .ak-balken i { background: linear-gradient(90deg, rgba(var(--brass-rgb), .55), var(--brass)); }
+.ak-gruende b { font-variant-numeric: tabular-nums; }
+.ak-gruende small { color: var(--txt-3); font-variant-numeric: tabular-nums; min-width: 3.4em; text-align: right; }

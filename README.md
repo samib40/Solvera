@@ -94,35 +94,31 @@ drin ist.
 
 ### Leistungs-Dashboard und Mitteilungen
 
-**Dashboard** (Menüpunkt „Dashboard“, für jeden Partner):
+**Dashboard** (Menüpunkt „Dashboard“, für jeden Partner) – **läuft ausschließlich mit
+den Daten aus dem Horizon CRM** (siehe „CRM-Abgleich“):
 
 * **Spielerkarte im FIFA-Stil** mit Gesamtwert (Durchschnitt) und sechs Werten
-  (1–99), Karte in Bronze (unter 65), Silber (65–74) oder Gold (ab 75), dazu ein
-  Netzdiagramm. **Drei Werte berechnen sich aus den Tagesberichten** (Ziele in
-  `config.js` unter `akademie.ziele`; Ziel erreicht = Wert 80):
-  * **Disziplin (DIS):** Ø Türen pro Arbeitstag der letzten 30 Tage, Ziel 300.
-  * **Einwandbehandlung (EIN):** Abschlüsse ÷ angetroffene Kunden, letzte 30 Tage,
-    Ziel über 50 %.
-  * **Stornoquote (STO):** Stornos ÷ Abschlüsse, letzte 90 Tage. Bis 50 % gut
-    (99 → 75), darüber mittelmäßig bis schlecht.
+  (1–99), Bronze unter 65, Silber 65–74, Gold ab 75, dazu ein Netzdiagramm. Drei Werte
+  kommen aus dem CRM (Ziele in `config.js` unter `akademie.ziele`, Ziel erreicht = 80):
+  * **Disziplin (DIS):** Arbeitstage mit mindestens einem Lead in den letzten 30 Tagen,
+    Ziel 20.
+  * **Einwandbehandlung (EIN):** Qualifiziert ÷ bearbeitete Leads (qualifiziert +
+    nicht qualifiziert), letzte 30 Tage, Ziel über 50 %.
+  * **Stornoquote (STO):** (Nicht qualifiziert + Neu) ÷ alle Leads, letzte 90 Tage.
+    Bis 50 % gut (99 → 75), darüber mittelmäßig bis schlecht.
 
-  Gesprächseröffnung (ERÖ), Bedarfsanalyse (BED) und Produktwissen (WIS) schätzt der
-  Admin ein. **Stärken** sind alle Werte ab 75, **Daran arbeiten** alle darunter
-  (50–74 mittelmäßig, unter 50 schlecht) – jeweils mit der Zahl, aus der sich der
-  Wert ergibt, plus Notiz des Admins.
-* **Stornos** trägt nur der Admin ein (Dashboard des Partners → „Tag eintragen oder
-  ändern“ → „Davon storniert“), am Tag des ursprünglichen Abschlusses. Partner
-  können den Wert nicht ändern; die Datenbank verhindert das.
-* **Tageszähler:** An jeder Tür einmal tippen – *Nicht angetroffen*, *Angetroffen,
-  kein Abschluss* oder *Abschluss*. Geklingelt ist die Summe. Speichert automatisch.
-* **Kennzahlen** für heute, diese Woche, diesen Monat mit Antreffquote
-  (angetroffen ÷ Türen) und Abschlussquote (Abschlüsse ÷ angetroffen).
-* **Diagramm** der letzten 14 Tage und Tabelle aller Tagesberichte; vergessene Tage
-  lassen sich nachtragen.
+  Gesprächseröffnung, Bedarfsanalyse und Produktwissen schätzt der Admin ein.
+  **Stärken** = alle Werte ab 75, **Daran arbeiten** = alle darunter, jeweils mit der
+  Zahl dahinter und der Notiz des Admins.
+* **Kennzahlen** für heute, diese Woche, diesen Monat: Leads, qualifiziert,
+  neu/in Bearbeitung, nicht qualifiziert, Stornoquote, Qualifizierungsquote, Anteil
+  erreichter Kunden.
+* **Diagramm** der Leads der letzten 14 Tage, **Absagegründe** (PV-Status) der
+  letzten 90 Tage und eine Tabelle der letzten 30 Tage.
 
-**Admin → Team:** Rangliste aller aktiven Partner (heute, Woche, Monat), Klick führt
-zum Dashboard des Partners mit „Bewertung bearbeiten“ (Schieberegler, Live-Vorschau
-der Karte).
+**Admin → Team:** Rangliste aller aktiven Partner (heute, Woche, Monat) nach Leads,
+Qualifiziert, Stornoquote oder Gesamtwert. Klick führt zum Dashboard des Partners mit
+„Bewertung bearbeiten“.
 
 **Admin → Mitteilungen:** Art (Info, Schulung, Powerwoche, Anfrage), Titel, Text, an
 alle oder ausgewählte Partner, optional „Antwort erbeten“. Bei den Partnern poppt die
@@ -140,10 +136,10 @@ einen Hinweis.
 
 Jede Nacht meldet sich die Edge Function `crm-abgleich` mit hinterlegten Zugangsdaten
 im Horizon CRM an (`/api/login/`), liest die Leads der letzten 90 Tage
-(`/api/leads/`) und zählt je Partner („Erstellt von“) und Tag die **Leads** und
-**Stornos**. Gespeichert werden nur diese Zahlen (Tabelle `crm_zahlen`), keine
-Kundendaten. Die Stornoquote auf der Spielerkarte kommt dann aus dem CRM; die Türen
-zählen die Partner weiter selbst.
+(`/api/leads/`) und zählt je Partner („Erstellt von“) und Tag die **Leads**, **Stornos** und die Verteilung
+auf Status, PV-Status (Absagegründe) und Kunden-Status. Gespeichert werden nur diese Zahlen (Tabelle `crm_zahlen`), keine
+Kundendaten. Das gesamte Dashboard rechnet nur mit diesen Zahlen. Als Storno zählen derzeit
+„Nicht qualifiziert“ und „Neu“ (einstellbar unter Admin → CRM).
 
 **Admin → CRM:** „CRM prüfen“ zeigt alle Status-Werte und Namen aus dem CRM (ohne
 Kundendaten). Dort per Häkchen festlegen, welche Status als Storno zählen, und

@@ -22,6 +22,9 @@ create table if not exists public.crm_zahlen (
   primary key (nutzer_id, datum)
 );
 
+-- Verteilung je Tag: {"status": {"Qualifiziert": 3, …}, "pv_status": {…}, "call_status": {…}}
+alter table public.crm_zahlen add column if not exists werte jsonb not null default '{}'::jsonb;
+
 create table if not exists public.crm_abgleiche (
   id                bigint generated always as identity primary key,
   zeit              timestamptz not null default now(),

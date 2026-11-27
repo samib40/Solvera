@@ -164,12 +164,12 @@ window.SOLVERA = {
        (macht Bildschirmaufnahmen nachverfolgbar). true = an, false = aus */
     wasserzeichen: false,
 
-    /* Ziele für die automatisch berechneten Werte der Spielerkarte.
+    /* Ziele für die aus dem CRM berechneten Werte der Spielerkarte.
        Ziel erreicht = Wert 80 (gut ab 75). */
     ziele: {
-      tuerenProTag: 300,   // Disziplin: Türen pro Arbeitstag (Schnitt der letzten 30 Tage)
-      abschlussquote: 50,  // Einwandbehandlung: % Abschlüsse bei angetroffenen Kunden
-      stornoquote: 50      // Stornoquote: gut bis zu diesem %-Wert (letzte 90 Tage)
+      arbeitstage: 20,           // Disziplin: Tage mit mindestens einem Lead in den letzten 30 Tagen
+      qualifizierungsquote: 50,  // Einwandbehandlung: % qualifiziert von bearbeiteten Leads (30 Tage)
+      stornoquote: 50            // Stornoquote: (nicht qualifiziert + neu) ÷ alle Leads, gut bis zu diesem % (90 Tage)
     }
   }
 };

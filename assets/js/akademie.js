@@ -490,11 +490,11 @@
       (neueste.length ? '<div class="ak-liste">' + neueste.map(beitragKarte).join('') + '</div>' : '<p class="ak-leer">Noch keine Beiträge.</p>') +
       '</section></div>' +
 
-      '<div class="ak-spalte">' + (S.erweiterungFehlt || istAdmin() ? '' : (function () {
-        var hs = summe(zeitraum(berichteVon(S.profil.id), 'heute'));
-        return '<section class="ak-karte"><div class="ak-karte-kopf"><h2>Heute an der Tür</h2><a href="#/dashboard">Dashboard</a></div>' +
-          '<div class="ak-heute"><div><b>' + fmt(hs.tueren) + '</b><span>Türen</span></div><div><b>' + fmt(hs.angetroffen) + '</b><span>angetroffen</span></div><div><b>' + fmt(hs.abs) + '</b><span>Abschlüsse</span></div></div>' +
-          '<a class="btn btn-primary btn-full mt-16" href="#/dashboard">' + ico('tacho') + 'Zum Tageszähler</a></section>';
+      '<div class="ak-spalte">' + (S.erweiterungFehlt || S.crmFehlt || istAdmin() ? '' : (function () {
+        var m = summeCrm(zeitraum(crmVon(S.profil.id), 'monat'));
+        return '<section class="ak-karte"><div class="ak-karte-kopf"><h2>Dein Monat</h2><a href="#/dashboard">Dashboard</a></div>' +
+          '<div class="ak-heute"><div><b>' + fmt(m.leads) + '</b><span>Leads</span></div><div><b>' + fmt(m.quali) + '</b><span>qualifiziert</span></div><div><b>' + (m.leads ? prozent(m.quote) : '–') + '</b><span>Stornoquote</span></div></div>' +
+          '<a class="btn btn-primary btn-full mt-16" href="#/dashboard">' + ico('tacho') + 'Zum Dashboard</a></section>';
       })()) + '<section class="ak-karte"><div class="ak-karte-kopf"><h2>Nächste Termine</h2></div>' +
       (termine.length ? termine.map(function (b) { return terminBlock(b, true); }).join('') : '<p class="ak-leer">Aktuell sind keine Termine geplant.</p>') +
       '</section></div></div>');
@@ -987,7 +987,7 @@
   /* =======================================================================
      LEISTUNG – FIFA-Karte, Tageszähler, Kennzahlen, Team
      ======================================================================= */
-  /* Sechs Werte der Spielerkarte. auto = wird aus den Tagesberichten
+  /* Sechs Werte der Spielerkarte. auto = wird aus den CRM-Daten
      berechnet, sonst vergibt der Admin den Wert (1–99). */
   var WERTE = [
     ['eroeffnung', 'ERÖ', 'Gesprächseröffnung'],
@@ -997,12 +997,10 @@
     ['wissen', 'WIS', 'Produktwissen'],
     ['disziplin', 'DIS', 'Disziplin', true]
   ];
-  var ZIELE = Object.assign({ tuerenProTag: 300, abschlussquote: 50, stornoquote: 50 }, CFG.ziele || {});
-  var KATEGORIEN = [
-    ['abschluesse', 'Abschlüsse', 'abs'],
-    ['angetroffen_ohne', 'Angetroffen, kein Abschluss', 'ohne'],
-    ['nicht_angetroffen', 'Nicht angetroffen', 'nicht']
-  ];
+  var ZIELE = Object.assign({ arbeitstage: 20, qualifizierungsquote: 50, stornoquote: 50 }, CFG.ziele || {});
+  /* Status im CRM */
+  var ST = { quali: 'Qualifiziert', nicht: 'Nicht qualifiziert', neu: 'Neu', bearb: 'In Bearbeitung' };
+  var CRM_KATS = [['quali', 'Qualifiziert', 'abs'], ['offen', 'Neu / in Bearbeitung', 'ohne'], ['nicht', 'Nicht qualifiziert', 'nicht']];
 
   function heuteIso() {
     var d = new Date();
@@ -1015,18 +1013,7 @@
     var d = new Date(iso + 'T12:00:00');
     return d.toLocaleDateString('de-DE', lang ? { weekday: 'long', day: 'numeric', month: 'long' } : { weekday: 'short', day: '2-digit', month: '2-digit' });
   }
-  function berichteVon(id) { return S.berichte.filter(function (b) { return b.nutzer_id === id; }); }
-  function summe(liste) {
-    var s = { nicht: 0, ohne: 0, abs: 0, sto: 0, tage: liste.length };
-    liste.forEach(function (b) { s.nicht += b.nicht_angetroffen; s.ohne += b.angetroffen_ohne; s.abs += b.abschluesse; s.sto += b.stornos || 0; });
-    s.angetroffen = s.ohne + s.abs;
-    s.tueren = s.angetroffen + s.nicht;
-    s.antreff = s.tueren ? Math.round(s.angetroffen / s.tueren * 100) : 0;
-    s.quote = s.angetroffen ? Math.round(s.abs / s.angetroffen * 1000) / 10 : 0;
-    s.jeTag = s.tage ? Math.round(s.tueren / s.tage) : 0;
-    s.storno = s.abs ? Math.round(s.sto / s.abs * 1000) / 10 : 0;
-    return s;
-  }
+
   function zeitraum(liste, art) {
     var jetzt = new Date(), ab;
     if (art === 'heute') ab = heuteIso();
@@ -1043,38 +1030,31 @@
     return liste.filter(function (b) { return b.datum >= ab; });
   }
 
-  /* Alle sechs Werte eines Partners: drei aus den Zahlen, drei vom Admin.
+  /* Alle sechs Werte eines Partners: drei aus dem CRM, drei vom Admin.
      Ziel erreicht = 80 (Gold-Bereich), darüber bis 99. */
   function leistungswerte(id) {
     var bw = bewertungVon(id);
-    var l = berichteVon(id);
-    var s30 = summe(letzteTage(l, 30)), s90 = summe(letzteTage(l, 90));
+    var l = crmVon(id);
+    var c30 = summeCrm(letzteTage(l, 30)), c90 = summeCrm(letzteTage(l, 90));
     var w = {}, info = {};
     WERTE.forEach(function (x) { if (!x[3]) w[x[0]] = bw && bw.werte[x[0]] ? begrenzt(Number(bw.werte[x[0]])) : null; });
 
-    if (s30.tage) {
-      w.disziplin = begrenzt(s30.jeTag / ZIELE.tuerenProTag * 80);
-      info.disziplin = 'Ø ' + fmt(s30.jeTag) + ' Türen pro Arbeitstag (letzte 30 Tage) · Ziel ' + fmt(ZIELE.tuerenProTag);
-    } else { w.disziplin = null; info.disziplin = 'Noch keine Tagesberichte'; }
+    if (c90.leads) {
+      w.disziplin = begrenzt(c30.tage / ZIELE.arbeitstage * 80);
+      info.disziplin = fmt(c30.tage) + ' Arbeitstage mit Leads (letzte 30 Tage), Ø ' + String(c30.jeTag).replace('.', ',') + ' Leads pro Arbeitstag · Ziel ' + ZIELE.arbeitstage + ' Tage';
+    } else { w.disziplin = null; info.disziplin = 'Noch keine Leads'; }
 
-    if (s30.angetroffen) {
-      w.einwand = begrenzt(s30.quote / ZIELE.abschlussquote * 80);
-      info.einwand = prozent(s30.quote) + ' Abschlüsse bei angetroffenen Kunden (letzte 30 Tage) · Ziel über ' + ZIELE.abschlussquote + ' %';
-    } else { w.einwand = null; info.einwand = 'Noch keine angetroffenen Kunden erfasst'; }
+    if (c30.bearbeitet) {
+      w.einwand = begrenzt(c30.qualiquote / ZIELE.qualifizierungsquote * 80);
+      info.einwand = prozent(c30.qualiquote) + ' qualifiziert (' + fmt(c30.quali) + ' von ' + fmt(c30.bearbeitet) + ' bearbeiteten Leads, letzte 30 Tage) · Ziel über ' + ZIELE.qualifizierungsquote + ' %';
+    } else { w.einwand = null; info.einwand = 'Noch keine bearbeiteten Leads in den letzten 30 Tagen'; }
 
-    var crm90 = letzteTage(S.crmZahlen.filter(function (c) { return c.nutzer_id === id; }), 90);
-    var crmLeads = crm90.reduce(function (a, c) { return a + c.leads; }, 0);
-    if (crmLeads) {
-      var crmSto = crm90.reduce(function (a, c) { return a + c.stornos; }, 0);
-      var cq = crmSto / crmLeads * 100, cz = ZIELE.stornoquote;
-      w.storno = begrenzt(cq <= cz ? 99 - 24 * cq / cz : 75 - (cq - cz) / (100 - cz) * 74);
-      info.storno = prozent(cq) + ' Stornos laut CRM (' + fmt(crmSto) + ' von ' + fmt(crmLeads) + ' Leads, letzte 90 Tage) · Ziel unter ' + cz + ' %';
-    } else if (s90.abs) {
-      var q = s90.storno, z = ZIELE.stornoquote;
+    if (c90.leads) {
+      var q = c90.quote, z = ZIELE.stornoquote;
       /* bis zum Ziel gut (99 → 75), darüber mittelmäßig bis schlecht (75 → 1) */
       w.storno = begrenzt(q <= z ? 99 - 24 * q / z : 75 - (q - z) / (100 - z) * 74);
-      info.storno = prozent(q) + ' Stornos (' + fmt(s90.sto) + ' von ' + fmt(s90.abs) + ' Abschlüssen, letzte 90 Tage) · Ziel unter ' + z + ' %';
-    } else { w.storno = null; info.storno = 'Noch keine Abschlüsse'; }
+      info.storno = prozent(q) + ' Storno (' + fmt(c90.stornos) + ' von ' + fmt(c90.leads) + ' Leads nicht qualifiziert oder neu, letzte 90 Tage) · Ziel unter ' + z + ' %';
+    } else { w.storno = null; info.storno = 'Noch keine Leads'; }
 
     var vorhanden = WERTE.filter(function (x) { return w[x[0]] != null; });
     var ovr = vorhanden.length ? Math.round(vorhanden.reduce(function (a, x) { return a + w[x[0]]; }, 0) / vorhanden.length) : 0;
@@ -1156,27 +1136,23 @@
       (offen.length ? '<p class="tiny">Noch offen: ' + offen.map(function (e) { return esc(e.name); }).join(', ') + '</p>' : '') + '</div>';
   }
 
-  /* ---------- Kennzahlen ---------- */
-  function kennzahlKachel(titel, s, crm) {
+  /* ---------- Kennzahlen (CRM) ---------- */
+  function kennzahlKachel(titel, c) {
     return '<div class="ak-kz"><div class="ak-kz-titel">' + titel + '</div>' +
-      '<div class="ak-kz-gross"><b>' + fmt(s.tueren) + '</b> Türen</div>' +
-      '<dl><div><dt><i class="ak-farbe nicht"></i>Nicht angetroffen</dt><dd>' + fmt(s.nicht) + '</dd></div>' +
-      '<div><dt><i class="ak-farbe ohne"></i>Angetroffen, kein Abschluss</dt><dd>' + fmt(s.ohne) + '</dd></div>' +
-      '<div><dt><i class="ak-farbe abs"></i>Abschlüsse</dt><dd>' + fmt(s.abs) + '</dd></div></dl>' +
-      '<div class="ak-kz-quoten"><span>Antreffquote <b>' + s.antreff + ' %</b></span><span>Abschlussquote <b>' + prozent(s.quote) + '</b></span>' +
-      (s.sto ? '<span>Stornos <b>' + fmt(s.sto) + ' (' + prozent(s.storno) + ')</b></span>' : '') + '</div>' +
-      (crm && crm.length ? (function () {
-        var ld = crm.reduce(function (a, c) { return a + c.leads; }, 0), st = crm.reduce(function (a, c) { return a + c.stornos; }, 0);
-        return '<div class="ak-kz-crm"><span>Laut CRM</span><b>' + fmt(ld) + '</b> Leads · <b>' + fmt(st) + '</b> Stornos' + (ld ? ' (' + prozent(st / ld * 100) + ')' : '') + '</div>';
-      })() : '') + '</div>';
+      '<div class="ak-kz-gross"><b>' + fmt(c.leads) + '</b> Leads</div>' +
+      '<dl><div><dt><i class="ak-farbe abs"></i>Qualifiziert</dt><dd>' + fmt(c.quali) + '</dd></div>' +
+      '<div><dt><i class="ak-farbe ohne"></i>Neu / in Bearbeitung</dt><dd>' + fmt(c.offen) + '</dd></div>' +
+      '<div><dt><i class="ak-farbe nicht"></i>Nicht qualifiziert</dt><dd>' + fmt(c.nicht) + '</dd></div></dl>' +
+      '<div class="ak-kz-quoten"><span>Stornoquote <b>' + (c.leads ? prozent(c.quote) : '–') + '</b></span>' +
+      '<span>Qualifizierungsquote <b>' + (c.bearbeitet ? prozent(c.qualiquote) : '–') + '</b></span>' +
+      (c.erreichbar ? '<span>Kunden erreicht <b>' + prozent(c.erreicht / c.erreichbar * 100) + '</b></span>' : '') + '</div></div>';
   }
 
   /* ---------- Säulendiagramm (gestapelt, letzte 14 Tage) ----------
      kats: [[feld, Bezeichnung, Farbklasse], …] von unten nach oben;
      einheit: Wort für die Summe („Türen“, „Leads“). */
-  var CRM_KATS = [['qualifiziert', 'Qualifiziert / in Bearbeitung', 'abs'], ['stornos', 'Storno (nicht qualifiziert oder neu)', 'nicht']];
   function tagesDiagramm(liste, kats, einheit) {
-    kats = kats || KATEGORIEN; einheit = einheit || 'Türen';
+    kats = kats || CRM_KATS; einheit = einheit || 'Leads';
     var tage = [];
     for (var i = 13; i >= 0; i--) { var d = new Date(); d.setDate(d.getDate() - i); tage.push(isoVon(d)); }
     var nachTag = {};
@@ -1254,191 +1230,141 @@
 
   /* ---------- CRM-Zahlen ---------- */
   function crmVon(id) { return S.crmZahlen.filter(function (c) { return c.nutzer_id === id; }); }
+  function zaehle(c, feld, wert) { return (c.werte && c.werte[feld] && c.werte[feld][wert]) || 0; }
+  /* Tageswerte eines Eintrags; ältere Einträge ohne Verteilung: alles außer Storno gilt als qualifiziert */
+  function crmTag(c) {
+    var hat = c.werte && c.werte.status;
+    var quali = hat ? zaehle(c, 'status', ST.quali) : c.leads - c.stornos;
+    var nicht = hat ? zaehle(c, 'status', ST.nicht) : c.stornos;
+    return { datum: c.datum, leads: c.leads, stornos: c.stornos, quali: quali, nicht: nicht, offen: Math.max(0, c.leads - quali - nicht) };
+  }
   function summeCrm(liste) {
-    var s = { leads: 0, stornos: 0 };
-    liste.forEach(function (c) { s.leads += c.leads; s.stornos += c.stornos; });
-    s.qualifiziert = s.leads - s.stornos;
+    var s = { leads: 0, stornos: 0, quali: 0, nicht: 0, offen: 0, erreicht: 0, erreichbar: 0, tage: 0, gruende: {} };
+    liste.forEach(function (c) {
+      var t = crmTag(c);
+      s.leads += t.leads; s.stornos += t.stornos; s.quali += t.quali; s.nicht += t.nicht; s.offen += t.offen;
+      if (t.leads) s.tage++;
+      var cs = (c.werte && c.werte.call_status) || {};
+      Object.keys(cs).forEach(function (k) { if (k !== '(leer)' && k !== 'Offen') { s.erreichbar += cs[k]; if (k === 'Erreicht') s.erreicht += cs[k]; } });
+      var pv = (c.werte && c.werte.pv_status) || {};
+      Object.keys(pv).forEach(function (k) { s.gruende[k] = (s.gruende[k] || 0) + pv[k]; });
+    });
+    s.bearbeitet = s.quali + s.nicht;
     s.quote = s.leads ? s.stornos / s.leads * 100 : 0;
+    s.qualiquote = s.bearbeitet ? s.quali / s.bearbeitet * 100 : 0;
+    s.jeTag = s.tage ? Math.round(s.leads / s.tage * 10) / 10 : 0;
     return s;
   }
-  function crmBereich(id) {
-    var l = crmVon(id);
-    if (!l.length) return '';
-    var kachel = function (titel, tage) {
-      var c = summeCrm(letzteTage(l, tage));
-      return '<div class="ak-kz"><div class="ak-kz-titel">' + titel + '</div><div class="ak-kz-gross"><b>' + fmt(c.leads) + '</b> Leads</div>' +
-        '<dl><div><dt><i class="ak-farbe abs"></i>Qualifiziert / in Bearbeitung</dt><dd>' + fmt(c.qualifiziert) + '</dd></div>' +
-        '<div><dt><i class="ak-farbe nicht"></i>Storno</dt><dd>' + fmt(c.stornos) + '</dd></div></dl>' +
-        '<div class="ak-kz-quoten"><span>Stornoquote <b>' + (c.leads ? prozent(c.quote) : '–') + '</b></span></div></div>';
-    };
-    var reihen = l.map(function (c) { return { datum: c.datum, qualifiziert: c.leads - c.stornos, stornos: c.stornos }; });
-    var stand = l.reduce(function (m, c) { return c.aktualisiert_am > m ? c.aktualisiert_am : m; }, '');
-    return '<section class="ak-karte mt-24"><div class="ak-karte-kopf"><h2>Leads laut CRM</h2><span class="tiny">Stand ' + (stand ? datum(stand, true) : '–') + '</span></div>' +
-      '<div class="ak-kennzahlen-3">' + kachel('Letzte 7 Tage', 7) + kachel('Letzte 30 Tage', 30) + kachel('Letzte 90 Tage', 90) + '</div>' +
-      '<div class="mt-24">' + tagesDiagramm(reihen, CRM_KATS, 'Leads') + '</div></section>';
+
+  function gruendeBlock(liste) {
+    var g = summeCrm(liste).gruende;
+    var namen = Object.keys(g).filter(function (k) { return ['Qualifiziert', 'Offen', '(leer)'].indexOf(k) === -1; })
+      .sort(function (a, b) { return g[b] - g[a]; });
+    if (!namen.length) return '<p class="ak-leer">Keine Absagegründe im Zeitraum.</p>';
+    var max = g[namen[0]], gesamt = namen.reduce(function (a, k) { return a + g[k]; }, 0);
+    return '<ul class="ak-gruende">' + namen.slice(0, 8).map(function (k) {
+      return '<li><span class="name">' + esc(k) + '</span><span class="ak-balken"><i style="width:' + (g[k] / max * 100) + '%"></i></span>' +
+        '<b>' + fmt(g[k]) + '</b><small>' + prozent(g[k] / gesamt * 100) + '</small></li>';
+    }).join('') + '</ul>';
   }
 
-  /* ---------- Tageszähler ---------- */
-  var zaehlerZeit = null;
-  function heuteBericht(id) {
-    return berichteVon(id).filter(function (b) { return b.datum === heuteIso(); })[0] ||
-      { nutzer_id: id, datum: heuteIso(), nicht_angetroffen: 0, angetroffen_ohne: 0, abschluesse: 0, notiz: '' };
-  }
-  function zaehlerHtml(id) {
-    var b = heuteBericht(id);
-    var s = summe([b]);
-    return '<div class="ak-zaehler" id="ak-zaehler" data-id="' + esc(id) + '">' +
-      KATEGORIEN.slice().reverse().map(function (k) {
-        return '<div class="ak-zaehler-feld ' + k[2] + '"><button type="button" class="ak-zaehler-plus" data-aktion="zaehlen" data-feld="' + k[0] + '" data-schritt="1" aria-label="' + k[1] + ' plus eins">' +
-          '<span class="zahl">' + b[k[0]] + '</span><span class="name">' + k[1] + '</span><span class="plus">+1</span></button>' +
-          '<button type="button" class="ak-zaehler-minus" data-aktion="zaehlen" data-feld="' + k[0] + '" data-schritt="-1" aria-label="' + k[1] + ' minus eins"' + (b[k[0]] ? '' : ' disabled') + '>−1</button></div>';
-      }).join('') +
-      '<div class="ak-zaehler-summe"><span>Heute geklingelt</span><b>' + s.tueren + '</b><span class="ak-gespeichert" id="ak-gespeichert"></span></div></div>';
-  }
-  function zaehlen(el) {
-    var box = document.getElementById('ak-zaehler');
-    var id = box.getAttribute('data-id');
-    var b = heuteBericht(id);
-    var feld = el.getAttribute('data-feld');
-    b[feld] = Math.max(0, (b[feld] || 0) + Number(el.getAttribute('data-schritt')));
-    var i = S.berichte.findIndex(function (x) { return x.nutzer_id === id && x.datum === b.datum; });
-    if (i >= 0) S.berichte[i] = b; else S.berichte.push(b);
-    if (navigator.vibrate) { try { navigator.vibrate(15); } catch (e) { /* egal */ } }
-    box.outerHTML = zaehlerHtml(id);
-    var st = document.getElementById('ak-gespeichert');
-    if (st) st.textContent = 'Wird gespeichert …';
-    clearTimeout(zaehlerZeit);
-    zaehlerZeit = setTimeout(function () { berichtSichern(b, true); }, 700);
-  }
-  function berichtSichern(b, still) {
-    var daten = { nutzer_id: b.nutzer_id, datum: b.datum, nicht_angetroffen: b.nicht_angetroffen,
-                  angetroffen_ohne: b.angetroffen_ohne, abschluesse: b.abschluesse, notiz: b.notiz || '' };
-    if (istAdmin()) daten.stornos = b.stornos || 0;   /* Partner können Stornos nicht ändern */
-    return D.berichtSpeichern(daten).then(function () {
-      var st = document.getElementById('ak-gespeichert');
-      if (st) st.textContent = 'Gespeichert';
-      if (!still) toast('Bericht gespeichert.');
-      var ks = document.getElementById('ak-kennzahlen');
-      if (ks) ks.innerHTML = kennzahlenHtml(b.nutzer_id);
-    }).catch(fehlerZeigen);
-  }
-
-  function kennzahlenHtml(id) {
-    var l = berichteVon(id);
-    return kennzahlKachel('Heute', summe(zeitraum(l, 'heute'))) +
-      kennzahlKachel('Diese Woche', summe(zeitraum(l, 'woche'))) +
-      kennzahlKachel('Dieser Monat', summe(zeitraum(l, 'monat')));
-  }
-
-  function verlaufTabelle(id, bearbeitbar, mitStorno) {
-    var l = berichteVon(id).slice().sort(function (a, b) { return b.datum.localeCompare(a.datum); }).slice(0, 30);
-    if (!l.length) return '<p class="ak-leer">Noch keine Tagesberichte.</p>';
-    var zeigeStorno = mitStorno || l.some(function (b) { return b.stornos; });
-    return '<div class="ak-tabelle-rahmen"><table class="ak-tabelle"><thead><tr><th>Tag</th><th>Türen</th><th>Nicht angetr.</th><th>Angetr., kein Abschl.</th><th>Abschlüsse</th><th>Abschlussquote</th>' +
-      (zeigeStorno ? '<th>Stornos</th>' : '') + (bearbeitbar ? '<th></th>' : '') + '</tr></thead><tbody>' +
-      l.map(function (b) {
-        var s = summe([b]);
-        return '<tr><td class="nowrap">' + esc(tagText(b.datum)) + '</td><td class="zahlen">' + fmt(s.tueren) + '</td><td class="zahlen">' + fmt(b.nicht_angetroffen) +
-          '</td><td class="zahlen">' + fmt(b.angetroffen_ohne) + '</td><td class="zahlen"><b>' + fmt(b.abschluesse) + '</b></td><td class="zahlen">' + prozent(s.quote) + '</td>' +
-          (zeigeStorno ? '<td class="zahlen">' + fmt(b.stornos || 0) + '</td>' : '') +
-          (bearbeitbar ? '<td><button class="btn btn-ghost btn-sm" type="button" data-aktion="bericht-laden" data-datum="' + b.datum + '">Ändern</button></td>' : '') + '</tr>';
+  function verlaufTabelleCrm(id) {
+    var l = letzteTage(crmVon(id), 30).slice().sort(function (a, b) { return b.datum.localeCompare(a.datum); });
+    if (!l.length) return '<p class="ak-leer">Keine Leads in den letzten 30 Tagen.</p>';
+    return '<div class="ak-tabelle-rahmen"><table class="ak-tabelle"><thead><tr><th>Tag</th><th>Leads</th><th>Qualifiziert</th><th>Neu / in Bearb.</th><th>Nicht qualifiziert</th><th>Stornoquote</th></tr></thead><tbody>' +
+      l.map(function (c) {
+        var t = crmTag(c);
+        return '<tr><td class="nowrap">' + esc(tagText(c.datum)) + '</td><td class="zahlen"><b>' + fmt(t.leads) + '</b></td><td class="zahlen">' + fmt(t.quali) +
+          '</td><td class="zahlen">' + fmt(t.offen) + '</td><td class="zahlen">' + fmt(t.nicht) + '</td><td class="zahlen">' + (t.leads ? prozent(t.stornos / t.leads * 100) : '–') + '</td></tr>';
       }).join('') + '</tbody></table></div>';
   }
-
-
-  function nachtragFormular(id, mitStorno) {
-    return '<form class="ak-formular" data-form="bericht" data-id="' + esc(id) + '" novalidate><div class="zeile4' + (mitStorno ? ' zeile5' : '') + '">' +
-      feld('datum', 'Tag', 'date', 'max="' + heuteIso() + '" value="' + heuteIso() + '" required') +
-      feld('nicht_angetroffen', 'Nicht angetroffen', 'number', 'min="0" inputmode="numeric" value="0"') +
-      feld('angetroffen_ohne', 'Angetroffen, kein Abschluss', 'number', 'min="0" inputmode="numeric" value="0"') +
-      feld('abschluesse', 'Abschlüsse', 'number', 'min="0" inputmode="numeric" value="0"') +
-      (mitStorno ? feld('stornos', 'Davon storniert', 'number', 'min="0" inputmode="numeric" value="0"') : '') +
-      '</div>' + (mitStorno ? '<p class="hilfe">Stornos dem Tag des ursprünglichen Abschlusses zuordnen. Nur du als Admin kannst sie eintragen.</p>' : '') +
-      '<div class="form-msg err" role="alert"></div><div><button class="btn btn-primary" type="submit">Tag speichern</button></div></form>';
-  }
-
 
   /* ---------- Dashboard (eigenes oder als Admin für einen Partner) ---------- */
   function vDashboard(id) {
     var adminSicht = istAdmin() && id && id !== S.profil.id;
     var p = adminSicht ? S.profile.filter(function (x) { return x.id === id; })[0] : S.profil;
     if (!p) return vNichtGefunden();
-    if (S.erweiterungFehlt) return vErweiterungFehlt();
+    if (S.erweiterungFehlt || S.crmFehlt) return vErweiterungFehlt();
     var L = leistungswerte(p.id);
-    var gesamt = summe(berichteVon(p.id));
+    var l = crmVon(p.id);
+    var c90 = summeCrm(letzteTage(l, 90));
+    var stand = l.reduce(function (m, c) { return c.aktualisiert_am > m ? c.aktualisiert_am : m; }, '');
+    var tage = l.map(crmTag);
     setzen((adminSicht ? '<a class="ak-zurueck" href="#/admin/team">' + ico('links') + 'Team-Übersicht</a>' : '') +
       '<div class="ak-kopf"><div><span class="eyebrow">' + (adminSicht ? 'Leistung' : 'Dein Dashboard') + '</span><h1>' + (adminSicht ? esc(name(p)) : 'Deine Leistung') + '</h1>' +
-      '<p>' + [gesamt.tage ? fmt(gesamt.tueren) + ' Türen an ' + gesamt.tage + ' Tagen · im Schnitt ' + fmt(gesamt.jeTag) + ' pro Tag' : (adminSicht ? 'Noch keine Türen erfasst' : 'Zähle heute deine erste Tür – unten mit einem Tipp pro Haustür'),
-        (function () { var c = summeCrm(letzteTage(crmVon(p.id), 90)); return c.leads ? fmt(c.leads) + ' Leads laut CRM in 90 Tagen' : ''; })()].filter(Boolean).join(' · ') + '.</p></div>' +
+      '<p>' + (c90.leads ? fmt(c90.leads) + ' Leads in den letzten 90 Tagen an ' + fmt(c90.tage) + ' Arbeitstagen · Stornoquote ' + prozent(c90.quote) : 'Noch keine Leads zugeordnet.') +
+      (stand ? ' · Stand ' + datum(stand, true) : '') + '</p></div>' +
       (adminSicht ? '<div class="ak-knoepfe" style="margin:0"><a class="btn btn-primary btn-sm" href="#/admin/bewertung/' + esc(p.id) + '">' + ico('stift') + 'Bewertung bearbeiten</a>' +
         '<a class="btn btn-ghost btn-sm" href="#/admin/partner/' + esc(p.id) + '">Ausbildung ansehen</a></div>' : '') + '</div>' +
+
+      (!l.length ? '<div class="ak-hinweis" style="margin-bottom:22px">' + (adminSicht
+        ? 'Für ' + esc(p.vorname) + ' sind noch keine Leads zugeordnet. Stimmt der Name nicht mit „Erstellt von“ im CRM überein, unter <a class="ak-link" href="#/admin/crm">CRM</a> zuordnen.'
+        : 'Deine Leads erscheinen hier nach dem nächsten Abgleich (jede Nacht). Fehlen sie danach noch, sag der Vertriebsleitung Bescheid.') + '</div>' : '') +
 
       '<section class="ak-karte ak-spieler"><div class="ak-spieler-karte">' + fifaKarte(p, L) + '</div>' +
       '<div class="ak-spieler-radar">' + radar(L) + '</div>' +
       '<div class="ak-spieler-text"><h2>Stärken und Schwächen</h2>' + staerkenBlock(L) +
-      '<p class="tiny mt-16">Skala 1–99 · ab 75 gut, 50–74 mittelmäßig, unter 50 schlecht. Disziplin, Einwandbehandlung und Stornoquote berechnen sich aus den Tagesberichten' +
+      '<p class="tiny mt-16">Skala 1–99 · ab 75 gut, 50–74 mittelmäßig, unter 50 schlecht. Disziplin, Einwandbehandlung und Stornoquote kommen aus dem CRM' +
       (L.bw ? ', die übrigen Werte sind die Einschätzung vom ' + datum(L.bw.aktualisiert_am) : '') + '.</p></div></section>' +
 
-      (!adminSicht ? '<section class="ak-karte mt-24"><div class="ak-karte-kopf"><h2>Tageszähler · ' + esc(tagText(heuteIso(), true)) + '</h2></div>' +
-        '<p class="small muted" style="margin:-8px 0 16px">An jeder Tür einmal tippen. Wird automatisch gespeichert.</p>' + zaehlerHtml(p.id) + '</section>' : '') +
+      '<section class="mt-24"><div class="ak-kennzahlen-3">' +
+      kennzahlKachel('Heute', summeCrm(zeitraum(l, 'heute'))) +
+      kennzahlKachel('Diese Woche', summeCrm(zeitraum(l, 'woche'))) +
+      kennzahlKachel('Dieser Monat', summeCrm(zeitraum(l, 'monat'))) + '</div></section>' +
 
-      '<section class="mt-24"><div class="ak-kennzahlen-3" id="ak-kennzahlen">' + kennzahlenHtml(p.id) + '</div></section>' +
+      '<section class="ak-karte mt-24"><div class="ak-karte-kopf"><h2>Leads pro Tag · letzte 14 Tage</h2></div>' + tagesDiagramm(tage) + '</section>' +
 
-      crmBereich(p.id) +
-      '<section class="ak-karte mt-24"><div class="ak-karte-kopf"><h2>Türen pro Tag · letzte 14 Tage</h2></div>' +
-      (berichteVon(p.id).length ? tagesDiagramm(berichteVon(p.id)) : '<p class="ak-leer">Noch keine Türen erfasst. ' + (adminSicht ? esc(p.vorname) + ' zählt sie mit dem Tageszähler im eigenen Dashboard.' : 'Oben im Tageszähler an jeder Tür einmal tippen.') + '</p>') + '</section>' +
-
-      '<section class="ak-karte mt-24"><div class="ak-karte-kopf"><h2>Tagesberichte</h2></div>' +
-      '<details class="ak-nachtrag"' + (adminSicht ? '' : '') + '><summary>' + ico('plus') + (adminSicht ? 'Tag für ' + esc(p.vorname) + ' eintragen oder ändern' : 'Anderen Tag nachtragen oder ändern') + '</summary>' + nachtragFormular(p.id, adminSicht) + '</details>' +
-      '<div class="mt-16" id="ak-verlauf">' + verlaufTabelle(p.id, true, adminSicht) + '</div></section>');
+      '<section class="ak-karte mt-24"><div class="ak-karte-kopf"><h2>Absagegründe · letzte 90 Tage</h2></div>' + gruendeBlock(letzteTage(l, 90)) + '</section>' +
+      '<section class="ak-karte mt-24"><div class="ak-karte-kopf"><h2>Tage im Detail · letzte 30 Tage</h2></div>' + verlaufTabelleCrm(p.id) + '</section>');
   }
 
   function vErweiterungFehlt() {
     setzen('<div class="ak-zustand"><div class="ico-tile ico-tile-lg">' + ico('sanduhr') + '</div><h1>Gleich verfügbar</h1>' +
-      '<p>' + (istAdmin() ? 'Für Dashboard und Mitteilungen muss in Supabase einmal die Datei <strong>supabase/erweiterung-dashboard.sql</strong> ausgeführt werden (SQL Editor → Run).'
+      '<p>' + (istAdmin() ? 'Für Dashboard und Mitteilungen müssen in Supabase einmal <strong>supabase/erweiterung-dashboard.sql</strong> und <strong>supabase/erweiterung-crm.sql</strong> ausgeführt werden (SQL Editor → Run).'
         : 'Dieser Bereich wird gerade eingerichtet. Schau bald wieder vorbei.') + '</p></div>');
   }
 
   /* ---------- Admin: Team-Übersicht ---------- */
-  var team = { zeit: 'woche', sort: 'abs' };
+  var team = { zeit: 'woche', sort: 'leads' };
   function vTeam() {
-    if (S.erweiterungFehlt) return vErweiterungFehlt();
+    if (S.erweiterungFehlt || S.crmFehlt) return vErweiterungFehlt();
     var partner = S.profile.filter(function (p) { return p.rolle !== 'admin' && p.status === 'aktiv'; });
     var zeilen = partner.map(function (p) {
-      var l = berichteVon(p.id);
-      var s = summe(zeitraum(l, team.zeit));
-      var letzter = l.reduce(function (m, b) { return b.datum > m ? b.datum : m; }, '');
+      var l = crmVon(p.id);
+      var c = summeCrm(zeitraum(l, team.zeit));
+      var letzter = l.reduce(function (m, b) { return b.leads && b.datum > m ? b.datum : m; }, '');
       var Lw = leistungswerte(p.id);
-      return { p: p, s: s, ovr: Lw.leer ? 0 : Lw.ovr, letzter: letzter };
+      return { p: p, c: c, ovr: Lw.leer ? 0 : Lw.ovr, letzter: letzter };
     });
     zeilen.sort({
-      abs: function (a, b) { return b.s.abs - a.s.abs; },
-      tueren: function (a, b) { return b.s.tueren - a.s.tueren; },
-      quote: function (a, b) { return b.s.quote - a.s.quote; },
+      leads: function (a, b) { return b.c.leads - a.c.leads; },
+      quali: function (a, b) { return b.c.quali - a.c.quali; },
+      quote: function (a, b) { return a.c.quote - b.c.quote; },
       ovr: function (a, b) { return b.ovr - a.ovr; }
     }[team.sort]);
-    var t = summe(zeitraum(S.berichte.filter(function (b) { return partner.some(function (p) { return p.id === b.nutzer_id; }); }), team.zeit));
+    var t = summeCrm(zeitraum(S.crmZahlen.filter(function (b) { return partner.some(function (p) { return p.id === b.nutzer_id; }); }), team.zeit));
     var zeitName = { heute: 'heute', woche: 'diese Woche', monat: 'diesen Monat' }[team.zeit];
-    setzen('<div class="ak-kopf"><div><span class="eyebrow">Admin</span><h1>Team-Leistung</h1><p>Türen, Antreffquote und Abschlüsse aller aktiven Partner – ' + zeitName + '.</p></div></div>' +
+    setzen('<div class="ak-kopf"><div><span class="eyebrow">Admin</span><h1>Team-Leistung</h1><p>Leads, Qualifizierung und Storno aller aktiven Partner – ' + zeitName + '.</p></div>' +
+      '<a class="btn btn-ghost btn-sm" href="#/admin/crm">' + ico('laden') + 'CRM-Abgleich</a></div>' +
       '<div class="ak-filter" role="group" aria-label="Zeitraum">' + [['heute', 'Heute'], ['woche', 'Diese Woche'], ['monat', 'Dieser Monat']].map(function (x) {
         return '<button type="button" data-aktion="team-zeit" data-wert="' + x[0] + '" aria-pressed="' + (team.zeit === x[0]) + '">' + x[1] + '</button>';
       }).join('') + '</div>' +
       '<div class="ak-kennzahlen">' +
-      '<div class="ak-kennzahl"><div class="v">' + fmt(t.tueren) + '</div><div class="k">Türen geklingelt</div></div>' +
-      '<div class="ak-kennzahl"><div class="v">' + t.antreff + ' %</div><div class="k">Antreffquote</div></div>' +
-      '<div class="ak-kennzahl"><div class="v">' + fmt(t.abs) + '</div><div class="k">Abschlüsse</div></div>' +
-      '<div class="ak-kennzahl"><div class="v">' + String(t.quote).replace('.', ',') + ' %</div><div class="k">Abschlussquote</div></div></div>' +
+      '<div class="ak-kennzahl"><div class="v">' + fmt(t.leads) + '</div><div class="k">Leads</div></div>' +
+      '<div class="ak-kennzahl"><div class="v">' + fmt(t.quali) + '</div><div class="k">qualifiziert</div></div>' +
+      '<div class="ak-kennzahl"><div class="v">' + (t.leads ? prozent(t.quote) : '–') + '</div><div class="k">Stornoquote</div></div>' +
+      '<div class="ak-kennzahl"><div class="v">' + (t.bearbeitet ? prozent(t.qualiquote) : '–') + '</div><div class="k">Qualifizierungsquote</div></div></div>' +
       '<div class="ak-werkzeug"><label class="small muted" for="team-sort">Sortieren nach</label><select class="select" id="team-sort" data-team-sort>' +
-      [['abs', 'Abschlüsse'], ['tueren', 'Türen'], ['quote', 'Abschlussquote'], ['ovr', 'Gesamtwert']].map(function (x) {
+      [['leads', 'Leads'], ['quali', 'Qualifiziert'], ['quote', 'Stornoquote (niedrigste zuerst)'], ['ovr', 'Gesamtwert']].map(function (x) {
         return '<option value="' + x[0] + '"' + (team.sort === x[0] ? ' selected' : '') + '>' + x[1] + '</option>';
       }).join('') + '</select></div>' +
-      (zeilen.length ? '<div class="ak-tabelle-rahmen"><table class="ak-tabelle"><thead><tr><th>#</th><th>Partner</th><th>Wert</th><th>Türen</th><th>Nicht angetr.</th><th>Angetr., kein Abschl.</th><th>Abschlüsse</th><th>Antreffquote</th><th>Abschlussquote</th><th>Letzter Bericht</th></tr></thead><tbody>' +
+      (zeilen.length ? '<div class="ak-tabelle-rahmen"><table class="ak-tabelle"><thead><tr><th>#</th><th>Partner</th><th>Wert</th><th>Leads</th><th>Qualifiziert</th><th>Neu / in Bearb.</th><th>Nicht qualifiziert</th><th>Stornoquote</th><th>Arbeitstage</th><th>Letzter Lead</th></tr></thead><tbody>' +
         zeilen.map(function (z, i) {
           return '<tr class="klickbar" data-aktion="leistung" data-id="' + esc(z.p.id) + '" tabindex="0"><td class="zahlen">' + (i + 1) + '</td>' +
             '<td class="name"><strong>' + esc(name(z.p)) + '</strong><small>' + esc(z.p.region || '') + '</small></td>' +
             '<td>' + (z.ovr ? '<span class="ak-ovr ' + (z.ovr >= 75 ? 'gold' : z.ovr >= 65 ? 'silber' : 'bronze') + '">' + z.ovr + '</span>' : '<span class="muted">–</span>') + '</td>' +
-            '<td class="zahlen">' + fmt(z.s.tueren) + '</td><td class="zahlen">' + fmt(z.s.nicht) + '</td><td class="zahlen">' + fmt(z.s.ohne) + '</td>' +
-            '<td class="zahlen"><b>' + fmt(z.s.abs) + '</b></td><td class="zahlen">' + z.s.antreff + ' %</td><td class="zahlen">' + String(z.s.quote).replace('.', ',') + ' %</td>' +
+            '<td class="zahlen"><b>' + fmt(z.c.leads) + '</b></td><td class="zahlen">' + fmt(z.c.quali) + '</td><td class="zahlen">' + fmt(z.c.offen) + '</td><td class="zahlen">' + fmt(z.c.nicht) + '</td>' +
+            '<td class="zahlen">' + (z.c.leads ? prozent(z.c.quote) : '–') + '</td><td class="zahlen">' + fmt(z.c.tage) + '</td>' +
             '<td class="zahlen">' + (z.letzter ? esc(tagText(z.letzter)) : 'noch keiner') + '</td></tr>';
         }).join('') + '</tbody></table></div>' : '<p class="ak-leer">Noch keine aktiven Partner.</p>'));
   }
@@ -1450,7 +1376,7 @@
     var bw = bewertungVon(id) || { werte: {}, staerken: '', schwaechen: '' };
     var L = leistungswerte(id);
     setzen('<a class="ak-zurueck" href="#/admin/leistung/' + esc(id) + '">' + ico('links') + 'Zurück zu ' + esc(name(p)) + '</a>' +
-      '<div class="ak-kopf"><div><span class="eyebrow">Bewertung</span><h1>' + esc(name(p)) + '</h1><p>Drei Werte schätzt du ein, drei berechnet die Akademie aus den Tagesberichten. Der Gesamtwert ist der Durchschnitt.</p></div></div>' +
+      '<div class="ak-kopf"><div><span class="eyebrow">Bewertung</span><h1>' + esc(name(p)) + '</h1><p>Drei Werte schätzt du ein, drei berechnet die Akademie aus dem CRM. Der Gesamtwert ist der Durchschnitt.</p></div></div>' +
       '<div class="ak-raster"><section class="ak-karte"><form class="ak-formular" data-form="bewertung" data-id="' + esc(id) + '" novalidate>' +
       '<h2>Deine Einschätzung</h2>' +
       WERTE.filter(function (x) { return !x[3]; }).map(function (x) {
@@ -1459,7 +1385,7 @@
           '<div class="row gap-12" style="flex-wrap:nowrap"><input type="range" id="w-' + x[0] + '" name="' + x[0] + '" min="1" max="99" value="' + w + '" data-regler style="--fill:' + ((w - 1) / 98 * 100) + '%">' +
           '<output for="w-' + x[0] + '">' + w + '</output></div></div>';
       }).join('') +
-      '<h2 class="mt-16">Aus den Zahlen berechnet</h2><ul class="ak-auto-liste">' +
+      '<h2 class="mt-16">Aus dem CRM berechnet</h2><ul class="ak-auto-liste">' +
       WERTE.filter(function (x) { return x[3]; }).map(function (x) {
         var u = urteil(L.w[x[0]]);
         return '<li><div class="zeile"><span>' + x[2] + ' <span class="kurz">' + x[1] + '</span></span><span class="ak-urteil ' + u[0] + '">' + u[1] + '</span><b>' + (L.w[x[0]] == null ? '–' : L.w[x[0]]) + '</b></div><small>' + esc(L.info[x[0]]) + '</small></li>';
@@ -1882,25 +1808,6 @@
     }
   };
 
-  FORMULARE.bericht = async function (form, w) {
-    if (!w.datum) return formFehler(form, 'Bitte einen Tag wählen.');
-    if (w.datum > heuteIso()) return formFehler(form, 'Ein Tag in der Zukunft geht nicht.');
-    var zahlen = ['nicht_angetroffen', 'angetroffen_ohne', 'abschluesse'].map(function (k) { return parseInt(w[k], 10); });
-    if (zahlen.some(function (n) { return isNaN(n) || n < 0; })) return formFehler(form, 'Bitte nur ganze Zahlen ab 0 eintragen.');
-    var b = { nutzer_id: form.getAttribute('data-id'), datum: w.datum, nicht_angetroffen: zahlen[0], angetroffen_ohne: zahlen[1], abschluesse: zahlen[2] };
-    var alt = S.berichte.filter(function (x) { return x.nutzer_id === b.nutzer_id && x.datum === b.datum; })[0];
-    b.notiz = alt ? alt.notiz : '';
-    b.stornos = alt ? (alt.stornos || 0) : 0;
-    if (form.elements.stornos) {
-      var st = parseInt(w.stornos, 10);
-      if (isNaN(st) || st < 0) return formFehler(form, 'Bitte bei Stornos eine ganze Zahl ab 0 eintragen.');
-      if (st > b.abschluesse) return formFehler(form, 'Es können nicht mehr Stornos als Abschlüsse sein.');
-      b.stornos = st;
-    }
-    await berichtSichern(b);
-    S.berichte = S.berichte.filter(function (x) { return !(x.nutzer_id === b.nutzer_id && x.datum === b.datum); }).concat([b]);
-    var y = window.scrollY; zeigen(); window.scrollTo(0, y);
-  };
   FORMULARE.bewertung = async function (form, w) {
     var werte = {};
     WERTE.forEach(function (x) { if (!x[3]) werte[x[0]] = begrenzt(parseInt(w[x[0]], 10) || 1); });
@@ -2041,21 +1948,8 @@
       zeigen();
     },
     csv: csvExport,
-    zaehlen: zaehlen,
     'crm-abgleich': function () { return crmStarten('abgleich'); },
     'crm-pruefen': function () { return crmStarten('pruefen'); },
-    'bericht-laden': function (el) {
-      var form = main.querySelector('form[data-form="bericht"]');
-      var b = S.berichte.filter(function (x) { return x.nutzer_id === form.getAttribute('data-id') && x.datum === el.getAttribute('data-datum'); })[0];
-      if (!b) return;
-      form.closest('details').open = true;
-      form.elements.datum.value = b.datum;
-      form.elements.nicht_angetroffen.value = b.nicht_angetroffen;
-      form.elements.angetroffen_ohne.value = b.angetroffen_ohne;
-      form.elements.abschluesse.value = b.abschluesse;
-      if (form.elements.stornos) form.elements.stornos.value = b.stornos || 0;
-      form.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    },
     'team-zeit': function (el) { team.zeit = el.getAttribute('data-wert'); vTeam(); },
     leistung: function (el) { geheZu('admin/leistung/' + el.getAttribute('data-id')); },
     verstanden: function (el) { el.disabled = true; return mitteilungErledigt(el.getAttribute('data-id'), ''); },

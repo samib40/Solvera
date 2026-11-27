@@ -2,9 +2,10 @@
 //  Solvera Akademie – Abgleich mit dem Horizon CRM
 //  -------------------------------------------------------------------------
 //  Meldet sich mit hinterlegten Zugangsdaten im CRM an, holt die Leads der
-//  letzten Tage und zählt je Partner („Erstellt von“) und Tag die Leads und
-//  Stornos. Gespeichert werden NUR diese Zahlen (Tabelle crm_zahlen), keine
-//  Kundendaten.
+//  letzten Tage und zählt je Partner („Erstellt von“) und Tag die Leads,
+//  Stornos und die Verteilung auf Status, PV-Status (Gründe) und
+//  Kunden-Status. Gespeichert werden NUR diese Zahlen (Tabelle crm_zahlen),
+//  keine Kundendaten.
 //
 //  Aufruf (POST, JSON-Body):
 //    { "modus": "pruefen" }   zeigt Felder, Status-Werte und Namen aus dem CRM
@@ -162,7 +163,8 @@ Deno.serve(async (req) => {
       if (p.crm_name) zuordnung.set(klein(p.crm_name), p.id);
     }
 
-    const zahlen = new Map<string, { nutzer_id: string; datum: string; leads: number; stornos: number }>();
+    type Zeile = { nutzer_id: string; datum: string; leads: number; stornos: number; werte: Record<string, Record<string, number>> };
+    const zahlen = new Map<string, Zeile>();
     const fehlt: Record<string, number> = {};
     let zugeordnet = 0;
     for (const l of leads) {
@@ -172,8 +174,13 @@ Deno.serve(async (req) => {
       if (!id || !tag) { const k = name || '(ohne Namen)'; fehlt[k] = (fehlt[k] || 0) + 1; continue; }
       zugeordnet++;
       const k = `${id}|${tag}`;
-      const z = zahlen.get(k) || { nutzer_id: id, datum: tag, leads: 0, stornos: 0 };
+      const z = zahlen.get(k) || { nutzer_id: id, datum: tag, leads: 0, stornos: 0, werte: {} };
       z.leads++; if (istStorno(l)) z.stornos++;
+      for (const f of ['status', 'pv_status', 'call_status']) {
+        const v = l?.[f] === undefined || l?.[f] === null || l?.[f] === '' ? '(leer)' : String(l[f]);
+        z.werte[f] = z.werte[f] || {};
+        z.werte[f][v] = (z.werte[f][v] || 0) + 1;
+      }
       zahlen.set(k, z);
     }
 
