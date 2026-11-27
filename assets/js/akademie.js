@@ -1171,24 +1171,31 @@
       })() : '') + '</div>';
   }
 
-  /* ---------- Tagesdiagramm (gestapelte Säulen, letzte 14 Tage) ---------- */
-  function tagesDiagramm(liste) {
+  /* ---------- Säulendiagramm (gestapelt, letzte 14 Tage) ----------
+     kats: [[feld, Bezeichnung, Farbklasse], …] von unten nach oben;
+     einheit: Wort für die Summe („Türen“, „Leads“). */
+  var CRM_KATS = [['qualifiziert', 'Qualifiziert / in Bearbeitung', 'abs'], ['stornos', 'Storno (nicht qualifiziert oder neu)', 'nicht']];
+  function tagesDiagramm(liste, kats, einheit) {
+    kats = kats || KATEGORIEN; einheit = einheit || 'Türen';
     var tage = [];
     for (var i = 13; i >= 0; i--) { var d = new Date(); d.setDate(d.getDate() - i); tage.push(isoVon(d)); }
     var nachTag = {};
     liste.forEach(function (b) { nachTag[b.datum] = b; });
     var reihen = tage.map(function (t) {
-      var b = nachTag[t] || { nicht_angetroffen: 0, angetroffen_ohne: 0, abschluesse: 0, leer: true };
-      return { datum: t, b: b, summe: b.nicht_angetroffen + b.angetroffen_ohne + b.abschluesse };
+      var b = nachTag[t];
+      var werte = kats.map(function (k) { return b ? (b[k[0]] || 0) : 0; });
+      return { datum: t, werte: werte, leer: !b, summe: werte.reduce(function (x, y) { return x + y; }, 0) };
     });
-    var max = Math.max.apply(null, reihen.map(function (r) { return r.summe; }).concat([10]));
+    var max = Math.max.apply(null, reihen.map(function (r) { return r.summe; }).concat([einheit === 'Türen' ? 10 : 4]));
     var schritt = Math.pow(10, Math.floor(Math.log10(max)));
     [1, 2, 2.5, 5, 10].some(function (f) { if (max / (schritt * f) <= 4) { schritt *= f; return true; } return false; });
+    schritt = Math.max(1, schritt);
     var oben = Math.ceil(max / schritt) * schritt;
     /* In echter Breite zeichnen, damit die Schrift nicht mitwächst */
     var B = Math.max(300, Math.min(1100, (main.querySelector('.wrap') || main).clientWidth - 60));
     var H = 240, L = 34, U = 26, O = 8, breite = (B - L) / tage.length, balken = Math.max(10, Math.min(28, breite - 8));
     var y = function (v) { return O + (H - O - U) * (1 - v / oben); };
+    var id = 'd' + Math.random().toString(36).slice(2, 7);
     var raster = '';
     for (var v = 0; v <= oben; v += schritt) {
       raster += '<line class="raster' + (v === 0 ? ' basis' : '') + '" x1="' + L + '" x2="' + B + '" y1="' + y(v) + '" y2="' + y(v) + '"/>' +
@@ -1199,11 +1206,11 @@
       var gesamtH = basis - y(r.summe);
       if (r.summe) {
         var unten = basis;
-        teile += '<clipPath id="ak-clip-' + i + '"><rect x="' + x + '" y="' + y(r.summe) + '" width="' + balken + '" height="' + gesamtH + '" rx="4"/><rect x="' + x + '" y="' + (basis - Math.min(4, gesamtH)) + '" width="' + balken + '" height="' + Math.min(4, gesamtH) + '"/></clipPath><g clip-path="url(#ak-clip-' + i + ')">';
-        KATEGORIEN.forEach(function (k, j) {
-          var wert = r.b[k[0]]; if (!wert) return;
+        teile += '<clipPath id="' + id + '-' + i + '"><rect x="' + x + '" y="' + y(r.summe) + '" width="' + balken + '" height="' + gesamtH + '" rx="4"/><rect x="' + x + '" y="' + (basis - Math.min(4, gesamtH)) + '" width="' + balken + '" height="' + Math.min(4, gesamtH) + '"/></clipPath><g clip-path="url(#' + id + '-' + i + ')">';
+        kats.forEach(function (k, j) {
+          var wert = r.werte[j]; if (!wert) return;
           var h = basis - y(wert);
-          var luecke = j > 0 && unten < basis ? 2 : 0;
+          var luecke = unten < basis ? 2 : 0;
           teile += '<rect class="seg ' + k[2] + '" x="' + x + '" y="' + (unten - h) + '" width="' + balken + '" height="' + Math.max(0, h - luecke) + '"/>';
           unten -= h;
         });
@@ -1213,12 +1220,10 @@
       var label = (i % 2 === (tage.length - 1) % 2) ? '<text class="achse-x" x="' + (x + balken / 2) + '" y="' + (H - 8) + '" text-anchor="middle">' + d.getDate() + '.' + (d.getMonth() + 1) + '.</text>' : '';
       return teile + label + '<rect class="treffer" data-tag="' + i + '" x="' + (L + i * breite) + '" y="' + O + '" width="' + breite + '" height="' + (H - O - U) + '"/>';
     }).join('');
-    var daten = JSON.stringify(reihen.map(function (r) {
-      return [tagText(r.datum), r.summe, r.b.nicht_angetroffen, r.b.angetroffen_ohne, r.b.abschluesse, !!r.b.leer];
-    }));
+    var daten = JSON.stringify({ einheit: einheit, kats: kats, reihen: reihen.map(function (r) { return [tagText(r.datum), r.summe, r.werte, r.leer]; }) });
     return '<div class="ak-diagramm" data-reihen="' + esc(daten) + '">' +
-      '<div class="ak-legende">' + KATEGORIEN.slice().reverse().map(function (k) { return '<span><i class="ak-farbe ' + k[2] + '"></i>' + k[1] + '</span>'; }).join('') + '</div>' +
-      '<div class="ak-diagramm-flaeche"><svg viewBox="0 0 ' + B + ' ' + H + '" role="img" aria-label="Türen pro Tag in den letzten 14 Tagen, gestapelt nach Ergebnis. Die Zahlen stehen auch in der Tabelle darunter.">' +
+      '<div class="ak-legende">' + kats.slice().reverse().map(function (k) { return '<span><i class="ak-farbe ' + k[2] + '"></i>' + k[1] + '</span>'; }).join('') + '</div>' +
+      '<div class="ak-diagramm-flaeche"><svg viewBox="0 0 ' + B + ' ' + H + '" role="img" aria-label="' + einheit + ' pro Tag in den letzten 14 Tagen, gestapelt. Die Zahlen stehen auch in den Kennzahlen.">' +
       raster + saeulen + '</svg><div class="ak-tooltip" hidden></div></div></div>';
   }
 
@@ -1228,12 +1233,13 @@
     if (!box) return;
     var tip = box.querySelector('.ak-tooltip');
     if (!t) { tip.hidden = true; return; }
-    var r = JSON.parse(box.getAttribute('data-reihen'))[Number(t.getAttribute('data-tag'))];
-    tip.innerHTML = '<strong>' + esc(r[0]) + '</strong>' + (r[5] ? '<span>Kein Bericht</span>' :
-      '<span>' + fmt(r[1]) + ' Türen</span>' +
-      '<span><i class="ak-farbe nicht"></i>Nicht angetroffen <b>' + fmt(r[2]) + '</b></span>' +
-      '<span><i class="ak-farbe ohne"></i>Angetroffen, kein Abschluss <b>' + fmt(r[3]) + '</b></span>' +
-      '<span><i class="ak-farbe abs"></i>Abschlüsse <b>' + fmt(r[4]) + '</b></span>');
+    var D2 = JSON.parse(box.getAttribute('data-reihen'));
+    var r = D2.reihen[Number(t.getAttribute('data-tag'))];
+    tip.innerHTML = '<strong>' + esc(r[0]) + '</strong>' + (r[3] ? '<span>Keine Daten</span>' :
+      '<span>' + fmt(r[1]) + ' ' + esc(D2.einheit) + '</span>' +
+      D2.kats.slice().reverse().map(function (k) {
+        return '<span><i class="ak-farbe ' + k[2] + '"></i>' + esc(k[1]) + ' <b>' + fmt(r[2][D2.kats.indexOf(k)]) + '</b></span>';
+      }).join(''));
     tip.hidden = false;
     var fl = box.querySelector('.ak-diagramm-flaeche').getBoundingClientRect();
     var tr = t.getBoundingClientRect();
@@ -1245,6 +1251,32 @@
   window.addEventListener('resize', function () {
     Array.prototype.forEach.call(document.querySelectorAll('.ak-tooltip'), function (t) { t.hidden = true; });
   });
+
+  /* ---------- CRM-Zahlen ---------- */
+  function crmVon(id) { return S.crmZahlen.filter(function (c) { return c.nutzer_id === id; }); }
+  function summeCrm(liste) {
+    var s = { leads: 0, stornos: 0 };
+    liste.forEach(function (c) { s.leads += c.leads; s.stornos += c.stornos; });
+    s.qualifiziert = s.leads - s.stornos;
+    s.quote = s.leads ? s.stornos / s.leads * 100 : 0;
+    return s;
+  }
+  function crmBereich(id) {
+    var l = crmVon(id);
+    if (!l.length) return '';
+    var kachel = function (titel, tage) {
+      var c = summeCrm(letzteTage(l, tage));
+      return '<div class="ak-kz"><div class="ak-kz-titel">' + titel + '</div><div class="ak-kz-gross"><b>' + fmt(c.leads) + '</b> Leads</div>' +
+        '<dl><div><dt><i class="ak-farbe abs"></i>Qualifiziert / in Bearbeitung</dt><dd>' + fmt(c.qualifiziert) + '</dd></div>' +
+        '<div><dt><i class="ak-farbe nicht"></i>Storno</dt><dd>' + fmt(c.stornos) + '</dd></div></dl>' +
+        '<div class="ak-kz-quoten"><span>Stornoquote <b>' + (c.leads ? prozent(c.quote) : '–') + '</b></span></div></div>';
+    };
+    var reihen = l.map(function (c) { return { datum: c.datum, qualifiziert: c.leads - c.stornos, stornos: c.stornos }; });
+    var stand = l.reduce(function (m, c) { return c.aktualisiert_am > m ? c.aktualisiert_am : m; }, '');
+    return '<section class="ak-karte mt-24"><div class="ak-karte-kopf"><h2>Leads laut CRM</h2><span class="tiny">Stand ' + (stand ? datum(stand, true) : '–') + '</span></div>' +
+      '<div class="ak-kennzahlen-3">' + kachel('Letzte 7 Tage', 7) + kachel('Letzte 30 Tage', 30) + kachel('Letzte 90 Tage', 90) + '</div>' +
+      '<div class="mt-24">' + tagesDiagramm(reihen, CRM_KATS, 'Leads') + '</div></section>';
+  }
 
   /* ---------- Tageszähler ---------- */
   var zaehlerZeit = null;
@@ -1293,10 +1325,9 @@
 
   function kennzahlenHtml(id) {
     var l = berichteVon(id);
-    var c = S.crmZahlen.filter(function (x) { return x.nutzer_id === id; });
-    return kennzahlKachel('Heute', summe(zeitraum(l, 'heute')), zeitraum(c, 'heute')) +
-      kennzahlKachel('Diese Woche', summe(zeitraum(l, 'woche')), zeitraum(c, 'woche')) +
-      kennzahlKachel('Dieser Monat', summe(zeitraum(l, 'monat')), zeitraum(c, 'monat'));
+    return kennzahlKachel('Heute', summe(zeitraum(l, 'heute'))) +
+      kennzahlKachel('Diese Woche', summe(zeitraum(l, 'woche'))) +
+      kennzahlKachel('Dieser Monat', summe(zeitraum(l, 'monat')));
   }
 
   function verlaufTabelle(id, bearbeitbar, mitStorno) {
@@ -1337,7 +1368,8 @@
     var gesamt = summe(berichteVon(p.id));
     setzen((adminSicht ? '<a class="ak-zurueck" href="#/admin/team">' + ico('links') + 'Team-Übersicht</a>' : '') +
       '<div class="ak-kopf"><div><span class="eyebrow">' + (adminSicht ? 'Leistung' : 'Dein Dashboard') + '</span><h1>' + (adminSicht ? esc(name(p)) : 'Deine Leistung') + '</h1>' +
-      '<p>' + (gesamt.tage ? fmt(gesamt.tueren) + ' Türen an ' + gesamt.tage + ' Tagen · im Schnitt ' + fmt(gesamt.jeTag) + ' pro Tag' : 'Zähle heute deine erste Tür – unten mit einem Tipp pro Haustür.') + '</p></div>' +
+      '<p>' + [gesamt.tage ? fmt(gesamt.tueren) + ' Türen an ' + gesamt.tage + ' Tagen · im Schnitt ' + fmt(gesamt.jeTag) + ' pro Tag' : (adminSicht ? 'Noch keine Türen erfasst' : 'Zähle heute deine erste Tür – unten mit einem Tipp pro Haustür'),
+        (function () { var c = summeCrm(letzteTage(crmVon(p.id), 90)); return c.leads ? fmt(c.leads) + ' Leads laut CRM in 90 Tagen' : ''; })()].filter(Boolean).join(' · ') + '.</p></div>' +
       (adminSicht ? '<div class="ak-knoepfe" style="margin:0"><a class="btn btn-primary btn-sm" href="#/admin/bewertung/' + esc(p.id) + '">' + ico('stift') + 'Bewertung bearbeiten</a>' +
         '<a class="btn btn-ghost btn-sm" href="#/admin/partner/' + esc(p.id) + '">Ausbildung ansehen</a></div>' : '') + '</div>' +
 
@@ -1352,7 +1384,9 @@
 
       '<section class="mt-24"><div class="ak-kennzahlen-3" id="ak-kennzahlen">' + kennzahlenHtml(p.id) + '</div></section>' +
 
-      '<section class="ak-karte mt-24"><div class="ak-karte-kopf"><h2>Türen pro Tag · letzte 14 Tage</h2></div>' + tagesDiagramm(berichteVon(p.id)) + '</section>' +
+      crmBereich(p.id) +
+      '<section class="ak-karte mt-24"><div class="ak-karte-kopf"><h2>Türen pro Tag · letzte 14 Tage</h2></div>' +
+      (berichteVon(p.id).length ? tagesDiagramm(berichteVon(p.id)) : '<p class="ak-leer">Noch keine Türen erfasst. ' + (adminSicht ? esc(p.vorname) + ' zählt sie mit dem Tageszähler im eigenen Dashboard.' : 'Oben im Tageszähler an jeder Tür einmal tippen.') + '</p>') + '</section>' +
 
       '<section class="ak-karte mt-24"><div class="ak-karte-kopf"><h2>Tagesberichte</h2></div>' +
       '<details class="ak-nachtrag"' + (adminSicht ? '' : '') + '><summary>' + ico('plus') + (adminSicht ? 'Tag für ' + esc(p.vorname) + ' eintragen oder ändern' : 'Anderen Tag nachtragen oder ändern') + '</summary>' + nachtragFormular(p.id, adminSicht) + '</details>' +
