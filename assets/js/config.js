@@ -168,8 +168,8 @@ window.SOLVERA = {
        Ziel erreicht = Wert 80 (gut ab 75). */
     ziele: {
       tuerenProTag: 300,         // Disziplin: Ø geklingelte Türen pro Arbeitstag (Gebietsplanung, 30 Tage)
-      leadsProTag: 8,            // Leads: Ø geschriebene Leads pro Arbeitstag (30 Tage)
-      qualifizierungsquote: 50,  // Einwandbehandlung: % qualifiziert von bearbeiteten Leads (30 Tage)
+      leadsProTag: 9,            // Leads: Ø geschriebene Leads pro Arbeitstag (30 Tage)
+      leadsPro100Tueren: 3,      // Einwandbehandlung: Leads (auch Storno) je 100 Türen (30 Tage)
       stornoquote: 50            // Stornoquote: (nicht qualifiziert + neu) ÷ alle Leads, gut bis zu diesem % (90 Tage)
     }
   }

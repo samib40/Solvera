@@ -996,7 +996,7 @@
     ['einwand', 'EIN', 'Einwandbehandlung', true],
     ['storno', 'STO', 'Stornoquote', true]
   ];
-  var ZIELE = Object.assign({ tuerenProTag: 300, leadsProTag: 8, qualifizierungsquote: 50, stornoquote: 50 }, CFG.ziele || {});
+  var ZIELE = Object.assign({ tuerenProTag: 300, leadsProTag: 9, leadsPro100Tueren: 3, stornoquote: 50 }, CFG.ziele || {});
   /* Status im CRM */
   var ST = { quali: 'Qualifiziert', nicht: 'Nicht qualifiziert', neu: 'Neu', bearb: 'In Bearbeitung' };
   var CRM_KATS = [['quali', 'Qualifiziert', 'abs'], ['offen', 'Neu / in Bearbeitung', 'ohne'], ['nicht', 'Nicht qualifiziert', 'nicht']];
@@ -1049,10 +1049,16 @@
       info.leads = 'Ø ' + String(c30.jeTag).replace('.', ',') + ' Leads pro Arbeitstag (' + fmt(c30.leads) + ' an ' + c30.tage + ' Tagen, letzte 30 Tage) · Ziel ' + ZIELE.leadsProTag;
     } else { w.leads = null; info.leads = 'Keine Leads in den letzten 30 Tagen'; }
 
-    if (c30.bearbeitet) {
-      w.einwand = begrenzt(c30.qualiquote / ZIELE.qualifizierungsquote * 80);
-      info.einwand = prozent(c30.qualiquote) + ' qualifiziert (' + fmt(c30.quali) + ' von ' + fmt(c30.bearbeitet) + ' bearbeiteten Leads, letzte 30 Tage) · Ziel über ' + ZIELE.qualifizierungsquote + ' %';
-    } else { w.einwand = null; info.einwand = 'Noch keine bearbeiteten Leads in den letzten 30 Tagen'; }
+    /* Einwandbehandlung: Leads (alle, auch Storno) je 100 Türen – nur an Tagen
+       mit Türdaten, damit Leads und Türen denselben Zeitraum abdecken */
+    var tTage = {}; letzteTage(tuerenVon(id), 30).forEach(function (t) { if (t.tueren) tTage[t.datum] = t.tueren; });
+    var tSumme = Object.keys(tTage).reduce(function (a2, k) { return a2 + tTage[k]; }, 0);
+    var lSumme = letzteTage(l, 30).filter(function (c) { return tTage[c.datum]; }).reduce(function (a2, c) { return a2 + c.leads; }, 0);
+    if (tSumme) {
+      var je100 = lSumme / tSumme * 100;
+      w.einwand = begrenzt(je100 / ZIELE.leadsPro100Tueren * 80);
+      info.einwand = String(Math.round(je100 * 10) / 10).replace('.', ',') + ' Leads pro 100 Türen (' + fmt(lSumme) + ' Leads bei ' + fmt(tSumme) + ' Türen, letzte 30 Tage) · Ziel ' + ZIELE.leadsPro100Tueren + ' (= ' + (ZIELE.leadsPro100Tueren * 3) + ' Leads auf 300 Türen)';
+    } else { w.einwand = null; info.einwand = 'Noch keine Türen aus der Gebietsplanung'; }
 
     if (c90.leads) {
       var q = c90.quote, z = ZIELE.stornoquote;

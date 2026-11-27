@@ -103,9 +103,9 @@ den Daten aus dem Horizon CRM** (siehe „CRM-Abgleich“):
   * **Disziplin (DIS):** Ø geklingelte Türen pro Arbeitstag (Gebietsplanung, 30 Tage),
     Ziel 300. Gezählt wird jede Nacht der Zuwachs je Gebiet und dem zugewiesenen
     Mitarbeiter zugerechnet; erneute Besuche ohne Statuswechsel zählen nicht.
-  * **Leads (LEA):** Ø geschriebene Leads pro Arbeitstag (30 Tage), Ziel 8.
-  * **Einwandbehandlung (EIN):** Qualifiziert ÷ bearbeitete Leads (30 Tage), Ziel über
-    50 %.
+  * **Leads (LEA):** Ø geschriebene Leads pro Arbeitstag (30 Tage), Ziel 9.
+  * **Einwandbehandlung (EIN):** Leads (alle, auch Storno) je 100 Türen, letzte 30
+    Tage, nur Tage mit Türdaten. Ziel 3 (= 9 Leads auf 300 Türen).
   * **Stornoquote (STO):** (Nicht qualifiziert + Neu) ÷ alle Leads (90 Tage). Bis 50 %
     gut, darüber mittelmäßig bis schlecht.
 
